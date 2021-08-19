@@ -1,5 +1,5 @@
 ![](doc/餐掌柜.png)
-
+前端工程：https://gitee.com/itxinfei/restkeeper-front
 ### 一、项目简介
 餐掌柜智能餐饮管理系统（简称餐掌柜 RestKeeper）是由传智播客研究院研发的智慧餐饮SaaS服务及运营平台，主要为餐饮集团或门店提供全套的互联网智能化收银、管理相关解决方案。主要功能包括点餐、收银、会员管理、移动支付等。
 
@@ -87,6 +87,3 @@
 | web（二级父工程）     | 微服务表现层   |
 | operator_web          | 运营端表现模块 |
 | web_common            | 表现层公共模块 |
-
-### 七、前端工程
-前端仓库 https://gitee.com/itxinfei/restkeeper-front
