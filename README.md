@@ -1,5 +1,7 @@
 ![](doc/餐掌柜.png)
 
+在线体验：https://pip.itcast.cn/eatManager
+
 前端工程（不公开）：https://gitee.com/itxinfei/restkeeper-front
 
 ### 一、项目简介
@@ -89,3 +91,33 @@
 | web（二级父工程）     | 微服务表现层   |
 | operator_web          | 运营端表现模块 |
 | web_common            | 表现层公共模块 |
+
+### 七、项目截图
+
+#### 1、餐掌柜后台
+
+![](doc/餐掌柜后台.jpg)
+
+#### 2、门店管理
+
+![](doc/门店管理.jpg)
+
+#### 3、集团管理
+
+![](doc/集团管理.jpg)
+
+#### 4、微信小程序
+
+<img src="doc/餐掌柜小程序.png"  />
+
+<img src="doc/小程序.jpg"  />
+
+#### 5、安卓APP
+
+![](doc/login.png)
+
+![](doc/index.png)
+
+### 八、项目部署--后期更新
+
+...
