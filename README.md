@@ -51,7 +51,6 @@
 
 ![](doc/1-1.png)
 
-
 1）商家在餐掌柜管家端申请帐号并提交资料到餐掌柜运营端。
 
 2）餐掌柜运营端记录本次订单信息，开通帐号并短信通知商家。
@@ -74,9 +73,16 @@
 
 ### 五、工程结构
 
-餐掌柜工程代码
+#### 1、餐掌柜工程代码
 
 ![](doc/1-6.png)
+#### 2、餐掌柜前端代码
+
+![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202631_23b21bbe_800553.jpeg "1.jpg")
+![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202641_8aa76c75_800553.jpeg "2.jpg")
+![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202650_2886719b_800553.jpeg "3.jpg")
+![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202703_b63450c4_800553.jpeg "4.jpg")
+![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202711_865f5a41_800553.jpeg "5.jpg")
 
 ### 六、工程说明：
 
