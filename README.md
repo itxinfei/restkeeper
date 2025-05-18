@@ -114,12 +114,6 @@
 
 ### 2. 前端工程结构
 
-![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/c5d197a38a6af6a4be9c417ce6d13e9f.png?Expires=1779085721&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=rbrXbK25dTV8sHqdRntmZVLbO%2B4%3D)
-![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/c591b2cb2292aab078055a3059c84640.png?Expires=1779085722&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=IK5dihSKLpInCcLuZkiwoHr4qZk%3D)
-![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/e0da2f7bfa5f945f44c03da69467bbb2.png?Expires=1779085722&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=ew9yj7gXvDFIgTd1asS5lepsVoY%3D)
-![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/007b165a18ae8d723cb641f42790867e.png?Expires=1779085723&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=8jIP8fJyIRa%2FrPUtOnDau4ia8L8%3D)
-![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/7d9b1f35295c703036172813baa4224e.png?Expires=1779085723&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=xACFGO2BVMkkxnqhHNE%2FswMK1nE%3D)
-
 前端采用 Vue3 + TypeScript 开发，适配 PC 端、移动端及小程序端，具备良好的响应式布局和交互体验。
 
 ---
@@ -140,12 +134,14 @@
 
 ### 4. 微信小程序端
 
-<img src="docs/餐掌柜小程序.png" width="300" />
-<img src="docs/小程序.jpg" width="300" />
+![餐掌柜小程序](docs/餐掌柜小程序.png)
+
+![小程序](docs/小程序.jpg)
 
 ### 5. 安卓 APP 界面
 
 ![登录页](docs/login.png)
+
 ![主页](docs/index.png)
 
 ---
