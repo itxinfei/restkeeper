@@ -1,129 +1,162 @@
-![](doc/餐掌柜.png)
+<div align="center">
 
-在线体验：https://pip.itcast.cn/eatManager
+# 🍽️ 餐掌柜 RestKeeper 智能餐饮管理系统
 
-前端工程：https://gitee.com/itxinfei/restkeeper-front
+ 餐掌柜 RestKeeper 是由传智播客研究院研发的智慧餐饮 SaaS 服务及运营平台，致力于为餐饮集团或门店提供全套互联网化、智能化的收银与管理解决方案。
 
-### 一、项目简介
-餐掌柜智能餐饮管理系统（简称餐掌柜 RestKeeper）是由传智播客研究院研发的智慧餐饮SaaS服务及运营平台，主要为餐饮集团或门店提供全套的互联网智能化收银、管理相关解决方案。主要功能包括点餐、收银、会员管理、移动支付等。
 
-### 二、系统模块
+<a href="https://spring.io/projects/spring-boot" target="_blank"> <img src="https://img.shields.io/badge/Spring%20Boot-2.1.6-brightgreen?style=flat-square&logo=spring" alt="Spring Boot"> </a> 
+<a href="https://spring.io/projects/spring-cloud" target="_blank"> <img src="https://img.shields.io/badge/Spring%20Cloud-Greenwich.SR2-blue?style=flat-square&logo=spring" alt="Spring Cloud"> </a> 
+<a href="https://github.com/alibaba/spring-cloud-alibaba" target="_blank"> <img src="https://img.shields.io/badge/Spring%20Cloud%20Alibaba-2.1.0-red?style=flat-square&logo=alibabacloud" alt="Spring Cloud Alibaba"> </a> 
+<a href="https://nacos.io/" target="_blank"> <img src="https://img.shields.io/badge/Nacos-integrated-red?style=flat-square&logo=nacos" alt="Nacos"> </a> 
+<a href="https://lombok.org/" target="_blank"> <img src="https://img.shields.io/badge/Lombok-1.18.10-orange?style=flat-square&logo=lombok" alt="Lombok"> </a> 
+<a href="https://spring.io/projects/spring-boot#test-support" target="_blank"> <img src="https://img.shields.io/badge/SpringBootTest-integrated-yellowgreen?style=flat-square&logo=junit" alt="SpringBootTest"> </a> 
+<a href="https://spring.io/projects/spring-boot/actuator" target="_blank"> <img src="https://img.shields.io/badge/Actuator-integrated-lightgrey?style=flat-square&logo=health" alt="Actuator"> </a> 
+<a href="https://springfox.github.io/springfox/" target="_blank"> <img src="https://img.shields.io/badge/Swagger-2.4.0-yellow?style=flat-square&logo=swagger" alt="Swagger">
 
-餐掌柜由平台运营中心系统、餐掌柜管家系统、餐掌柜收银系统、餐掌柜H5点餐系统组成，为商户及用户提供全方位的用餐服务。
+</div>
 
-（1）平台运营中心系统 即运营方的管理中心，主要包含账号管理、订单中心、平台配置、支付中心等功能。
+---
 
-（2）餐掌柜管家系统 商家入驻平台后，可以通过餐掌柜管家端管理和配置系统的基本信息，如区域桌台配置、菜品分类配置、人员配置、统计分析等。管家端支持集团管理功能，商家可以通过集团管理员账号登录系统来管理分店信息。
+## 📌 一、项目简介
 
-（3）餐掌柜收银系统 收银员用于收银结算使用的系统，可以运行在安卓或IOS系统上。主要功能包括堂点、收银等功能。
+![餐掌柜Logo](docs/餐掌柜.png)
 
-（4）餐掌柜H5点餐系统
 
-### 三、核心业务流程
+餐掌柜 RestKeeper 是一款面向餐饮行业的智能化 SaaS 管理系统，集成了点餐、收银、会员管理、移动支付等核心功能，适用于餐饮企业从单店到连锁集团的多种业务场景。
 
-#### 1、账号开通及申请流程
+随着餐饮行业数字化转型加速，传统线下管理模式已无法满足高效运营和用户体验的需求。本项目应运而生，通过线上平台帮助商家实现统一管理、多端协同、数据可视化的经营目标，提升运营效率和服务质量。
 
-对于商家申请入驻，餐掌柜提供了两种模式，分别是：用户自主开通，运营后台开通。具体入驻流程如下图所示：
 
-![](doc/1-3.png)
+## 🔗 在线体验
 
-#### 2、自主提交
+🔗 [在线体验地址](https://pip.itcast.cn/eatManager)
 
-1）商家在餐掌柜管家端申请试用，并填写相关资料信息。
 
-2）信息被提交到餐掌柜运营中心进行记录生成并存入数据库中进行记录。
+## 💻 前端工程
 
-3）运营中心生产商家相关帐号信息，包括：餐厅商户号、帐号、密码到期时间。
+📱 [Gitee 前端仓库地址](https://gitee.com/itxinfei/restkeeper-front)
 
-4）向商家发送开通成功短信通知，并记录当前时间。
 
-5）商家在管家端进行登录，在登录过程中会判断当前商家帐号是否到期，并作出相关提示。
+---
 
-#### 3、后台开通
+## 🧩 二、系统模块
 
-1）餐掌柜后台运营人员在运营端为商家开通帐号，填写相关餐厅信息并保存到数据库中进行保存。
+系统由四大子系统组成，覆盖商户端、员工端、用户端以及运营后台，提供全方位的餐饮服务支持：
 
-2）为商家生成帐号信息，短信通知商家并记录当前时间。
+| 子系统名称             | 主要功能描述 |
+|----------------------|-------------|
+| 平台运营中心系统       | 账号管理、订单中心、平台配置、支付中心等 |
+| 餐掌柜管家系统         | 商家入驻后使用的管理后台，支持区域桌台配置、菜品分类、人员管理、统计分析等；支持集团管理 |
+| 餐掌柜收银系统         | 收银员操作界面，支持堂食点餐、结算等功能，兼容安卓 / iOS 设备 |
+| 餐掌柜 H5 点餐系统     | 用户扫码即可进入点餐页面，完成下单与支付流程 |
 
-3）商家在管家端进行登录，在登录过程中会判断当前商家帐号是否到期，并作出相关提示。
+---
 
-#### 4、主线业务流程
+## 🔄 三、核心业务流程
 
-![](doc/1-1.png)
+### 1. 商户入驻流程
 
-1）商家在餐掌柜管家端申请帐号并提交资料到餐掌柜运营端。
+餐掌柜支持两种入驻方式：**自主申请开通** 和 **运营后台手动开通**
 
-2）餐掌柜运营端记录本次订单信息，开通帐号并短信通知商家。
+#### 自主提交流程：
 
-3）商家接收短信，并开始试用。
+1. 商家在餐掌柜管家端填写资料并提交；
+2. 运营中心记录信息并生成账号（含餐厅编号、登录账号、有效期）；
+3. 向商家发送短信通知，提示账号开通成功；
+4. 商家登录后系统自动检测是否到期，并作出相应提示。
 
-4）当试用到期，商家可以选择向运营端申请开通正式帐号，当开通了正式帐号之后，商家可以继续使用。
+#### 后台开通流程：
 
-5）商家可以在管家端进入管家平台，然后创建门店、添加菜品、常见套餐、添加桌台并为每一个桌台生成唯一二维码、开启并设置记账方式、添加打印机并保存配置信息。
+1. 运营人员在平台后台填写餐厅信息并保存；
+2. 自动生成账号信息并通过短信通知商家；
+3. 商家登录后系统验证账号有效性并提示使用状态。
 
-6）商家在管家端添加员工并分配帐号信息。员工就可以登录员工平台。
+### 2. 主线业务流程
 
-7）员工可以在员工平台中，为每一桌客人进行堂食开桌、点餐、打印单据、结账、清台。
+![主线业务流程图](docs/1-1.png)
 
-8）客人可以用手机扫描二维码进行点餐、下单、支付等操作。
+1. 商家申请账号并提交资料；
+2. 运营中心开通账号并短信通知；
+3. 商家试用结束后可申请正式账号继续使用；
+4. 登录管家端配置门店、菜品、桌台二维码、打印机等；
+5. 添加员工并分配权限；
+6. 员工登录员工端进行开桌、点餐、打印、结账、清台等操作；
+7. 客户扫码点餐、下单、支付，实现全流程自助化。
 
-### 四、技术架构
+---
 
-![](doc/1-8.png)
+## ⚙️ 四、技术架构
 
-### 五、工程结构
+![技术架构图](docs/1-8.png)
 
-#### 1、餐掌柜工程代码
+系统采用 **Spring Cloud 微服务架构**，结合 Nacos 注册中心、Sentinel 流量控制、Redis 缓存、MySQL 分库分表等技术，构建了一个高并发、高可用、易扩展的企业级系统。
 
-![](doc/1-6.png)
-#### 2、餐掌柜前端代码
+---
 
-![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202631_23b21bbe_800553.jpeg "1.jpg")
-![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202641_8aa76c75_800553.jpeg "2.jpg")
-![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202650_2886719b_800553.jpeg "3.jpg")
-![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202703_b63450c4_800553.jpeg "4.jpg")
-![输入图片说明](https://images.gitee.com/uploads/images/2021/1102/202711_865f5a41_800553.jpeg "5.jpg")
+## 📁 五、工程结构说明
 
-### 六、工程说明：
+### 1. 后端工程结构
 
-| 工程模块名称          | 作用           |
-| :-------------------- | :------------- |
-| common                | 公共模块       |
-| gateway               | 网关模块       |
-| service（二级父工程） | 微服务业务层   |
-| operator              | 运营端业务模块 |
-| operator_api          | 运营端资源模块 |
-| service_common        | 业务层公共模块 |
-| web（二级父工程）     | 微服务表现层   |
-| operator_web          | 运营端表现模块 |
-| web_common            | 表现层公共模块 |
+![工程结构图](docs/1-6.png)
 
-### 七、项目截图
+| 模块名称          | 功能说明               |
+|------------------|------------------------|
+| common            | 公共工具类与基础组件   |
+| gateway           | 系统网关模块           |
+| service (父工程)  | 微服务业务层           |
+| operator          | 运营端业务模块         |
+| operator_api      | 运营端接口资源模块     |
+| service_common    | 服务层公共依赖模块     |
+| web (父工程)      | 表现层（Controller）模块 |
+| operator_web      | 运营端表现层模块       |
+| web_common        | 表现层公共依赖模块     |
 
-#### 1、餐掌柜后台
+### 2. 前端工程结构
 
-![](doc/餐掌柜后台.jpg)
+![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/c5d197a38a6af6a4be9c417ce6d13e9f.png?Expires=1779085721&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=rbrXbK25dTV8sHqdRntmZVLbO%2B4%3D)
+![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/c591b2cb2292aab078055a3059c84640.png?Expires=1779085722&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=IK5dihSKLpInCcLuZkiwoHr4qZk%3D)
+![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/e0da2f7bfa5f945f44c03da69467bbb2.png?Expires=1779085722&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=ew9yj7gXvDFIgTd1asS5lepsVoY%3D)
+![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/007b165a18ae8d723cb641f42790867e.png?Expires=1779085723&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=8jIP8fJyIRa%2FrPUtOnDau4ia8L8%3D)
+![前端截图](https://broadscope-dialogue-new.oss-cn-beijing.aliyuncs.com/output/20250518/7d9b1f35295c703036172813baa4224e.png?Expires=1779085723&OSSAccessKeyId=LTAI5tL97mBYzVcjkG1cUyin&Signature=xACFGO2BVMkkxnqhHNE%2FswMK1nE%3D)
 
-#### 2、门店管理
+前端采用 Vue3 + TypeScript 开发，适配 PC 端、移动端及小程序端，具备良好的响应式布局和交互体验。
 
-![](doc/门店管理.jpg)
+---
 
-#### 3、集团管理
+## 📸 六、项目截图
 
-![](doc/集团管理.jpg)
+### 1. 餐掌柜后台系统
 
-#### 4、微信小程序
+![餐掌柜后台](docs/餐掌柜后台.jpg)
 
-<img src="doc/餐掌柜小程序.png"  />
+### 2. 门店管理模块
 
-<img src="doc/小程序.jpg"  />
+![门店管理](docs/门店管理.jpg)
 
-#### 5、安卓APP
+### 3. 集团管理模块
 
-![](doc/login.png)
+![集团管理](docs/集团管理.jpg)
 
-![](doc/index.png)
+### 4. 微信小程序端
 
-### 八、项目部署--后期更新
+<img src="docs/餐掌柜小程序.png" width="300" />
+<img src="docs/小程序.jpg" width="300" />
 
-...
+### 5. 安卓 APP 界面
+
+![登录页](docs/login.png)
+![主页](docs/index.png)
+
+---
+
+## 🏗️ 七、项目部署（后期更新）
+
+该项目支持本地部署、云端部署等多种方式，后续将逐步完善部署文档与自动化部署脚本，敬请期待。
+
+### 🔗 项目链接 & 社区支持  
+![微信公众号二维码](docs/心飞为你飞.jpg)  
+🚀 项目地址：[https://gitee.com/itxinfei/wanxinp2p](https://gitee.com/itxinfei/wanxinp2p)  
+👥 QQ交流群：[661543188](https://qm.qq.com/cgi-bin/qm/qr?k=gNgch-wCkfUu-QbI7DZSudrax2BN7vY0&jump_from=webapi&authKey=QHSRnxQvu+h5S3AXGn/DSHrVPiFQAYEk6bSlCE1lS276SFjQAUagV4FG7bHf0OSM)  
+📧 邮箱支持：[747011882@qq.com](http://mail.qq.com/cgi-bin/qm_share?t=qm_mailme&email=f0hLSE9OTkdHTT8ODlEcEBI)  
+
