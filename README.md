@@ -37,7 +37,7 @@
 
 ## 💻 前端工程
 
-📱 [Gitee 前端仓库地址](https://gitee.com/itxinfei/restkeeper-front)
+📱 [Gitee 前端仓库地址](https://gitee.com/itxinfei/xfcy-ui)
 
 
 ---
@@ -154,7 +154,7 @@
 
 ### 🔗 项目链接 & 社区支持  
 ![微信公众号二维码](docs/心飞为你飞.jpg)  
-🚀 项目地址：[https://gitee.com/itxinfei/restkeeper](https://gitee.com/itxinfei/restkeeper)  
+🚀 项目地址：[https://gitee.com/itxinfei/xfcy](https://gitee.com/itxinfei/xfcy)  
 👥 QQ交流群：[661543188](https://qm.qq.com/cgi-bin/qm/qr?k=gNgch-wCkfUu-QbI7DZSudrax2BN7vY0&jump_from=webapi&authKey=QHSRnxQvu+h5S3AXGn/DSHrVPiFQAYEk6bSlCE1lS276SFjQAUagV4FG7bHf0OSM)  
 📧 邮箱支持：[747011882@qq.com](http://mail.qq.com/cgi-bin/qm_share?t=qm_mailme&email=f0hLSE9OTkdHTT8ODlEcEBI)  
 
