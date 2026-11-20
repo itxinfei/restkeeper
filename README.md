@@ -1,4 +1,4 @@
-> 本仓库为个人学习归档，代码著作权归原作者／原课程机构所有。本仓库不授予任何许可，请勿用于商业用途。
+> 本仓库在「餐掌柜」公开课程项目基础上二次开发。原始代码著作权归原课程机构所有，本仓库作者只对改造与新增部分以 Apache-2.0 授权，原始代码不在授权范围内。归属说明见 [NOTICE](NOTICE)。
 
 <h1 align="center">心飞餐饮 · XinFei Dining</h1>
 
@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/MySQL-5.7-4479A1.svg?logo=mysql&logoColor=white" alt="MySQL">
   <img src="https://img.shields.io/badge/Redis-5-DC382D.svg?logo=redis&logoColor=white" alt="Redis">
   <img src="https://img.shields.io/badge/Swagger-2.4.0-85EA2D.svg?logo=swagger&logoColor=white" alt="Swagger">
-  <img src="https://img.shields.io/badge/license-none%20%2F%20archive-red.svg" alt="license">
+  <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="license">
 </p>
 
 <p align="center">
@@ -130,6 +130,8 @@ QQ 群 661543188 ｜ 邮箱 747011882@qq.com
 
 ## 八、版权说明
 
-本仓库为「餐掌柜」课程项目的学习归档，原始代码著作权归原课程机构所有，不授予任何许可，不得用于商业用途。
+本仓库在「餐掌柜」公开课程项目基础上二次开发，原始代码著作权归原课程机构所有。
 
-`restkeeper-front/` 下的两个前端工程各带一个 MIT LICENSE（`Copyright (c) 2018 Chong Guo`），那是脚手架模板自带的文件，授权来自模板原作者。归档者不撤销它，也不代表它覆盖课程业务代码——这两层权利要分开看。商用前请分别与前端模板作者、课程机构确认。
+作者改造与新增的部分——品牌更名、界面与文案调整、文档、构建与部署配置——以 **Apache-2.0** 授权，全文见 [LICENSE](LICENSE)。该授权不覆盖原始课程代码，也不构成对原始代码的再许可；完整归属说明见 [NOTICE](NOTICE)。
+
+`restkeeper-front/` 下的两个前端工程各带一个 MIT LICENSE（`Copyright (c) 2018 Chong Guo`），那是脚手架模板自带的文件，授权来自模板原作者。本仓库不撤销它，但它不覆盖课程业务代码——这两层权利要分开看，商用前请分别与前端模板作者、课程机构确认。
