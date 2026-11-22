@@ -11,6 +11,9 @@ public class SystemCode {
     //运营端账号下发队列
     public final static String SMS_ACCOUNT_QUEUE="account_queue";
 
+    //菜品/套餐索引变更队列（K16：store 发送，es 消费双写索引）
+    public final static String DISH_INDEX_QUEUE="dish_index_queue";
+
     //1 集团类型  2 门店类型
     public  final  static String  USER_TYPE_SHOP="1"; //集团用户类型
     public  final  static String  USER_TYPE_STORE_MANAGER="2"; //门店管理员类型

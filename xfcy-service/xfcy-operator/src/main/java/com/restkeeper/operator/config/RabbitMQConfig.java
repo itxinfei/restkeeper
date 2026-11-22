@@ -1,41 +1,24 @@
 package com.restkeeper.operator.config;
 
-import org.springframework.amqp.core.*;
-import org.springframework.beans.factory.annotation.Qualifier;
+import com.restkeeper.constants.SystemCode;
+import org.springframework.amqp.core.Queue;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 /**
- * rabbitMQ配置类
+ * rabbitMQ配置类：仅声明账号下发队列。
+ * <p>发送方（operator/shop/store）经默认交换机直投 account_queue，监听方 @RabbitListener 同名队列消费。
+ * 原 sms_exchange / account_queue_key 绑定未被任何发送方使用（死配置），K18 已删除。
  */
 @Component
 public class RabbitMQConfig {
 
     //帐号下发队列
-    public static final String ACCOUNT_QUEUE = "account_queue";
-
-    //帐号下发routingkey
-    public static final String ACCOUNT_QUEUE_KEY ="account_queue_key";
-
-    //短信发送交换机
-    public static final String SMS_EXCHANGE = "sms_exchange";
+    public static final String ACCOUNT_QUEUE = SystemCode.SMS_ACCOUNT_QUEUE;
 
     //声明队列
     @Bean(ACCOUNT_QUEUE)
-    public Queue accountQueue(){
-        Queue queue = new Queue(ACCOUNT_QUEUE);
-        return queue;
-    }
-
-    //声明交换机
-    @Bean(SMS_EXCHANGE)
-    public Exchange smsExchange(){
-        return ExchangeBuilder.directExchange(SMS_EXCHANGE).build();
-    }
-
-    //队列绑定交换机
-    @Bean
-    public Binding accountQueueToSmsExchange(@Qualifier(ACCOUNT_QUEUE) Queue queue, @Qualifier(SMS_EXCHANGE) Exchange exchange){
-        return BindingBuilder.bind(queue).to(exchange).with(ACCOUNT_QUEUE_KEY).noargs();
+    public Queue accountQueue() {
+        return new Queue(ACCOUNT_QUEUE);
     }
 }

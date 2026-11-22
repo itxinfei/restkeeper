@@ -7,15 +7,18 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
+import com.restkeeper.mq.DishIndexMessage;
 import com.restkeeper.store.entity.Dish;
 import com.restkeeper.store.entity.SetMeal;
 import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.mapper.SetMealMapper;
+import com.restkeeper.store.mq.DishIndexEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,9 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
 
     @Autowired
     private DishServiceImpl dishService;
+
+    @Autowired
+    private DishIndexEventPublisher dishIndexEventPublisher;
 
     /**
      * 套餐分页（按名称模糊）
@@ -55,6 +61,7 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
             setMealDish.setIndex(0);
         });
         setMealDishService.saveBatch(setMealDishes);
+        dishIndexEventPublisher.publishSetMeal(setMeal.getId(), DishIndexMessage.ACTION_UPSERT);
         return true;
     }
 
@@ -73,6 +80,7 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
             setMealDishes.forEach(setMealDish -> setMealDish.setSetMealId(setMeal.getId()));
             setMealDishService.saveBatch(setMealDishes);
         }
+        dishIndexEventPublisher.publishSetMeal(setMeal.getId(), DishIndexMessage.ACTION_UPSERT);
         return true;
     }
 
@@ -87,7 +95,9 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
 
         UpdateWrapper<SetMeal> updateWrapper = new UpdateWrapper<>();
         updateWrapper.lambda().set(SetMeal::getStatus, SystemCode.FORBIDDEN).in(SetMeal::getId, ids);
-        return this.update(updateWrapper);
+        boolean result = this.update(updateWrapper);
+        ids.forEach(id -> dishIndexEventPublisher.publishSetMeal(id, DishIndexMessage.ACTION_UPSERT));
+        return result;
     }
 
     /**
@@ -115,6 +125,19 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
 
         UpdateWrapper<SetMeal> updateWrapper = new UpdateWrapper<>();
         updateWrapper.lambda().set(SetMeal::getStatus, SystemCode.ENABLED).in(SetMeal::getId, ids);
-        return this.update(updateWrapper);
+        boolean result = this.update(updateWrapper);
+        ids.forEach(id -> dishIndexEventPublisher.publishSetMeal(id, DishIndexMessage.ACTION_UPSERT));
+        return result;
+    }
+
+    /**
+     * 批量逻辑删除套餐（K16：同步删除 ES 索引）
+     */
+    @Override
+    @Transactional
+    public boolean removeByIds(Collection<?> ids) {
+        boolean result = super.removeByIds(ids);
+        ids.forEach(id -> dishIndexEventPublisher.publishSetMeal(String.valueOf(id), DishIndexMessage.ACTION_DELETE));
+        return result;
     }
 }

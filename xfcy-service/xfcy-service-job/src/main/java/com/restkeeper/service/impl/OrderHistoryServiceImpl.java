@@ -54,29 +54,25 @@ public class OrderHistoryServiceImpl implements OrderHistoryService {
             List<OrderDetailEntity> orderDetailEntityList = orderDetailMapper.selectList(detailWrapper);
 
             orderDetailEntityList.forEach(orderDetailEntity -> {
-                if (orderDetailEntity.getDishType() == 1){
-                    //普通菜品
-                    //添加到历史表中t_his_order_detail
-                    OrderDetailHistoryEntity orderDetailHistoryEntity = new OrderDetailHistoryEntity();
-                    BeanUtils.copyProperties(orderDetailEntity,orderDetailHistoryEntity);
-                    orderDetailHistoryMapper.insert(orderDetailHistoryEntity);
-                    orderDetailMapper.deleteById(orderDetailEntity.getDetailId());
-                }
+                //K19：主明细（普通菜品 / 套餐头）一律先归档再删除，避免套餐头残留为孤儿
+                OrderDetailHistoryEntity orderDetailHistoryEntity = new OrderDetailHistoryEntity();
+                BeanUtils.copyProperties(orderDetailEntity, orderDetailHistoryEntity);
+                orderDetailHistoryMapper.insert(orderDetailHistoryEntity);
+                orderDetailMapper.deleteById(orderDetailEntity.getDetailId());
 
-                if (orderDetailEntity.getDishType() == 2){
-                    //套餐。获取当前套餐下的相关菜品信息
+                Integer dishType = orderDetailEntity.getDishType();
+                if (dishType != null && dishType == 2) {
+                    //套餐：获取当前套餐下的拆单明细并归档
                     QueryWrapper<OrderDetailMealEntity> mealWrapper = new QueryWrapper<>();
-                    mealWrapper.lambda().eq(OrderDetailMealEntity::getOrderId,orderDetailEntity.getOrderId());
+                    mealWrapper.lambda().eq(OrderDetailMealEntity::getOrderId, orderDetailEntity.getOrderId());
                     List<OrderDetailMealEntity> detailMealEntityList = orderDetailMealMapper.selectList(mealWrapper);
 
                     for (OrderDetailMealEntity orderDetailMealEntity : detailMealEntityList) {
-
-                        OrderDetailHistoryEntity orderDetailHistoryEntity = new OrderDetailHistoryEntity();
-                        BeanUtils.copyProperties(orderDetailMealEntity,orderDetailHistoryEntity);
-                        orderDetailHistoryMapper.insert(orderDetailHistoryEntity);
+                        OrderDetailHistoryEntity mealHistoryEntity = new OrderDetailHistoryEntity();
+                        BeanUtils.copyProperties(orderDetailMealEntity, mealHistoryEntity);
+                        orderDetailHistoryMapper.insert(mealHistoryEntity);
                         orderDetailMealMapper.deleteById(orderDetailMealEntity.getDetailId());
                     }
-
                 }
             });
 

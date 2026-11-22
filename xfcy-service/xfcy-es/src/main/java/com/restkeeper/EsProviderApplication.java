@@ -5,8 +5,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
 /**
- * 检索服务不连数据库：classpath 无 spring-jdbc，MyBatis-Plus 与数据源自动配置均不会装配，
- * 因此无需像业务 provider 那样 exclude DataSourceAutoConfiguration（Boot 4 下该类已拆出 autoconfigure 主包）。
+ * 检索服务：K16 起只读 store 库（spring-jdbc + JdbcTemplate）用于索引回填/全量重建，
+ * 不引入 MyBatis-Plus 与租户拦截，数据源配置见 Nacos dataId es-dubbo-provider.yml。
  */
 @EnableDiscoveryClient
 @SpringBootApplication(scanBasePackages = {"com.restkeeper"})

@@ -29,15 +29,15 @@ public class ReportDataGenerateJob {
 
         //统计历史的营收概况
         reportPayService.generateData();
-        System.out.println(LocalDateTime.now()+"**************历史汇总成功**************");
+        log.info("{} **************历史汇总成功**************", LocalDateTime.now());
 
         //统计历史菜品销量
         reportDishService.generateData();
-        System.out.println(LocalDateTime.now()+"**************历史菜品销量汇总成功**************");
+        log.info("{} **************历史菜品销量汇总成功**************", LocalDateTime.now());
 
         //订单数据迁移
         orderHistoryService.exportToHistory();
-        System.out.println(LocalDateTime.now()+"**************job执行成功**************");
+        log.info("{} **************job执行成功**************", LocalDateTime.now());
 
         return ReturnT.SUCCESS;
 

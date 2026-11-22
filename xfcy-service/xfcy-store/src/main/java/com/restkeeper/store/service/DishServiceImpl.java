@@ -7,11 +7,13 @@ import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
+import com.restkeeper.mq.DishIndexMessage;
 import com.restkeeper.store.entity.Dish;
 import com.restkeeper.store.entity.DishFlavor;
 import com.restkeeper.store.entity.SetMeal;
 import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.mapper.DishMapper;
+import com.restkeeper.store.mq.DishIndexEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
     @Autowired
     private SetMealServiceImpl setMealService;
 
+    @Autowired
+    private DishIndexEventPublisher dishIndexEventPublisher;
+
     /**
      * 新增菜品及口味
      */
@@ -45,6 +50,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
 
         dishFlavorList.forEach(dishFlavor -> dishFlavor.setDishId(dish.getId()));
         dishFlavorService.saveBatch(dishFlavorList);
+        dishIndexEventPublisher.publishDish(dish.getId(), DishIndexMessage.ACTION_UPSERT);
         return true;
     }
 
@@ -61,6 +67,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
 
         dishFlavorList.forEach(dishFlavor -> dishFlavor.setDishId(dish.getId()));
         dishFlavorService.saveBatch(dishFlavorList);
+        dishIndexEventPublisher.publishDish(dish.getId(), DishIndexMessage.ACTION_UPSERT);
         return true;
     }
 
@@ -112,6 +119,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
         UpdateWrapper<Dish> updateWrapper = new UpdateWrapper<>();
         updateWrapper.lambda().set(Dish::getStatus, SystemCode.FORBIDDEN).in(Dish::getId, ids);
         this.update(updateWrapper);
+        ids.forEach(id -> dishIndexEventPublisher.publishDish(id, DishIndexMessage.ACTION_UPSERT));
 
         List<String> setMealIds = listRelatedSetMealIds(ids);
         if (!setMealIds.isEmpty()) {
@@ -133,7 +141,9 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
 
         UpdateWrapper<Dish> updateWrapper = new UpdateWrapper<>();
         updateWrapper.lambda().set(Dish::getStatus, SystemCode.ENABLED).in(Dish::getId, ids);
-        return this.update(updateWrapper);
+        boolean result = this.update(updateWrapper);
+        ids.forEach(id -> dishIndexEventPublisher.publishDish(id, DishIndexMessage.ACTION_UPSERT));
+        return result;
     }
 
     /**
@@ -153,6 +163,7 @@ public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
         }
 
         this.removeByIds(ids);
+        ids.forEach(id -> dishIndexEventPublisher.publishDish(id, DishIndexMessage.ACTION_DELETE));
         return true;
     }
 

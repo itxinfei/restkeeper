@@ -22,7 +22,7 @@ public class SmsMessageListener {
     @RabbitListener(queues = SystemCode.SMS_ACCOUNT_QUEUE)
     public void getAccountMessage(String message){
 
-        log.info("发送短信监听类接收到了消息："+message);
+        log.info("发送短信监听类接收到了消息：{}", message);
 
         //转换参数
         SmsObject smsObject = JSON.parseObject(message, SmsObject.class);
@@ -47,8 +47,9 @@ public class SmsMessageListener {
         try {
             sendSmsResponse = smsService.sendSmsRequest(request);
         } catch (ClientException e) {
-            e.printStackTrace();
-            sendSmsResponse = new SendSmsResponse();
+            //K18：不再吞异常，记录后由 AMQP 重试策略接管（common.yml 已开启 retry）
+            log.error("短信发送失败, phone={}, templateCode={}", phoneNumber, templateCode, e);
+            throw new RuntimeException("短信发送失败", e);
         }
 
         return sendSmsResponse;
