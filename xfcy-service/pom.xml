@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>xfcy</artifactId>
+        <groupId>com.restkeeper</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>xfcy-service</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>xfcy-service-common</module>
+        <module>xfcy-operator</module>
+        <module>xfcy-operator-api</module>
+        <module>xfcy-service-mq</module>
+        <module>xfcy-shop-api</module>
+        <module>xfcy-shop</module>
+        <module>xfcy-store-api</module>
+        <module>xfcy-store</module>
+        <module>xfcy-es-api</module>
+        <module>xfcy-es</module>
+        <module>xfcy-order-api</module>
+        <module>xfcy-order</module>
+        <module>xfcy-service-job</module>
+    </modules>
+
+
+</project>

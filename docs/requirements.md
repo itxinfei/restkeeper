@@ -30,13 +30,13 @@
 
 | 端 | 使用角色 | 后端模块 | 形态 |
 |---|---|---|---|
-| 平台运营中心 | 平台运营人员 | restkeeper_operator_web（BFF） | Vue3 重写 |
-| 餐掌柜管家端（企业端） | 企业账号、门店经理 | restkeeper_enterprise_web（BFF） | Vue3 重写 |
-| 餐掌柜收银端 | 门店收银员 | restkeeper_cash_web（BFF） | Vue3 重写（触屏大按钮） |
-| 点餐 H5 / 微信小程序 | 顾客（C 端） | **restkeeper_microapp_web（本轮新增，规划 8087、/microApp）** | Taro 4 双端 |
+| 平台运营中心 | 平台运营人员 | xfcy-operator-web（BFF） | Vue3 重写 |
+| 餐掌柜管家端（企业端） | 企业账号、门店经理 | xfcy-enterprise-web（BFF） | Vue3 重写 |
+| 餐掌柜收银端 | 门店收银员 | xfcy-cash-web（BFF） | Vue3 重写（触屏大按钮） |
+| 点餐 H5 / 微信小程序 | 顾客（C 端） | **xfcy-microapp-web（本轮新增，规划 8087、/microApp）** | Taro 4 双端 |
 | 收银 APP（Flutter） | 门店收银员 | 既有原生应用，本轮不动 | Flutter |
 
-后端为 Maven 多模块微服务：`restkeeper_common`、`restkeeper_service_common`、`restkeeper_web_common` 三个公共模块；5 个 `*_api` 契约模块 + 5 个 provider（operator/shop/store/order/es）+ mq/job 两个辅助服务 + gateway；三个现存 web BFF；全部完成后含新增 microapp_web 共 23 个模块。
+后端为 Maven 多模块微服务：`xfcy-common`、`xfcy-service-common`、`xfcy-web-common` 三个公共模块；5 个 `*_api` 契约模块 + 5 个 provider（operator/shop/store/order/es）+ mq/job 两个辅助服务 + gateway；三个现存 web BFF；全部完成后含新增 microapp_web 共 23 个模块。
 
 ## 二、角色、登录入口与多租户模型
 
@@ -193,7 +193,7 @@
 | 反结账 | 先 `GET /order/number/{orderNumber}` 🆕 按流水号查**已付**订单（含明细；非已付或查无返回 null，作为前端入口约束），确认后 `POST /order/reverse`（IReverseOrderService，@RequestBody ReverseOrder：orderId + remark）：订单 payStatus 置 0、写 t_reverse_order（回填 orderNumber/tableId/amount=原单 payAmount/createTime/operatorName）。**reverse 本身不校验原单已付、不恢复桌台、不回冲沽清**（K7） |
 | 沽清维护 | `POST /sellCalculation`（body）、`DELETE /sellCalculation`（ids）；另见 4.2 沽清行 |
 
-### 4.4 点餐 H5 / 微信小程序后端（restkeeper_microapp_web，阶段 6 新增）
+### 4.4 点餐 H5 / 微信小程序后端（xfcy-microapp-web，阶段 6 新增）
 
 - 端口 8087，context-path `/microApp`；HTTP Interface 复用 store/order 契约，不新建数据访问层；
 - C 端接口范围：按门店浏览分类与可售菜品/套餐、购物车提交订单（复用 `/order/add`）、加菜、模拟支付（dev 打桩：微信 code2session、JSAPI）；
@@ -214,17 +214,17 @@
 
 | provider | api 模块 | 契约数 | 主要实体 |
 |---|---|---|---|
-| operator | restkeeper_operator_api | 3 | EnterpriseAccount、OperatorUser、SysDictionary |
-| shop | restkeeper_shop_api | 3 | Brand、Store、StoreManager；DTO：StoreDTO |
-| store | restkeeper_store_api | 15 | Dish、DishCategory、DishFlavor、SetMeal、SetMealDish、Table、TableArea、TableLog、Staff、Credit、CreditCompanyUser、CreditLogs、CreditRepayment、Remark、SellCalculation |
-| order | restkeeper_order_api | 6 | OrderEntity、OrderDetailEntity、OrderDetailMealEntity、OrderDetailAllView（读视图）、ReverseOrder、ReportDishEntity、ReportPay；DTO：DetailDTO、CreditPayRequest |
-| es | restkeeper_es_api | 1 | DishEs（@Document 索引视图，SearchResult 包装） |
+| operator | xfcy-operator-api | 3 | EnterpriseAccount、OperatorUser、SysDictionary |
+| shop | xfcy-shop-api | 3 | Brand、Store、StoreManager；DTO：StoreDTO |
+| store | xfcy-store-api | 15 | Dish、DishCategory、DishFlavor、SetMeal、SetMealDish、Table、TableArea、TableLog、Staff、Credit、CreditCompanyUser、CreditLogs、CreditRepayment、Remark、SellCalculation |
+| order | xfcy-order-api | 6 | OrderEntity、OrderDetailEntity、OrderDetailMealEntity、OrderDetailAllView（读视图）、ReverseOrder、ReportDishEntity、ReportPay；DTO：DetailDTO、CreditPayRequest |
+| es | xfcy-es-api | 1 | DishEs（@Document 索引视图，SearchResult 包装） |
 
 合计 28 个服务契约（**含 2 个空占位契约**：`IDishFlavorService`、`IOrderDetailMealService`——接口体为空、无 Controller 落地，相关本地能力由不实现契约的 MP ServiceImpl 承载；web 端**不得**为这两个接口生成 HTTP 代理或注册端点）。
 
 复合请求体 DTO：DishWithFlavors、SetMealWithDishes、CreditWithCompanyUsers、CreditPayRequest；读模型 DTO：CurrentAmountCollectDTO、CurrentHourCollectDTO、PayTypeCollectDTO、PrivilegeDTO、DayAmountCollectDTO、OrderDetailAllView、StoreDTO、DetailDTO。
 
-辅助服务：`restkeeper_service_mq`（短信：阿里云 dysmsapi20170525，dev 打桩；消费 RabbitMQ 账号队列，链路见 7.8）、`restkeeper_service_job`（XXL-Job 3.5 定时任务，独立的报表聚合 + 历史归档实现，见 7.9）、`restkeeper_gateway`（统一入口、CORS 收口、Sa-Token reactor 鉴权——阶段 5 已实现）。
+辅助服务：`xfcy-service-mq`（短信：阿里云 dysmsapi20170525，dev 打桩；消费 RabbitMQ 账号队列，链路见 7.8）、`xfcy-service-job`（XXL-Job 3.5 定时任务，独立的报表聚合 + 历史归档实现，见 7.9）、`xfcy-gateway`（统一入口、CORS 收口、Sa-Token reactor 鉴权——阶段 5 已实现）。
 
 每个业务库独立 Flyway 迁移（`V1__init.sql`），DDL 按实体与现存 Mapper XML 逆向产出；**t_staff.status 新列随 V1 一并落地**。
 
@@ -304,7 +304,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 | P0/P1 补端点 | 8 个缺口端点 + 员工登录加固 + 账号注释勘误 | ✅ 完成（已提交） |
 | 4 | web BFF 适配 + 网关 | ✅ 完成（已提交） |
 | 5 | Sa-Token 全链路落地 + 中间件环境冒烟 | 🚧 进行中（Sa-Token 全链路已落地并编译通过；中间件冒烟待环境就绪） |
-| 6 | 新增 restkeeper_microapp_web（8087、/microApp、C 端 StpLogic） | 未开始 |
+| 6 | 新增 xfcy-microapp-web（8087、/microApp、C 端 StpLogic） | 未开始 |
 | 7 | 前端 pnpm monorepo 重写三端 + Taro 点餐 spike | 未开始 |
 
 ### 10.2 旧 BFF → 新 provider 契约迁移对照表（阶段 4 施工依据）

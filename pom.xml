@@ -5,15 +5,15 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.restkeeper</groupId>
-    <artifactId>RestKeeper</artifactId>
+    <artifactId>xfcy</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
 
     <modules>
-        <module>restkeeper_common</module>
-        <module>restkeeper_gateway</module>
-        <module>restkeeper_service</module>
-        <module>restkeeper_web</module>
+        <module>xfcy-common</module>
+        <module>xfcy-gateway</module>
+        <module>xfcy-service</module>
+        <module>xfcy-web</module>
     </modules>
 
     <!-- Spring Boot 版本信息 -->

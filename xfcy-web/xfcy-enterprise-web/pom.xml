@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>xfcy-web</artifactId>
+        <groupId>com.restkeeper</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>xfcy-enterprise-web</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>xfcy-web-common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>xfcy-operator-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>xfcy-shop-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <!-- 阶段4：SCA 2025.1 已移除 spring-cloud-starter-alicloud-oss，改用官方 SDK -->
+        <dependency>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>3.18.5</version>
+        </dependency>
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>xfcy-store-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>xfcy-order-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
+
+</project>
