@@ -237,10 +237,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             creditLogs.setCreditId(creditId);
             creditLogs.setOrderId(orderEntity.getOrderId());
             creditLogs.setType(credit.getCreditType());
-            // K14：creditAmount 只赋值一次（原重复赋值已删）；orderAmount/receivedAmount 取订单总额，语义待与业务确认
+            // K14：creditAmount 只赋值一次；orderAmount=订单总额，receivedAmount=本次实收（payAmount，空则回退总额）
             creditLogs.setCreditAmount(creditDTO.getCreditAmount());
             creditLogs.setOrderAmount(orderEntity.getTotalAmount());
-            creditLogs.setReceivedAmount(orderEntity.getTotalAmount());
+            creditLogs.setReceivedAmount(orderEntity.getPayAmount() != null
+                    ? orderEntity.getPayAmount() : orderEntity.getTotalAmount());
 
             if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
 

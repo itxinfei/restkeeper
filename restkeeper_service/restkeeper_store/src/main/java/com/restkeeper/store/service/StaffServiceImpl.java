@@ -72,12 +72,25 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
      */
     @Transactional
     public boolean addStaff(Staff staff) {
+        return super.save(encodePassword(staff));
+    }
+
+    /**
+     * 保存员工：统一 BCrypt 加密（原裸 save 直通 MP 不加密，明文入库风险）
+     */
+    @Override
+    @Transactional
+    public boolean save(Staff staff) {
+        return super.save(encodePassword(staff));
+    }
+
+    private Staff encodePassword(Staff staff) {
         String password = staff.getPassword();
         if (!StringUtils.hasText(password)) {
             password = RandomCodeUtil.randomNumeric(8);
         }
         staff.setPassword(PasswordUtil.encode(password));
-        return this.save(staff);
+        return staff;
     }
 
     /**
