@@ -1,0 +1,67 @@
+$bgcl: #f7f7f8;   // 背景颜色
+$maincl: #edb00a;  // 主色调
+$pricl: #e9500d;   // 价格色调
+$logcl: #141466;    // logo 色调
+$bordercl: #cecece; // 分割线
+
+/*** 常用色调 ***/
+$white: #ffffff;
+$black: black;
+$cl1: #333;
+$cl2: #666;
+$cl3: #999;
+
+/*** 常用公共样式 ***/
+
+.labYellow {
+  background: #fffaec;
+  color: #be8f0e;
+}
+.labRed {
+  background: #fff6f8;
+  color: #cd3c5b;
+}
+.labGreen {
+  background: #f3fff5;
+  color: #4b9f57;
+}
+.pir{
+  color:$pricl;
+}
+.borderbt{
+  border-bottom: solid 2px $bgcl;
+}
+
+
+/** 成功提示页面 **/
+.success{
+  text-align: center;
+  margin-top: 30%;
+  .successLog{
+    width: 140px;
+    height: 140px;
+  }
+  .title{
+    font-size: 36px;
+    margin: 40px;
+  }
+  .cont{
+    font-size: 28px;
+    color:$cl2;
+    margin: 40px;
+  }
+  .but{
+    margin: 0 20px;
+  }
+}
+
+/**弹窗背景*/
+.popup{
+  background: rgba(0, 0, 0, 0.5);
+  position: fixed;
+  top:0px;
+  left: 0px;
+  width: 100vh;
+  height: 100vh;
+  z-index: 99;
+}

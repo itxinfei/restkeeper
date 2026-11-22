@@ -1,0 +1,64 @@
+@import "./../../assets/common.scss";
+.but_main{
+  padding: 8px 40px;
+  font-size: 28px;
+  border-radius: 50px;
+}
+.but_solid{
+  background: $maincl;
+  color: $white;
+}
+.but_smSolid{
+  padding: 0px 30px;
+  font-size: 0.8rem;
+  line-height: 1.1rem;
+  height: 1.1rem;
+  border-radius: 40px;
+  background: $maincl;
+  color: $white;
+}
+.but_empty{
+  border:solid 2px $maincl;
+  color: $maincl;
+}
+.but_big, .but_med{
+  display: inline-block;
+  background: linear-gradient(90deg, #eeba0b, #f9a136);
+  width: 80%;
+  margin: 0 auto;
+  text-align: center;
+  border-radius: 90px;
+  line-height: 90px;
+  color: #fff;
+  font-size: 38px;
+}
+.but_med{
+  width: 60%;
+  margin: 0 auto;
+  line-height: 50px;
+  font-size: 28px;
+}
+// 标签
+.lab_main{
+  display: inline-block;
+  padding: 2px 10px;
+  font-size: 24px;
+  border-radius: 10px;
+}
+.lab_Yellow {
+  background: #fffaec;
+  color: #be8f0e;
+}
+.lab_Red {
+  background: #fff6f8;
+  color: #cd3c5b;
+}
+.lab_Green {
+  background: #f3fff5;
+  color: #4b9f57;
+}
+.lab_black{
+  background: #333333;
+  font-size: 20px;
+  color: #ffc937;
+}

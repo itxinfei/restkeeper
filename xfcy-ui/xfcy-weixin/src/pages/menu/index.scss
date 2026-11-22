@@ -1,0 +1,734 @@
+@import "./../../assets/common";
+.meun{
+  .meunBan{
+    width:750px;
+    height: 299px;
+    top:0px;
+    position: absolute;
+  }
+  .meunTop{
+    position: absolute;
+    transition: 1s;
+    border-radius: 5px;
+    top:100px;
+    z-index: 2;
+    background: $white;
+    width: 90%;
+    height: 240px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-right: 10px;
+    box-shadow: 0px 2px 8px $bordercl;
+  }
+  .meunCont{
+    z-index: 1;
+    margin-top: 289px;
+    padding-top: 60px;
+    background: $white;
+    .topInfo{
+      display: flex;
+      padding: 40px;
+      .info{
+        flex: 1;
+        font-size: 32px;
+        line-height: 50px;
+        padding: 0 10px;
+        // border-right: solid 1px $bordercl;
+        .tabPostion{
+          color:$cl3
+        }
+      }
+      .logo{
+        width: 100px;
+        height: 100px;
+      }
+      .code{
+        width: 88px;
+        height: 83px;
+
+        margin: 20px 10px 20px 40px;
+      }
+    }
+    .labelBox{
+      font-size: 24px;
+      padding: 0 40px;
+      position: relative;
+      top:-20px;
+      .lab{
+        padding: 6px 20px;
+        border-radius: 10px;
+        margin-right: 20px;
+      }
+      .rit{
+        position: absolute;
+        right: 40px;
+        top: -2px;
+        color: $cl3;
+      }
+    }
+    .labelBoxOp{
+      border-top: solid 1px $bgcl;
+      padding:20px 40px;
+      font-size: 36px;
+      .laber{
+        padding: 20px 0;
+        color:$cl2;
+        font-size: 32px;
+        .lab{
+          display: inline-block;
+          font-size: 28px;
+          margin-right: 20px;
+          padding:4px 10px;
+          border-radius: 8px;
+        }
+      }
+      .bot{
+        position: absolute;
+        width:100%;
+        bottom: 20px;
+        color:$cl3;
+        text-align: center;
+      }
+    }
+    .open{
+      position: fixed;
+      overflow: hidden;
+      height: calc(100vh - 300px);
+    }
+  }
+}
+
+/*** 点餐 ***/
+
+.orderMeal{
+  display: flex;
+   .leftMeal{
+     background: $bgcl;
+     .titItems{
+       padding: 20px 20px;
+       font-size: 32px;
+       color: $cl3;
+     }
+     .act{
+       background: $white;
+       color: $logcl;
+     }
+   }
+   .ritCont{
+     flex: 1;
+     background: $white;
+     .topTitle{
+       font-size: 32px;
+       line-height: 100px;
+       margin-left: 20px;
+     }
+     .scrollBox{
+       height: calc(100vh - 100Px);
+     }
+   }
+}
+/**** 购物车 ****/
+.shopCart{
+  position: fixed;
+  display: flex;
+  padding: 10px 20px;
+  bottom: 0px;
+  left: 0px;
+  width: calc(100% - 40px);
+  background: $cl2;
+  line-height: 80px;
+  font-size: 36px;
+  z-index: 101;
+  .cart,.carts{
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: $cl3;
+    text-align: center;
+  }
+  .carts{
+    background: $white;
+    position: relative;
+    .cartNum{
+      position: absolute;
+      font-size: 24px;
+      line-height:32px;
+      color:$white;
+      background: red;
+      width: 30px;
+      height: 30px;
+      text-align: center;
+      right: 0px;
+      top:0px;
+      border-radius: 100%;
+    }
+  }
+  .price{
+    flex: 1;
+    color:$white;
+    margin-left: 10px;
+  }
+  .but{
+    color:$white;
+  }
+  .buts{
+    text-align: center;
+    color:$white;
+    position: absolute;
+    line-height: 102px;
+    width: 40%;
+    top:0px;
+    right:0px;
+    background: linear-gradient(90deg, #eeba0b, #f9a136);
+  }
+  .cartImg{
+    position: relative;
+    top:8px;
+    width: 50px;
+    height: 40px;
+  }
+}
+// TODO: flex居中布局
+.seatNumberPopup {
+  position: fixed;
+  transition: 1s;
+  overflow: hidden;
+  bottom: 3px;
+  left: 4px;
+  height: 0vh;
+  z-index: 102;
+  background: $white;
+  overflow-y: scroll;
+  width: calc(100%  - 64px);
+  border-radius: 10px 10px 0 0;
+  padding: 0 30px;
+  .title{
+    display: flex;
+    justify-content: space-between;
+    font-size: 32px;
+    font-weight: bold;
+    line-height: 100px;
+  }
+  .content {
+    .item{
+      display: flex;
+      font-size: 40px;
+      margin: 10px 0 60px;
+      color: $cl1;
+      .number{
+        display: flex;
+        align-items: center;
+        .red,.add{
+          display: inline-block;
+          width: 80px;
+          height: 80px;
+          border-radius: 80px;
+          text-align: center;
+          line-height: 80px;
+          border: solid 1px $logcl;
+        }
+        .red{
+          color:$logcl;
+        }
+        .num{
+          padding:0 40px;
+        }
+        .add{
+          background: $logcl;
+          color:$white;
+        }
+      }
+    }
+  }
+}
+.seatNumberPopupOpen{
+  height: 35vh;
+}
+.cartsPopup, .popupBox{
+  position: fixed;
+  transition: 1s;
+  overflow: hidden;
+  bottom: 100px;
+  left: 2px;
+  height: 0vh;
+  z-index: 100;
+  background: $white;
+  overflow-y: scroll;
+  width: calc(100%  - 64px);
+  border-radius: 10px 10px 0 0;
+  padding: 0 30px;
+  .title{
+    display: flex;
+    justify-content: space-between;
+    font-size: 28px;
+    line-height: 100px;
+  }
+  .content {
+    .item{
+      display: flex;
+      font-size: 32px;
+      margin: 10px 0;
+      color: $cl1;
+      .info{
+        min-width: 200px;
+      }
+      .priceBox{
+        flex: 1;
+        text-align: center;
+        line-height: 100px;
+        .old{
+          text-decoration: line-through;
+          color: $cl3;
+          margin-left: 10px;
+          font-size: 24px;
+        }
+      }
+      .des{
+        color: $cl3;
+        font-size: 28px;
+      }
+      .number{
+        display: flex;
+        align-items: center;
+        .red,.add{
+          display: inline-block;
+          width: 40px;
+          height: 40px;
+          border-radius: 40px;
+          text-align: center;
+          line-height: 36px;
+          border: solid 1px $logcl;
+        }
+        .red{
+          color:$logcl;
+        }
+        .num{
+          padding:0 20px;
+        }
+        .add{
+          background: $logcl;
+          color:$white;
+        }
+      }
+    }
+  }
+}
+.popupBox{
+  bottom:0;
+  padding: 0;
+  width: 100%;
+  left: 0;
+}
+.cartsPopupOpen{
+  height: 40vh;
+}
+.popupInfo{
+  height: 70vh;
+  z-index: 105;
+}
+/* 选规格，菜品详情，套餐详情弹窗 */
+.specification, .menuDetils, .setMeals{
+  position: relative;
+  color: $cl3;
+  .closePopu{
+    position: absolute;
+    right: 20px;
+    top:20px;
+    background: $cl2;
+    color: $white;
+    font-size: 28px;
+    border-radius: 40px;
+    width: 40px;
+    height: 40px;
+    text-align: center;
+  }
+  .contBox{
+    padding: 0px 40px 90px 40px;
+  }
+  .menuImg{
+    width: 100%;
+    height: 30vh;
+    border-radius: 10px 10px 0 0;
+  }
+  .title{
+    font-size: 32px;
+    color:$cl1;
+    padding: 0 40px;
+  }
+  .tit{
+    font-size: 28px;
+  }
+  .lab{
+    border: solid 2px $cl3;
+    font-size: 24px;
+    display: inline-block;
+    padding: 0px 20px;
+    border-radius: 8px;
+    margin-right: 20px;
+  }
+  .act{
+    border: solid 2px $maincl;
+    background: rgba(250,160,50,0.2);
+    color: $maincl;
+  }
+  .bottom{
+    position: fixed;
+    display: flex;
+    width: calc(100% - 80px);
+    background: $white;
+    padding: 16px 0;
+    justify-content: space-between;
+    bottom: 0px;
+    font-size: 28px;
+  }
+}
+.menuDetils{
+  .title{
+    color: $cl1;
+    font-size: 32px;
+    line-height: 100px;
+    padding: 0;
+  }
+  .detail{
+    font-size: 28px;
+    line-height: 60px;
+  }
+}
+.setMeals{
+  .title{
+    display: block;
+    text-align: center;
+  }
+  .menuImg{
+    border-radius: 10px;
+  }
+  .items{
+    margin-bottom: 10px;
+  }
+  .name{
+    color: $cl1;
+    font-size: 32px;
+  }
+  .itemsInfo{
+    display: flex;
+    color:$cl1;
+    font-size: 28px;
+    padding: 10px 0 40px;
+    .num{
+      flex: 1;
+      padding-left: 40px;
+    }
+  }
+}
+
+
+
+/*** 评价 ***/
+.evaluate{
+  height: calc(100vh - 100Px);
+  .eval{
+    .topTitle{
+      background: $white;
+      padding: 10px 20px;
+      .evalLaber{
+        display: inline-block;
+        border: solid 2px $bordercl;
+        font-size: 28px;
+        color: $cl3;
+        margin: 10px;
+        padding:4px 10px;
+        border-radius: 10px;
+      }
+      .act{
+        color: $maincl;
+        border-color: $maincl;
+      }
+    }
+    .content{
+      margin: 20px 0;
+      .items{
+        background: $white;
+        display: flex;
+        padding: 40px 0;
+        border-bottom: solid 1px $bgcl;
+        .headIcon{
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          margin:20px;
+        }
+        .cont{
+          flex: 1;
+          font-size: 28px;
+          .contTop{
+            margin-top: 20px;
+            color: $cl1;
+            position: relative;
+            .level{
+              background: $cl1;
+              margin-left: 20px;
+              color: $maincl;
+              font-size: 24px;
+              padding: 4px 10px;
+              border-radius: 8px;
+            }
+            .time{
+              position: absolute;
+              right: 20px;
+              color: $cl2;
+            }
+          }
+          .contStar{
+            font-size: 26px;
+            color: $cl2;
+            .star{
+              display: inline-block;
+              position: relative;
+              top:-12px;
+              left: 8px;
+            }
+          }
+          .menuImgBox{
+            display: flex;
+            .menuImg{
+              width: 169px;
+              height: 169px;
+              margin: 20px 20px 20px 0px;
+            }
+          }
+          .evalCont, .replyCont{
+            color:$cl2;
+          }
+          .replyCont{
+            background:$bgcl;
+            margin-right: 20px;
+            padding: 20px;
+          }
+        }
+      }
+    }
+  }
+}
+
+/*** 商家 ***/
+.businessInfo{
+  font-size: 38px;
+  color:$cl2;
+  .topFirst{
+    margin-top:0px !important;
+  }
+  .listItem{
+    padding: 0px 40px;
+    padding-right: 0px;
+    line-height: 120px;
+    background: $white;
+    margin: 20px 0;
+    .listView{
+      border-bottom: solid 1px $bgcl;
+    }
+    .title{
+      color: $cl1;
+    }
+    .content{
+      padding: 20px 0;
+      .label{
+        line-height: 80px;
+        .lab{
+          padding:6px 12px;
+          border-radius: 5px;
+          margin-right: 10px;
+        }
+      }
+    }
+  }
+  .check{
+    text-align: center;
+    color:$maincl;
+  }
+}
+
+
+/** 食品安全档案 **/
+
+.menuSecurity{
+  .securityItems{
+    margin: 20px 40px;
+    background: $white;
+    border-radius: 10px;
+    line-height: 80px;
+    font-size: 28px;
+    .topTitle{
+      font-size: 32px;
+      color: $cl1;
+      line-height: 100px;
+      padding: 0 30px;
+      border-bottom: solid 1px $bordercl;
+    }
+    .content{
+      padding: 0 30px;
+      color: $cl3;
+    }
+    .contentImg{
+      display: flex;
+      text-align: center;
+      justify-content:center;
+      font-size: 28px;
+      line-height: 50px;
+      color: $cl3;
+      padding-bottom: 30px;
+      .img{
+        margin: 24px 12px 0 12px;
+        text-align: center;
+        width: 300px;
+        height: 200px;
+      }
+    }
+  }
+}
+
+/** 购物车 **/
+.shopCards{
+  .topInfo{
+    background: $white;
+    margin: 20px;
+    display: flex;
+    padding: 40px;
+    border-radius: 10px;
+    .info{
+      flex: 1;
+      font-size: 32px;
+      line-height: 50px;
+      padding: 0 10px;
+      // border-right: solid 1px $bordercl;
+      .tabPostion{
+        color:$cl3
+      }
+    }
+    .logo{
+      width: 100px;
+      height: 100px;
+    }
+    .code{
+      width: 88px;
+      height: 83px;
+
+      margin: 20px 10px 20px 40px;
+    }
+  }
+  .addMenu{
+    background: $white;
+    font-size: 30px;
+    margin: 20px;
+    display: flex;
+    padding: 40px;
+    justify-content: space-between;
+    border-radius: 10px;
+    .addBut{
+      color: $logcl;
+    }
+  }
+  .menuItemsBox{
+    margin: 20px;
+    .clsItems{
+      background: $white;
+      font-size: 32px;
+      margin: 20px;
+      padding: 40px;
+      border-radius: 10px;
+      .clsTit{
+        color:$logcl;
+      }
+    }
+    .menuItems{
+      display: flex;
+      margin: 20px 0;
+      .itemImg{
+        width: 160px;
+        height: 160px;
+        margin-right: 20px;
+      }
+      .cont{
+        flex: 1;
+      }
+      .addNum{
+        display: flex;
+        align-items: center;
+        .red,.add{
+          display: inline-block;
+          width: 40px;
+          height: 40px;
+          border-radius: 40px;
+          text-align: center;
+          line-height: 36px;
+          border: solid 2px $logcl;
+        }
+        .red{
+          color:$logcl;
+        }
+        .num{
+          padding:0 10px;
+        }
+        .add{
+          background: $logcl;
+          color:$white;
+        }
+      }
+      .laber{
+        .lab{
+          font-size: 12px;
+          display: inline-block;
+          padding:0px 16px;
+          border: solid 2px $maincl;
+          margin-right: 12px;
+          border-radius: 40px;
+          color: $maincl;
+        }
+      }
+      .price{
+        color: $pricl;
+        font-size: 32px;
+      }
+    }
+  }
+  .submitBut{
+    position: fixed;
+    background: $cl1;
+    display: flex;
+    justify-content:flex-end;
+    width: 100%;
+    font-size: 36px;
+    line-height: 100px;
+    bottom: 0;
+    left: 0px;
+    .price{
+      flex: 1;
+      color:$white;
+      margin-left: 10px;
+    }
+    .submit{
+      color: $white;
+      width: 40%;
+      text-align: center;
+      background: linear-gradient(90deg, #eeba0b, #f9a136);
+    }
+  }
+}
+
+/** 下单成功 **/
+.orderSucc{
+  text-align: center;
+  margin-top: 30%;
+  .successLog{
+    width: 140px;
+    height: 140px;
+  }
+  .title{
+    font-size: 36px;
+    margin: 40px;
+  }
+  .cont{
+    font-size: 28px;
+    color:$cl2;
+    margin: 40px;
+  }
+}

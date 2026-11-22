@@ -1,0 +1,1 @@
+export const TABLE_INFO = 'TABLE_INFO' // 桌台信息
