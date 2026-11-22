@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>管家端 · 工作台</title>
+<link rel="stylesheet" href="assets/app.css">
+<style>.cols{display:grid;grid-template-columns:1fr 340px;gap:16px}.side .panel{margin-bottom:16px}.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.tcell{border:1px solid var(--c-border);border-radius:var(--r-md);padding:10px;text-align:center;font-size:12px;color:var(--c-text-2)}.tcell b{display:block;font-size:18px;font-weight:700;color:var(--c-text)}.tcell.warn{background:var(--c-danger-soft);border-color:#fca5a5}.tcell.warn b{color:var(--c-danger)}</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand"><span class="logo">心</span>心飞管家端<small>李国栋 · 国贸店</small></div>
+    <nav class="nav">
+      <div class="grp">经营</div>
+      <a class="on"><span class="ic">▦</span>工作台</a>
+      <a><span class="ic">▤</span>菜品管理</a>
+      <a><span class="ic">▥</span>套餐管理</a>
+      <a><span class="ic">▨</span>桌台管理</a>
+      <a><span class="ic">♟</span>员工管理</a>
+      <div class="grp">账务</div>
+      <a><span class="ic">◈</span>挂账管理</a>
+      <a><span class="ic">◫</span>沽清管理</a>
+      <div class="grp">数据</div>
+      <a><span class="ic">▦</span>经营报表</a>
+    </nav>
+    <div class="railfoot"><b>李国栋</b>门店经理 · 3 家门店</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>工作台</h1>
+      <div class="sp">
+        <div class="select">心飞餐饮 · 国贸店 ▾</div>
+        <span class="tiny">2026-11-22 星期日 13:02</span>
+        <div class="avatar">李</div>
+      </div>
+    </div>
+    <div class="content">
+      <div class="kpis">
+        <div class="kpi"><span>今日营业额</span><b>¥8,642.00<em class="up">▲ 12.4%</em></b></div>
+        <div class="kpi"><span>今日单量</span><b>42<em class="up">▲ 6 单</em></b></div>
+        <div class="kpi"><span>客单价</span><b>¥205.8<em class="down">▼ 3.2%</em></b></div>
+        <div class="kpi"><span>翻台率</span><b>1.8<em class="tiny">目标 2.0</em></b></div>
+      </div>
+      <div class="cols">
+        <div class="panel">
+          <header><h2>最新订单</h2><div class="sp"><button class="btn secondary sm">全部订单</button></div></header>
+          <table>
+            <thead><tr><th>单号</th><th>桌台</th><th>人数</th><th>金额</th><th>支付</th><th>状态</th><th>时间</th></tr></thead>
+            <tbody>
+              <tr><td class="num">FK-018</td><td>A03 大厅</td><td class="num">4</td><td class="num">¥328.00</td><td>微信</td><td><span class="tag danger">未结</span></td><td class="num">12:41</td></tr>
+              <tr><td class="num">FK-017</td><td>B01 包间</td><td class="num">8</td><td class="num">¥1,246.00</td><td>挂账</td><td><span class="tag warning">挂账</span></td><td class="num">12:18</td></tr>
+              <tr><td class="num">FK-015</td><td>A01 大厅</td><td class="num">2</td><td class="num">¥96.00</td><td>现金</td><td><span class="tag success">已结</span></td><td class="num">11:52</td></tr>
+              <tr><td class="num">FK-012</td><td>C02 卡座</td><td class="num">6</td><td class="num">¥512.00</td><td>支付宝</td><td><span class="tag success">已结</span></td><td class="num">11:20</td></tr>
+              <tr><td class="num">FK-009</td><td>A05 大厅</td><td class="num">3</td><td class="num">¥178.00</td><td>微信</td><td><span class="tag success">已结</span></td><td class="num">10:47</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="side">
+          <div class="panel">
+            <header><h2>桌台盘</h2></header>
+            <div style="padding:12px 16px"><div class="tgrid">
+              <div class="tcell"><b>12</b>空闲</div><div class="tcell warn"><b>7</b>开台</div><div class="tcell"><b>1</b>锁定</div>
+            </div></div>
+          </div>
+          <div class="panel">
+            <header><h2>沽清余量</h2><div class="sp"><a class="btn sm ghost">登记</a></div></header>
+            <div style="padding:8px 16px 12px">
+              <div class="row" style="padding:6px 0;border-bottom:1px dashed var(--c-border)"><span>招牌红烧肉</span><b class="sp num">余 3</b></div>
+              <div class="row" style="padding:6px 0;border-bottom:1px dashed var(--c-border)"><span>清蒸鲈鱼</span><b class="sp num" style="color:var(--c-danger)">余 0</b></div>
+              <div class="row" style="padding:6px 0"><span>蒜蓉时蔬</span><b class="sp num">不限</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

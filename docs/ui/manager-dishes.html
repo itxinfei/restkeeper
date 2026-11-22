@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>管家端 · 菜品与套餐</title>
+<link rel="stylesheet" href="assets/app.css">
+<style>.thumb{width:40px;height:40px;border-radius:var(--r-md);background:linear-gradient(135deg,#f3f4f6,#e5e7eb);display:inline-grid;place-items:center;font-size:18px}</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="rail">
+    <div class="brand"><span class="logo">心</span>心飞管家端<small>李国栋 · 国贸店</small></div>
+    <nav class="nav">
+      <div class="grp">经营</div>
+      <a><span class="ic">▦</span>工作台</a>
+      <a class="on"><span class="ic">▤</span>菜品管理</a>
+      <a><span class="ic">▥</span>套餐管理</a>
+      <a><span class="ic">▨</span>桌台管理</a>
+      <a><span class="ic">♟</span>员工管理</a>
+      <div class="grp">账务</div>
+      <a><span class="ic">◈</span>挂账管理</a>
+      <a><span class="ic">◫</span>沽清管理</a>
+      <div class="grp">数据</div>
+      <a><span class="ic">▦</span>经营报表</a>
+    </nav>
+    <div class="railfoot"><b>李国栋</b>门店经理</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <h1>菜品管理</h1>
+      <div class="sp"><div class="select">心飞餐饮 · 国贸店 ▾</div><div class="avatar">李</div></div>
+    </div>
+    <div class="content">
+      <div class="tabs"><a class="on">菜品</a><a>套餐</a><a>菜品分类</a><a>口味库</a></div>
+      <div class="toolbar">
+        <div class="search"><input class="input" placeholder="搜索菜名 / 编码"></div>
+        <select class="select"><option>分类：全部</option><option>热菜</option><option>凉菜</option><option>主食</option><option>饮品</option></select>
+        <select class="select"><option>状态：全部</option><option>起售</option><option>停售</option></select>
+        <div class="sp"></div>
+        <button class="btn secondary">批量停售</button>
+        <button class="btn primary">＋ 新增菜品</button>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th></th><th>菜品</th><th>分类</th><th>编码</th><th>价格</th><th>沽清余量</th><th>状态</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><span class="thumb">🍖</span></td><td><b>招牌红烧肉</b><div class="tiny">五花肉 · 冰糖慢炖</div></td><td>热菜</td><td class="num">D001</td><td class="num">¥48.00</td><td class="num">余 3</td><td><span class="tag success">起售</span></td><td><a class="btn sm ghost">编辑</a> <a class="btn sm ghost">停售</a></td></tr>
+            <tr><td><span class="thumb">🐟</span></td><td><b>清蒸鲈鱼</b><div class="tiny">鲜活 · 粤式蒸法</div></td><td>热菜</td><td class="num">D002</td><td class="num">¥88.00</td><td class="num" style="color:var(--c-danger)">余 0</td><td><span class="tag success">起售</span></td><td><a class="btn sm ghost">编辑</a> <a class="btn sm ghost">停售</a></td></tr>
+            <tr><td><span class="thumb">🥬</span></td><td><b>蒜蓉时蔬</b><div class="tiny">时令 · 清炒</div></td><td>热菜</td><td class="num">D003</td><td class="num">¥22.00</td><td class="num">不限</td><td><span class="tag success">起售</span></td><td><a class="btn sm ghost">编辑</a> <a class="btn sm ghost">停售</a></td></tr>
+            <tr><td><span class="thumb">🍚</span></td><td><b>腊味煲仔饭</b><div class="tiny">丝苗米 · 锅巴香</div></td><td>主食</td><td class="num">D004</td><td class="num">¥36.00</td><td class="num">不限</td><td><span class="tag neutral">停售</span></td><td><a class="btn sm ghost">编辑</a> <a class="btn sm ghost">起售</a></td></tr>
+            <tr><td><span class="thumb">🍹</span></td><td><b>酸梅汤</b><div class="tiny">冰镇 · 解腻</div></td><td>饮品</td><td class="num">D005</td><td class="num">¥12.00</td><td class="num">不限</td><td><span class="tag success">起售</span></td><td><a class="btn sm ghost">编辑</a> <a class="btn sm ghost">停售</a></td></tr>
+          </tbody>
+        </table>
+        <div class="pager"><span>共 28 道 · 起售 25 · 停售 3</span><div class="sp"></div><span class="pg">‹</span><span class="pg on">1</span><span class="pg">2</span><span class="pg">›</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>心飞餐饮 · UI 原型导航</title>
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  .hero{padding:32px 40px 8px}
+  .hero h1{font-size:28px;font-weight:700}
+  .hero p{color:var(--c-text-2);margin-top:6px}
+  .navgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:24px 40px}
+  .navcard{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-lg);padding:18px;box-shadow:var(--sh-sm)}
+  .navcard .no{font-size:12px;color:var(--c-text-3)}
+  .navcard h2{font-size:16px;margin:6px 0 4px}
+  .navcard p{font-size:12.5px;color:var(--c-text-2);min-height:36px}
+  .navcard .go{display:inline-block;margin-top:10px;font-size:13px;color:var(--c-primary)}
+  .spec{padding:8px 40px 40px}
+  .spec h2{font-size:16px;margin-bottom:12px}
+  .swatches{display:grid;grid-template-columns:repeat(8,1fr);gap:10px}
+  .sw{border-radius:var(--r-md);overflow:hidden;border:1px solid var(--c-border)}
+  .sw i{display:block;height:48px}
+  .sw span{display:block;font-size:11px;padding:4px 6px;color:var(--c-text-2)}
+  .type{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+  .type div{background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--r-md);padding:12px}
+  .type small{display:block;color:var(--c-text-3);font-size:11px;margin-top:4px}
+</style>
+</head>
+<body>
+<div class="hero">
+  <h1>心飞餐饮 · 全端 UI 原型</h1>
+  <p>方向：品类标准（canon）· 任务优先、干净工整 · 设计系统见 <b>DESIGN.md</b> · 示例数据均为示意</p>
+</div>
+<div class="navgrid">
+  <a class="navcard" href="operator.html"><span class="no">01</span><h2>运营中心</h2><p>企业账号列表：开通、停用、编辑、回收站</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="manager.html"><span class="no">02</span><h2>管家端 · 工作台</h2><p>今日经营：KPI、最新订单、桌台与沽清</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="manager-dishes.html"><span class="no">03</span><h2>管家端 · 菜品</h2><p>菜品与套餐维护：上下架、价格、口味</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="cashier.html"><span class="no">04</span><h2>收银端 · 点餐</h2><p>触屏：桌台盘点、点餐、下单、结账</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="microapp-menu.html"><span class="no">05</span><h2>C 端 · 菜单</h2><p>扫码进入门店，浏览分类与菜品</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="microapp-cart.html"><span class="no">06</span><h2>C 端 · 购物车</h2><p>选规格、改数量、下单确认</p><span class="go">查看 →</span></a>
+  <a class="navcard" href="microapp-result.html"><span class="no">07</span><h2>C 端 · 支付结果</h2><p>下单成功与订单状态</p><span class="go">查看 →</span></a>
+  <div class="navcard"><span class="no">08</span><h2>设计系统</h2><p>色彩、字阶、间距、组件规范（DESIGN.md）</p><span class="go">见仓库根 DESIGN.md</span></div>
+</div>
+<div class="spec">
+  <h2>色彩 Token</h2>
+  <div class="swatches">
+    <div class="sw"><i style="background:#2563eb"></i><span>--c-primary</span></div>
+    <div class="sw"><i style="background:#1d4ed8"></i><span>primary-hover</span></div>
+    <div class="sw"><i style="background:#ea580c"></i><span>--c-brand（C 端）</span></div>
+    <div class="sw"><i style="background:#059669"></i><span>success</span></div>
+    <div class="sw"><i style="background:#d97706"></i><span>warning</span></div>
+    <div class="sw"><i style="background:#dc2626"></i><span>danger</span></div>
+    <div class="sw"><i style="background:#111827"></i><span>text</span></div>
+    <div class="sw"><i style="background:#e5e7eb"></i><span>border</span></div>
+  </div>
+  <h2 class="mt24">字阶</h2>
+  <div class="type">
+    <div><span style="font-size:32px;font-weight:700">32 / 700</span><small>Display</small></div>
+    <div><span style="font-size:24px;font-weight:600">24 / 600</span><small>H1 页面标题</small></div>
+    <div><span style="font-size:18px;font-weight:600">18 / 600</span><small>H2 区块</small></div>
+    <div><span style="font-size:14px">14 / 400 正文 Body</span><small>正文 / 表格</small></div>
+  </div>
+  <h2 class="mt24">组件</h2>
+  <div class="row mt8" style="flex-wrap:wrap">
+    <button class="btn primary">主按钮</button>
+    <button class="btn secondary">次按钮</button>
+    <button class="btn ghost">文字按钮</button>
+    <button class="btn danger">危险</button>
+    <button class="btn" disabled>禁用</button>
+    <span class="tag success">已结账</span>
+    <span class="tag warning">挂账</span>
+    <span class="tag danger">未结</span>
+    <span class="tag neutral">沽清</span>
+    <span class="tag info">进行中</span>
+  </div>
+</div>
+</body>
+</html>

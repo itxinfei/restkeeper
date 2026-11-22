@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1440">
+<title>收银端 · 触屏点餐</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+<div class="cash">
+  <div class="left">
+    <div class="topbar" style="min-height:64px">
+      <h1 style="font-size:18px">点餐收银</h1>
+      <span class="tag solid">当前桌台 A03 · 大厅 · 4 人</span>
+      <div class="sp"><span class="tiny">13:02:21</span><div class="avatar">张</div></div>
+    </div>
+    <div class="cats">
+      <a class="on">招牌推荐</a><a>热菜</a><a>凉菜</a><a>主食</a><a>饮品</a><a>套餐</a><a>酒水</a>
+    </div>
+    <div class="grid">
+      <div class="dish"><div class="pic">🍖</div><div class="dishname">招牌红烧肉</div><div class="row"><span class="pr">¥48</span><span class="tiny sp">余 3</span></div></div>
+      <div class="dish"><div class="pic">🐟</div><div class="dishname">清蒸鲈鱼</div><div class="row"><span class="pr">¥88</span><span class="tiny sp">余 0</span></div></div>
+      <div class="dish"><div class="pic">🥬</div><div class="dishname">蒜蓉时蔬</div><div class="row"><span class="pr">¥22</span><span class="tiny sp">不限</span></div></div>
+      <div class="dish"><div class="pic">🍚</div><div class="dishname">腊味煲仔饭</div><div class="row"><span class="pr">¥36</span><span class="tiny sp">不限</span></div></div>
+      <div class="dish"><div class="pic">🍹</div><div class="dishname">酸梅汤</div><div class="row"><span class="pr">¥12</span><span class="tiny sp">不限</span></div></div>
+      <div class="dish"><div class="pic">🥟</div><div class="dishname">手工水饺</div><div class="row"><span class="pr">¥28</span><span class="tiny sp">不限</span></div></div>
+      <div class="dish"><div class="pic">🍲</div><div class="dishname">毛血旺</div><div class="row"><span class="pr">¥68</span><span class="tiny sp">余 5</span></div></div>
+      <div class="dish"><div class="pic">🍨</div><div class="dishname">红糖冰粉</div><div class="row"><span class="pr">¥16</span><span class="tiny sp">不限</span></div></div>
+    </div>
+  </div>
+  <div class="order">
+    <header>
+      <h2 style="font-size:15px">订单明细</h2>
+      <span class="sp"></span>
+      <button class="btn secondary sm">清空</button>
+    </header>
+    <div class="lines">
+      <div class="line"><span>招牌红烧肉</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="sp num">¥48</b></div>
+      <div class="line"><span>清蒸鲈鱼</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="sp num">¥88</b></div>
+      <div class="line"><span>蒜蓉时蔬</span><div class="qty"><button>−</button><b class="num">2</b><button>＋</button></div><b class="sp num">¥44</b></div>
+      <div class="line"><span>酸梅汤</span><div class="qty"><button>−</button><b class="num">4</b><button>＋</button></div><b class="sp num">¥48</b></div>
+      <div class="line"><span>手工水饺</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="sp num">¥28</b></div>
+    </div>
+    <div class="total">
+      <div class="row"><span>数量合计</span><b class="num">9 份</b></div>
+      <div class="row"><span>优惠</span><b class="num" style="color:var(--c-success)">−¥0.00</b></div>
+      <div class="row big"><span>应收</span><b class="num">¥256.00</b></div>
+    </div>
+    <div class="ops">
+      <button class="btn secondary lg">挂账</button>
+      <button class="btn secondary lg">换台</button>
+      <button class="btn secondary lg">退菜</button>
+      <button class="btn secondary lg">打印</button>
+      <button class="btn pay lg">结账 ¥256.00</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

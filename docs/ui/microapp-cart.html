@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>C 端 · 购物车与下单</title>
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  body{display:flex;align-items:flex-start;justify-content:center;background:#e9edf1}
+  .mnav{display:flex;align-items:center;gap:10px}
+  .mnav h1{font-size:16px;font-weight:600}
+  .block{background:#fff;border-radius:var(--r-lg);padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh-sm)}
+  .block h2{font-size:14px;font-weight:600;margin-bottom:8px}
+  .line{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--c-border);font-size:14px}
+  .line:last-child{border-bottom:0}
+  .qty{display:flex;align-items:center;gap:8px;margin-left:auto}
+  .qty button{width:32px;height:32px;border-radius:var(--r-md);border:1px solid var(--c-border-strong);background:#fff}
+  .sumrow{display:flex;justify-content:space-between;font-size:13px;color:var(--c-text-2);padding:5px 0}
+  .sumrow.big{font-size:16px;font-weight:700;color:var(--c-text)}
+  .mbar{background:var(--c-text);border-radius:16px;margin:0 16px 16px;padding:12px 16px;display:flex;align-items:center;gap:12px;color:#fff}
+  .mbar .go{margin-left:auto;background:var(--c-brand);border-radius:12px;padding:10px 18px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="mhead"><div class="mnav"><span style="font-size:18px">‹</span><h1>确认订单</h1></div></div>
+  <div class="mscroll" style="padding-top:14px">
+    <div class="block">
+      <h2>用餐信息</h2>
+      <div class="sumrow"><span>门店</span><b>心飞餐饮 · 国贸店</b></div>
+      <div class="sumrow"><span>桌台</span><b>A03 · 大厅</b></div>
+      <div class="sumrow"><span>人数</span><b>4 人</b></div>
+    </div>
+    <div class="block">
+      <h2>已选菜品 · 5 份</h2>
+      <div class="line"><span>招牌红烧肉</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="num sp">¥48</b></div>
+      <div class="line"><span>清蒸鲈鱼</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="num sp">¥88</b></div>
+      <div class="line"><span>蒜蓉时蔬</span><div class="qty"><button>−</button><b class="num">2</b><button>＋</button></div><b class="num sp">¥44</b></div>
+      <div class="line"><span>酸梅汤</span><div class="qty"><button>−</button><b class="num">1</b><button>＋</button></div><b class="num sp">¥12</b></div>
+    </div>
+    <div class="block">
+      <h2>备注</h2>
+      <div style="height:38px;border:1px solid var(--c-border-strong);border-radius:var(--r-md);display:flex;align-items:center;padding:0 12px;font-size:13px;color:var(--c-text-3)">口味 / 忌口，可留空</div>
+    </div>
+    <div class="block">
+      <div class="sumrow"><span>菜品合计</span><b class="num">¥192.00</b></div>
+      <div class="sumrow"><span>打包费</span><b class="num">¥0.00</b></div>
+      <div class="sumrow big"><span>应付</span><b class="num" style="color:var(--c-brand)">¥192.00</b></div>
+    </div>
+  </div>
+  <div class="mbar">
+    <div style="font-size:12px;color:#c9c2b8">合计<b style="display:block;font-size:17px;color:#fff">¥192.00</b></div>
+    <div class="go">提交订单</div>
+  </div>
+</div>
+</body>
+</html>

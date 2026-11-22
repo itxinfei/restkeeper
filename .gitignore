@@ -11,3 +11,6 @@ gen
 
 # Serena 代码分析工具本地配置（不入库）
 .serena/
+
+# Impeccable 设计工具本地工作目录（不入库；PRODUCT.md / DESIGN.md 已提升至根目录入库）
+.impeccable/

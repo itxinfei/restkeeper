@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>C 端 · 支付结果</title>
+<link rel="stylesheet" href="assets/app.css">
+<style>
+  body{display:flex;align-items:flex-start;justify-content:center;background:#e9edf1}
+  .ok{width:72px;height:72px;border-radius:50%;background:var(--c-success-soft);color:var(--c-success);display:grid;place-items:center;font-size:36px;margin:0 auto 14px}
+  .hero2{text-align:center;padding:40px 20px 8px}
+  .hero2 h1{font-size:20px;font-weight:600}
+  .hero2 p{font-size:13px;color:var(--c-text-2);margin-top:6px}
+  .rcard{background:#fff;border-radius:var(--r-lg);margin:16px;padding:16px;box-shadow:var(--sh-sm)}
+  .rrow{display:flex;justify-content:space-between;font-size:13.5px;padding:6px 0}
+  .rrow b{font-variant-numeric:tabular-nums}
+  .rrow .amt{font-size:18px;font-weight:700;color:var(--c-brand)}
+  .steps{display:flex;justify-content:space-around;text-align:center;font-size:12px;color:var(--c-text-2);margin-top:18px}
+  .steps div{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .steps .dot{width:30px;height:30px;border-radius:50%;background:var(--c-neutral-soft);display:grid;place-items:center;font-size:14px}
+  .steps .done .dot{background:var(--c-success-soft);color:var(--c-success)}
+  .mbar{background:var(--c-text);border-radius:16px;margin:0 16px 16px;padding:12px 16px;display:flex;gap:10px}
+  .mbar .b1{flex:1;text-align:center;background:var(--c-neutral-soft);color:var(--c-text);border-radius:12px;padding:11px;font-size:14px}
+  .mbar .b2{flex:1;text-align:center;background:var(--c-brand);color:#fff;border-radius:12px;padding:11px;font-size:14px;font-weight:500}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="hero2">
+    <div class="ok">✓</div>
+    <h1>支付成功</h1>
+    <p>厨房已接单，请稍候上菜</p>
+  </div>
+  <div class="rcard">
+    <div class="rrow"><span>订单号</span><b class="num">FK20261122-018</b></div>
+    <div class="rrow"><span>桌台</span><b>A03 · 大厅</b></div>
+    <div class="rrow"><span>下单时间</span><b class="num">13:04</b></div>
+    <div class="rrow"><span>支付时间</span><b class="num">13:04</b></div>
+    <div class="rrow" style="border-top:1px dashed var(--c-border);margin-top:6px;padding-top:12px"><span>实付金额</span><b class="amt num">¥192.00</b></div>
+  </div>
+  <div class="steps">
+    <div class="done"><span class="dot">✓</span>下单</div>
+    <div class="done"><span class="dot">✓</span>支付</div>
+    <div><span class="dot">3</span>制作</div>
+    <div><span class="dot">4</span>上菜</div>
+  </div>
+  <div class="mbar"><div class="b1">返回菜单</div><div class="b2">查看订单</div></div>
+</div>
+</body>
+</html>
