@@ -1,13 +1,17 @@
 package com.restkeeper.gateway.filter;
 
+import cn.dev33.satoken.exception.NotLoginException;
+import cn.dev33.satoken.reactor.context.SaReactorSyncHolder;
+import cn.dev33.satoken.session.SaSession;
+import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.restkeeper.utils.JWTUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
@@ -18,22 +22,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 网关鉴权全局过滤器（过渡实现：自研 JWT）。
- * <p>阶段 5 将替换为 reactor Sa-Token 鉴权（sa-token-reactor），
- * 并与 web_common 的 Sa-Token 异常处理对齐。
+ * 网关鉴权全局过滤器（阶段 5：Sa-Token reactor 校验，替换自研 JWT）。
+ * <p>校验通过后从会话注入租户上下文请求头（x-tenant-shop-id 等），
+ * provider 侧 TenantContextHeaderFilter 据此还原 ThreadLocal。
  */
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
 
-    @Value("#{'${gateway.excludedUrls}'.split(',')}")
+    @Value("#{'${gateway.excludedUrls:}'.split(',')}")
     private List<String> excludedUrls;
-
-    @Value("${gateway.secret}")
-    private String secret;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
-
         ServerHttpResponse response = exchange.getResponse();
 
         String path = exchange.getRequest().getURI().getPath();
@@ -42,33 +42,60 @@ public class AuthFilter implements GlobalFilter, Ordered {
         }
 
         String token = exchange.getRequest().getHeaders().getFirst("Authorization");
+        if (token == null || token.isEmpty()) {
+            return responseError(response, 401, "非法请求", "token is empty");
+        }
 
-        if (token != null && !token.isEmpty()) {
-            JWTUtil.VerifyResult verifyResult = JWTUtil.verifyJwt(token, secret);
-            if (verifyResult.isValidate()) {
-                return chain.filter(exchange);
-            } else {
-                Map<String, Object> responseData = new HashMap<>();
-                responseData.put("code", verifyResult.getCode());
-                responseData.put("message", "验证失败");
-                return responseError(response, responseData);
-            }
-        } else {
-            Map<String, Object> responseData = new HashMap<>();
-            responseData.put("code", 401);
-            responseData.put("message", "非法请求");
-            responseData.put("cause", "token is empty");
-            return responseError(response, responseData);
+        try {
+            return SaReactorSyncHolder.setContext(exchange, () -> {
+                StpUtil.checkLogin();
+                return chain.filter(injectTenantHeaders(exchange));
+            });
+        } catch (NotLoginException e) {
+            return responseError(response, 401, "验证失败", "未登录或登录已过期");
         }
     }
 
-    private Mono<Void> responseError(ServerHttpResponse response, Map<String, Object> responseData) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        byte[] data = new byte[0];
+    /**
+     * 从 Sa-Token 会话注入租户上下文请求头，供下游 provider 还原 ThreadLocal
+     */
+    private ServerWebExchange injectTenantHeaders(ServerWebExchange exchange) {
+        SaSession session = StpUtil.getSession();
+        String shopId = (String) session.get("shopId");
+        String storeId = (String) session.get("storeId");
+        String loginUserId = (String) session.get("loginUserId");
+        String loginUserName = (String) session.get("loginUserName");
+
+        ServerHttpRequest mutated = exchange.getRequest().mutate()
+                .headers(headers -> {
+                    if (shopId != null) {
+                        headers.set("x-tenant-shop-id", shopId);
+                    }
+                    if (storeId != null) {
+                        headers.set("x-tenant-store-id", storeId);
+                    }
+                    if (loginUserId != null) {
+                        headers.set("x-login-user-id", loginUserId);
+                    }
+                    if (loginUserName != null) {
+                        headers.set("x-login-user-name", loginUserName);
+                    }
+                })
+                .build();
+        return exchange.mutate().request(mutated).build();
+    }
+
+    private Mono<Void> responseError(ServerHttpResponse response, int code, String message, String cause) {
+        Map<String, Object> responseData = new HashMap<>();
+        responseData.put("code", code);
+        responseData.put("message", message);
+        responseData.put("cause", cause);
+
+        byte[] data;
         try {
-            data = objectMapper.writeValueAsBytes(responseData);
+            data = new ObjectMapper().writeValueAsBytes(responseData);
         } catch (Exception e) {
-            // 序列化失败时返回空错误体，避免二次异常
+            data = new byte[0];
         }
 
         DataBuffer buffer = response.bufferFactory().wrap(data);

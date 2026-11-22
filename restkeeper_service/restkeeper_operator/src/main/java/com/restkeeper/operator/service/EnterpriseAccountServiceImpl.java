@@ -1,5 +1,6 @@
 package com.restkeeper.operator.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -12,7 +13,6 @@ import com.restkeeper.operator.entity.EnterpriseAccount;
 import com.restkeeper.operator.mapper.EnterpriseAccountMapper;
 import com.restkeeper.sms.SmsObject;
 import com.restkeeper.utils.AccountStatus;
-import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.PasswordUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
@@ -27,8 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -47,9 +45,6 @@ public class EnterpriseAccountServiceImpl extends ServiceImpl<EnterpriseAccountM
 
     @Value("${sms.operator.templateCode:}")
     private String templateCode;
-
-    @Value("${gateway.secret:restkeeper}")
-    private String secret;
 
     //消息发送
     private void sendMessage(String phone, String shopId, String pwd) {
@@ -214,12 +209,13 @@ public class EnterpriseAccountServiceImpl extends ServiceImpl<EnterpriseAccountM
             return result;
         }
 
-        //令牌生成（阶段 5 切换 Sa-Token 后移除 JWTUtil）
-        Map<String, Object> tokenInfo = new HashMap<>();
-        tokenInfo.put("shopId", enterpriseAccount.getShopId());
-        tokenInfo.put("loginName", enterpriseAccount.getEnterpriseName());
-        tokenInfo.put("userType", SystemCode.USER_TYPE_SHOP);
-        String token = JWTUtil.createJWTByObj(tokenInfo, secret);
+        // Sa-Token 签发（阶段 5：替换 JWT），会话携带租户与身份信息
+        StpUtil.login(enterpriseAccount.getEnterpriseId());
+        StpUtil.getSession().set("shopId", enterpriseAccount.getShopId());
+        StpUtil.getSession().set("loginUserId", enterpriseAccount.getEnterpriseId());
+        StpUtil.getSession().set("loginUserName", enterpriseAccount.getEnterpriseName());
+        StpUtil.getSession().set("userType", SystemCode.USER_TYPE_SHOP);
+        String token = StpUtil.getTokenValue();
 
         result.setStatus(ResultCode.success);
         result.setDesc("ok");

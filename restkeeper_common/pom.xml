@@ -12,20 +12,6 @@
     <artifactId>restkeeper_common</artifactId>
 
     <dependencies>
-        <!-- jjwt 0.12.x（过渡期桥接，Sa-Token 落地后移除）-->
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-        </dependency>
-
         <!-- 仅用 BCrypt，不引入整套 Spring Security（版本由 Boot BOM 管理）-->
         <dependency>
             <groupId>org.springframework.security</groupId>

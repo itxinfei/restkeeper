@@ -1,12 +1,12 @@
 package com.restkeeper.operator.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.operator.entity.OperatorUser;
 import com.restkeeper.operator.mapper.OperatorUserMapper;
-import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.PasswordUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
@@ -16,9 +16,6 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * 运营人员本地业务服务（去 Dubbo 后不再实现 api 契约；HTTP 入口在 Controller 层）
  */
@@ -26,9 +23,6 @@ import java.util.Map;
 @Service
 @RefreshScope
 public class OperatorUserServiceImpl extends ServiceImpl<OperatorUserMapper, OperatorUser> {
-
-    @Value("${gateway.secret:restkeeper}")
-    private String secret;
 
     //按名称分页查询
     public PageResult<OperatorUser> queryPageByName(int pageNum, int pageSize, String name) {
@@ -71,10 +65,11 @@ public class OperatorUserServiceImpl extends ServiceImpl<OperatorUserMapper, Ope
             return result;
         }
 
-        //令牌生成（阶段 5 切换 Sa-Token 后移除 JWTUtil）
-        Map<String, Object> tokenInfo = new HashMap<>();
-        tokenInfo.put("loginName", operatorUser.getLoginname());
-        String token = JWTUtil.createJWTByObj(tokenInfo, secret);
+        // Sa-Token 签发（阶段 5：替换 JWT）
+        StpUtil.login(operatorUser.getUid());
+        StpUtil.getSession().set("loginUserId", operatorUser.getUid());
+        StpUtil.getSession().set("loginUserName", operatorUser.getLoginname());
+        String token = StpUtil.getTokenValue();
 
         result.setStatus(ResultCode.success);
         result.setDesc("ok");

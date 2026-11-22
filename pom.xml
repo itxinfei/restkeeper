@@ -38,7 +38,6 @@
         <springdoc.version>3.1.1</springdoc.version>
         <fastjson2.version>2.0.66</fastjson2.version>
         <easyexcel.version>4.0.3</easyexcel.version>
-        <jjwt.version>0.12.7</jjwt.version>
         <sa-token.version>1.46.0</sa-token.version>
         <!-- 与 Cloud BOM 解析结果对齐；JDK 25 需要 1.18.48 -->
         <lombok.version>1.18.48</lombok.version>
@@ -144,25 +143,6 @@
                 <groupId>com.alibaba</groupId>
                 <artifactId>easyexcel</artifactId>
                 <version>${easyexcel.version}</version>
-            </dependency>
-
-            <!-- jjwt（过渡期桥接，Sa-Token 落地后移除）-->
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-api</artifactId>
-                <version>${jjwt.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-impl</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
-            </dependency>
-            <dependency>
-                <groupId>io.jsonwebtoken</groupId>
-                <artifactId>jjwt-jackson</artifactId>
-                <version>${jjwt.version}</version>
-                <scope>runtime</scope>
             </dependency>
 
             <!-- Sa-Token（servlet 业务侧 / reactor 网关侧 / Redis 共享会话）-->

@@ -33,3 +33,13 @@ spring:
 server:
   # K12：原 8085 与 cash_web 冲突，网关改用 8080
   port: 8080
+
+# Sa-Token：与 provider 保持一致，token 走 Authorization 头，会话经 Redis 共享
+sa-token:
+  token-name: Authorization
+  timeout: 259200
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  is-read-header: true
+  is-read-cookie: false

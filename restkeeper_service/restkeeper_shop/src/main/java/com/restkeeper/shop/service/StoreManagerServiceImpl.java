@@ -1,5 +1,6 @@
 package com.restkeeper.shop.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -14,7 +15,6 @@ import com.restkeeper.shop.entity.StoreManager;
 import com.restkeeper.shop.mapper.StoreManagerMapper;
 import com.restkeeper.sms.SmsObject;
 import com.restkeeper.tenant.TenantContext;
-import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.PasswordUtil;
 import com.restkeeper.utils.RandomCodeUtil;
 import com.restkeeper.utils.Result;
@@ -27,9 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 门店管理员本地服务：不再实现 api 契约接口，HTTP 端点由 StoreManagerController 薄转发。
@@ -49,9 +47,6 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
 
     @Value("${sms.operator.templateCode:}")
     private String templateCode;
-
-    @Value("${gateway.secret:restkeeper}")
-    private String secret;
 
     /**
      * 按手机号或姓名分页查询
@@ -77,6 +72,7 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
         StoreManager storeManager = new StoreManager();
         storeManager.setStoreManagerName(name);
         storeManager.setStoreManagerPhone(phone);
+        storeManager.setStatus(SystemCode.ENABLED);
         String pwd = RandomCodeUtil.randomNumeric(8);
         storeManager.setPassword(PasswordUtil.encode(pwd));
         this.save(storeManager);
@@ -178,11 +174,20 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
         QueryWrapper<StoreManager> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda()
                 .eq(StoreManager::getShopId, shopId)
-                .eq(StoreManager::getStoreManagerPhone, phone);
+                .eq(StoreManager::getStoreManagerPhone, phone)
+                // K8：停用账号（status=0）禁止登录
+                .ne(StoreManager::getStatus, SystemCode.FORBIDDEN);
         StoreManager storeManager = this.getOne(queryWrapper);
         if (storeManager == null) {
             result.setStatus(ResultCode.error);
-            result.setDesc("门店管理员不存在");
+            result.setDesc("门店管理员不存在或已停用");
+            return result;
+        }
+
+        // K8：先校验密码，再校验门店绑定，避免无门店时密码错误被门店问题掩盖
+        if (!PasswordUtil.matches(loginPass, storeManager.getPassword())) {
+            result.setStatus(ResultCode.error);
+            result.setDesc("密码错误");
             return result;
         }
 
@@ -194,30 +199,19 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
         }
         Store store = stores.get(0);
 
-        if (!PasswordUtil.matches(loginPass, storeManager.getPassword())) {
-            result.setStatus(ResultCode.error);
-            result.setDesc("密码错误");
-            return result;
-        }
+        // Sa-Token 签发（阶段 5：替换 JWT）
+        StpUtil.login(storeManager.getStoreManagerId());
+        StpUtil.getSession().set("shopId", shopId);
+        StpUtil.getSession().set("storeId", store.getStoreId());
+        StpUtil.getSession().set("loginUserId", storeManager.getStoreManagerId());
+        StpUtil.getSession().set("loginUserName", storeManager.getStoreManagerName());
+        StpUtil.getSession().set("userType", SystemCode.USER_TYPE_STORE_MANAGER);
+        String token = StpUtil.getTokenValue();
 
-        Map<String, Object> tokenMap = new HashMap<>();
-        tokenMap.put("shopId", shopId);
-        tokenMap.put("storeId", store.getStoreId());
-        tokenMap.put("loginUserId", storeManager.getStoreManagerId());
-        tokenMap.put("loginUserName", storeManager.getStoreManagerName());
-        tokenMap.put("userType", SystemCode.USER_TYPE_STORE_MANAGER);
-
-        try {
-            String tokenInfo = JWTUtil.createJWTByObj(tokenMap, secret);
-            result.setStatus(ResultCode.success);
-            result.setDesc("ok");
-            result.setData(storeManager);
-            result.setToken(tokenInfo);
-        } catch (Exception e) {
-            log.error("门店管理员登录令牌生成失败, phone={}", phone, e);
-            result.setStatus(ResultCode.error);
-            result.setDesc("令牌生成失败");
-        }
+        result.setStatus(ResultCode.success);
+        result.setDesc("ok");
+        result.setData(storeManager);
+        result.setToken(token);
         return result;
     }
 

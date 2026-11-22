@@ -14,3 +14,13 @@ spring:
         shared-dataids: common.yml
         #哪些共享配置支持动态刷新，如多个使用逗号分隔
         refreshable-dataids: common.yml
+
+# Sa-Token：token 走 Authorization 头，会话经 Redis 共享（sa-token-redis-jackson）
+sa-token:
+  token-name: Authorization
+  timeout: 259200            # 3 天，与原 JWT 有效期一致
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  is-read-header: true
+  is-read-cookie: false

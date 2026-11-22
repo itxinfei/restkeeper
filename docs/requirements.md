@@ -54,10 +54,10 @@
 | 门店经理 | IStoreManagerService | `POST /store/manager/login` | shopId、phone、loginPass |
 | 门店员工 | IStaffService | `POST /staff/login` | shopId、**loginName（员工姓名，不是手机号）**、**password（命名与前三套不同）** |
 
-管家端登录页为「企业账号 / 门店经理」双身份，由 BFF 按身份分发到对应 provider 端点。四套登录当前签发 JWT（过渡桥接），阶段 5 统一换 Sa-Token。
+管家端登录页为「企业账号 / 门店经理」双身份，由 BFF 按身份分发到对应 provider 端点。四套登录已统一换 Sa-Token 签发（阶段 5，2026-11-22）：loginId 为业务主键，会话携带 shopId/storeId/loginUserId/loginUserName/userType，网关校验后经 x-tenant-* 头注入租户上下文；JWTUtil 与 jjwt 依赖已删除。
 
 > ⚠️ **登录参数命名不统一（K13）**：员工契约用 `password`，其余三套用 `loginPass`；旧 BFF 的 VO 字段恰好交叉错位（cash 传 loginPass、enterprise 传 password）。阶段 4 重写时必须统一前端 VO 与契约参数映射，否则直接 400。
-> ⚠️ **店长登录现存两个缺陷（K8）**：不拦截停用账号；且「至少绑定一家门店」的校验先于密码校验。
+> ✅ **K8 已修（阶段 5，2026-11-22）**：登录查询排除 status=0；密码校验先于门店绑定校验，提示语改为「门店管理员不存在或已停用」。
 
 ### 2.3 多租户模型
 
@@ -291,14 +291,14 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 ### 10.1 阶段进度
 
-| 阶段 | 内容 | 状态（2026-10-23） |
+| 阶段 | 内容 | 状态（2026-11-22） |
 |---|---|---|
 | 1 | 地基三层升级（BOM/JDK25、common 桥接、租户透传三件套、叶子 pom 锁版） | ✅ 完成（待提交） |
 | 2 | api 契约层 @HttpExchange 化（28 契约、PageResult、复合 DTO、@Schema 迁移） | ✅ 完成（待提交） |
 | 3 | provider 适配（薄 Controller、MP 3.5.17、双租户、Seata 2.5、ES Spring Data、BCrypt 登录） | ✅ 主体完成（待提交） |
 | P0/P1 补端点 | 8 个缺口端点 + 员工登录加固 + 账号注释勘误 | ✅ 完成（编译验证通过，待提交） |
-| 4 | web BFF 适配 + 网关 | ⏳ 下一阶段 |
-| 5 | Sa-Token 全链路落地 + 中间件环境冒烟 | 未开始 |
+| 4 | web BFF 适配 + 网关 | ✅ 完成（已提交） |
+| 5 | Sa-Token 全链路落地 + 中间件环境冒烟 | 🚧 进行中（Sa-Token 全链路已落地并编译通过；中间件冒烟待环境就绪） |
 | 6 | 新增 restkeeper_microapp_web（8087、/microApp、C 端 StpLogic） | 未开始 |
 | 7 | 前端 pnpm monorepo 重写三端 + Taro 点餐 spike | 未开始 |
 
@@ -364,6 +364,8 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 > ✅ **阶段 4 收口（2026-11-22）**：以上 10 项全部完成，全反应堆 `mvn compile -DskipTests` BUILD SUCCESS；K9 已下沉 provider，OSS 已换 aliyun-sdk-oss，sysDict 转发已新增，网关端口/routes/CORS 已改造（reactor Sa-Token 鉴权留阶段 5）。
 
+> ✅ **阶段 5 第一批收口（2026-11-22）**：Sa-Token 1.46 全链路落地——operator/shop/store provider 与 gateway 引入 sa-token starter（redis-jackson 共享会话；token-name=Authorization、有效期 3 天、并发/共享/读头不读 Cookie）；运营/企业/店长/员工四套登录与切店改 `StpUtil.login` 签发 + 会话属性（shopId/storeId/loginUserId/loginUserName/userType）；网关 AuthFilter 改 reactor `SaReactorSyncHolder` + `StpUtil.checkLogin()` 校验并经 x-tenant-* 头注入租户；K8 已修；删除 JWTUtil 与 jjwt 依赖。全反应堆 `mvn compile -DskipTests` 通过。**遗留**：K17 provider 统一异常 advice、Resilience4j 接入 web_common、中间件环境冒烟（Nacos/Redis/MySQL/RabbitMQ/ES）与端到端登录联调，待环境就绪。
+
 **后置（用户确认「以后再说」）**：docker-compose 全套、Nacos 配置清单（含 gateway.yml 路由、common.yml context-path 核实）、正式部署文档、Prometheus/Grafana/Zipkin 面板；mq 短信真实通道联调；5 库 Flyway DDL 在数据层改造时随代码产出（t_staff.status 含在内）。
 
 ## 十一、已知缺口与后置项（实证）
@@ -377,11 +379,11 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 | K5 | 菜品管理端分页经类级 resultMap 嵌套 select 装配分类/口味，存在 N+1（每页约 20 次子查询） | 教学规模可接受 | 后续优化改分步查询或 XML join |
 | K6 | `SellCalculationServiceImpl.add` 按 dishId 查不到记录时直接 NPE，只 update 不 insert/upsert；且 add 散参 dishNum 与 decrease 的 dishNumber 命名不一致 | 对未建沽清记录的菜品退菜回加会 500 | 阶段 4 前补 upsert 并统一参数名 |
 | K7 | `ReverseOrderServiceImpl.reverse` 不校验原单 payStatus 是否已付 | 裸调端点可反结未付订单 | 前端入口已由 `GET /order/number/{orderNumber}` 限已付；建议 provider 补已付前置校验 |
-| K8 | 门店经理登录不排除 status=0/-1（停用者仍可登录）；且「至少绑定一家门店」校验先于密码校验 | 停用店长可登录；无门店时密码错误也提示门店问题 | 阶段 4/5 修：登录 SQL 加状态条件、调整校验顺序 |
+| K8 | 门店经理登录不排除 status=0/-1（停用者仍可登录）；且「至少绑定一家门店」校验先于密码校验 | 停用店长可登录；无门店时密码错误也提示门店问题 | ✅ 阶段 5 已修：StoreManagerServiceImpl 登录查询加 status≠0 条件、校验顺序调整、新增经理补 status=ENABLED |
 | K9 | provider 的企业 add 不写 status/expireTime/applicationTime、update 不重算到期；7 天试用、续费基准 now、正式禁改试用只存在于旧 Dubbo BFF | 直连新端点开通的账号 status=null 无法登录；BFF 不重写则业务规则丢失 | ✅ 阶段 4 已下沉 provider：EnterpriseAccountServiceImpl#add/updateById 单点计算与校验（7 天试用 / 基准 now / 正式禁改试用） |
 | K10 | 退菜只冲订单 totalAmount，不回冲 payAmount/抹零/赠菜/免单 | 已付后退菜产生实收与应收差额 | 与产品确认是否接受；如需红冲需补账单差额处理 |
 | K11 | 全工程无 @Version，开台/换台/清台仅按 status 现值判断 | 并发操作存在竞态覆盖 | 教学项目可接受；前端勿缓存桌台状态，必要时加乐观锁 |
-| K12 | gateway 与 cash_web 同占 8085；网关仓库内无 routes、无 CORS、仍用自研 JWT AuthFilter、pom 残留 openfeign | 同机启动端口冲突；鉴权/CORS 与目标态不符 | 阶段 4 改端口、补路由、换 reactor Sa-Token、删 openfeign（10.4-7） |
+| K12 | gateway 与 cash_web 同占 8085；网关仓库内无 routes、无 CORS、仍用自研 JWT AuthFilter、pom 残留 openfeign | 同机启动端口冲突；鉴权/CORS 与目标态不符 | ✅ 阶段 4 改端口 8080、补路由、CORS 收口、删 openfeign；阶段 5 已换 reactor Sa-Token AuthFilter |
 | K13 | 登录参数命名不统一（员工 password / 其余 loginPass），旧 BFF VO 字段交叉错位；分页路径变量 pageNo/pageNum 并存 | BFF 迁移时极易 400 | 10.4-3 统一映射并在联调时逐口验证 |
 | K14 | 挂账结账写 CreditLogs 时 creditAmount 重复赋值、orderAmount/receivedAmount 取订单总额而非本次实收；还款不写 CreditLogs | 挂账流水金额字段语义可疑；流水页统计不到还款 | 阶段 4 联调时与业务核对字段语义后修正 |
 | K15 | `SystemCode` 桌台常量注释与值错位（TABLE_STATUS_LOCKED=2 注释写「1 锁定」、OPENED=1 注释写「2 已开桌」）；shopId 仅递归查重无 DB 唯一约束 | 不影响按常量名使用；shopId 极小概率重复 | 顺手修注释；shopId 唯一约束随 Flyway V1 评估 |

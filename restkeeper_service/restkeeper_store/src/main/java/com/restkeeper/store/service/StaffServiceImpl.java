@@ -1,5 +1,6 @@
 package com.restkeeper.store.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -10,7 +11,6 @@ import com.restkeeper.http.PageResult;
 import com.restkeeper.sms.SmsObject;
 import com.restkeeper.store.entity.Staff;
 import com.restkeeper.store.mapper.StaffMapper;
-import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.PasswordUtil;
 import com.restkeeper.utils.RandomCodeUtil;
 import com.restkeeper.utils.Result;
@@ -23,18 +23,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
-
 /**
  * 门店员工本地服务
  */
 @Slf4j
 @Service
 public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
-
-    @Value("${gateway.secret:restkeeper}")
-    private String secret;
 
     @Value("${sms.operator.signName:}")
     private String signName;
@@ -106,24 +100,19 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
             return result;
         }
 
-        Map<String, Object> tokenMap = new HashMap<>();
-        tokenMap.put("shopId", shopId);
-        tokenMap.put("storeId", staff.getStoreId());
-        tokenMap.put("loginUserId", staff.getStaffId());
-        tokenMap.put("loginUserName", loginName);
-        tokenMap.put("userType", SystemCode.USER_TYPE_STAFF);
+        // Sa-Token 签发（阶段 5：替换 JWT）
+        StpUtil.login(staff.getStaffId());
+        StpUtil.getSession().set("shopId", shopId);
+        StpUtil.getSession().set("storeId", staff.getStoreId());
+        StpUtil.getSession().set("loginUserId", staff.getStaffId());
+        StpUtil.getSession().set("loginUserName", staff.getStaffName());
+        StpUtil.getSession().set("userType", SystemCode.USER_TYPE_STAFF);
+        String token = StpUtil.getTokenValue();
 
-        try {
-            String tokenInfo = JWTUtil.createJWTByObj(tokenMap, secret);
-            result.setStatus(ResultCode.success);
-            result.setDesc("ok");
-            result.setData(staff);
-            result.setToken(tokenInfo);
-        } catch (Exception e) {
-            log.error("员工登录令牌生成失败, loginName={}", loginName, e);
-            result.setStatus(ResultCode.error);
-            result.setDesc("加密失败");
-        }
+        result.setStatus(ResultCode.success);
+        result.setDesc("ok");
+        result.setData(staff);
+        result.setToken(token);
         return result;
     }
 

@@ -1,5 +1,6 @@
 package com.restkeeper.shop.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -10,7 +11,6 @@ import com.restkeeper.shop.entity.Store;
 import com.restkeeper.shop.mapper.StoreMapper;
 import com.restkeeper.tenant.TenantContext;
 import com.restkeeper.utils.BeanListUtils;
-import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
 import lombok.extern.slf4j.Slf4j;
@@ -19,9 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 门店本地服务：不再实现 api 契约接口，HTTP 端点由 StoreController 薄转发。
@@ -29,9 +27,6 @@ import java.util.Map;
 @Service("storeService")
 @Slf4j
 public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> {
-
-    @Value("${gateway.secret:restkeeper}")
-    private String secret;
 
     /**
      * 分页查询（按门店名称模糊）
@@ -106,24 +101,19 @@ public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> {
     public Result switchStore(String storeId) {
         Result result = new Result();
 
-        Map<String, Object> tokenMap = new HashMap<>();
-        tokenMap.put("shopId", TenantContext.getShopId());
-        tokenMap.put("storeId", storeId);
-        tokenMap.put("loginUserId", TenantContext.getLoginUserId());
-        tokenMap.put("loginUserName", TenantContext.getLoginUserName());
-        tokenMap.put("userType", SystemCode.USER_TYPE_STORE_MANAGER);
+        // Sa-Token 重新签发（阶段 5：替换 JWT），会话更新当前门店
+        StpUtil.login(TenantContext.getLoginUserId());
+        StpUtil.getSession().set("shopId", TenantContext.getShopId());
+        StpUtil.getSession().set("storeId", storeId);
+        StpUtil.getSession().set("loginUserId", TenantContext.getLoginUserId());
+        StpUtil.getSession().set("loginUserName", TenantContext.getLoginUserName());
+        StpUtil.getSession().set("userType", SystemCode.USER_TYPE_STORE_MANAGER);
+        String token = StpUtil.getTokenValue();
 
-        try {
-            String tokenInfo = JWTUtil.createJWTByObj(tokenMap, secret);
-            result.setStatus(ResultCode.success);
-            result.setDesc("ok");
-            result.setData(storeId);
-            result.setToken(tokenInfo);
-        } catch (Exception e) {
-            log.error("切换门店生成令牌失败, storeId={}", storeId, e);
-            result.setStatus(ResultCode.error);
-            result.setDesc("生成令牌失败");
-        }
+        result.setStatus(ResultCode.success);
+        result.setDesc("ok");
+        result.setData(storeId);
+        result.setToken(token);
         return result;
     }
 
