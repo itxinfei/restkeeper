@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { categories, dishes } from '../api/mock'
-import type { Dish } from '../api/mock'
+import type { PosDish } from '../api/pos'
 import { useOrderStore } from '../stores/order'
 import type { PayMethod } from '../stores/order'
 import DishGrid from '../components/DishGrid.vue'
@@ -32,11 +31,11 @@ ensureTable()
 watch(tableId, ensureTable)
 
 const groups = computed(() =>
-  categories
+  order.categories
     .map((category) => ({
       id: category.id,
       name: category.name,
-      dishes: dishes.filter((d) => d.categoryId === category.id),
+      dishes: order.dishes.filter((d) => d.categoryId === category.id),
     }))
     .filter((group) => group.dishes.length > 0),
 )
@@ -79,14 +78,14 @@ function onScroll() {
   if (current !== activeCat.value) activeCat.value = current
 }
 
-function onAddDish(dish: Dish) {
-  order.addDish(dish.id)
+async function onAddDish(dish: PosDish) {
+  await order.addDish(dish.id)
 }
 
 const checkoutOpen = ref(false)
 
-function onCheckout(method: PayMethod) {
-  order.checkout(method)
+async function onCheckout(method: PayMethod) {
+  await order.checkout(method)
   checkoutOpen.value = false
   router.replace({ name: 'tables' })
 }

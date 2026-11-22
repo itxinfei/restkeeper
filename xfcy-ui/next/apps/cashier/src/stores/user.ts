@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-
-const TOKEN_KEY = 'xfcy.cashier.token'
+import { auth, getToken, isMockMode, setToken } from '@xfcy/api'
 
 export type UserProfile = {
   name: string
@@ -10,11 +9,12 @@ export type UserProfile = {
 }
 
 /**
- * 用户状态（示意）：首版用 localStorage token 模拟登录态，
- * 后续接入真实认证接口时仅需替换 login / logout 实现。
+ * 用户状态：登录统一走 @xfcy/api auth。
+ * - mock 模式（VITE_USE_MOCK=1，默认）：保持演示行为，不校验账号密码；
+ * - real 模式：调用门店员工登录契约 POST /staff/login（shopId/loginName/password）。
  */
 export const useUserStore = defineStore('user', () => {
-  const token = ref<string>(localStorage.getItem(TOKEN_KEY) ?? '')
+  const token = ref<string>(getToken())
   const profile = ref<UserProfile>({
     name: '陈晓',
     role: '收银员',
@@ -24,15 +24,24 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => token.value.length > 0)
   const avatarText = computed(() => profile.value.name.slice(0, 1))
 
-  function login(_username: string, _password: string) {
-    // 示意：不校验真实账号密码，仅写入本地 token
-    token.value = `xfcy-demo-${Date.now()}`
-    localStorage.setItem(TOKEN_KEY, token.value)
+  async function login(username: string, password: string, shopId?: string) {
+    if (isMockMode()) {
+      token.value = `xfcy-demo-${Date.now()}`
+      setToken(token.value)
+      return
+    }
+    const result = await auth.loginStaff(shopId ?? '', username, password)
+    token.value = result.token
+    profile.value = {
+      name: result.user.staffName,
+      role: '收银员',
+      shop: shopId ? `门店 ${shopId}` : '心飞餐饮',
+    }
   }
 
   function logout() {
+    auth.logout()
     token.value = ''
-    localStorage.removeItem(TOKEN_KEY)
   }
 
   return { token, profile, isLoggedIn, avatarText, login, logout }

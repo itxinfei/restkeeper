@@ -62,6 +62,17 @@ export interface OperatorUser {
   loginpass?: string
 }
 
+/** t_sys_dict */
+export interface SysDictionary {
+  dictId: string
+  dictName: string
+  /** 字典数据（编码） */
+  dictData?: string
+  /** 分类 */
+  category?: string
+  info?: string
+}
+
 /* ----------------  shop 域 ---------------- */
 
 /** t_brand */

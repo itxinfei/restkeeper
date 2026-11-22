@@ -11,8 +11,11 @@
 import type {
   Dish,
   DishCategory,
+  EnterpriseAccount,
+  OperatorUser,
   OrderEntity,
   SetMeal,
+  SysDictionary,
   Table,
   TableArea,
 } from '../types'
@@ -20,71 +23,37 @@ import type {
 /* ---------------- 菜品分类（示意） ---------------- */
 
 export const mockCategories: DishCategory[] = [
-  { categoryId: 'cat-1', type: 1, name: '热菜', torder: 1 },
-  { categoryId: 'cat-2', type: 1, name: '凉菜', torder: 2 },
-  { categoryId: 'cat-3', type: 1, name: '主食', torder: 3 },
-  { categoryId: 'cat-4', type: 1, name: '饮品', torder: 4 },
-  { categoryId: 'cat-5', type: 1, name: '甜点', torder: 5 },
+  { categoryId: 'cat-rec', type: 1, name: '招牌推荐', torder: 1 },
+  { categoryId: 'cat-1', type: 1, name: '热菜', torder: 2 },
+  { categoryId: 'cat-2', type: 1, name: '凉菜', torder: 3 },
+  { categoryId: 'cat-3', type: 1, name: '主食', torder: 4 },
+  { categoryId: 'cat-4', type: 1, name: '饮品', torder: 5 },
+  { categoryId: 'cat-combo', type: 2, name: '套餐', torder: 6 },
+  { categoryId: 'cat-liquor', type: 1, name: '酒水', torder: 7 },
+  { categoryId: 'cat-5', type: 1, name: '甜点', torder: 8 },
 ]
 
 /* ---------------- 菜品（示意，价格单位：分） ---------------- */
 
-export const mockDishes: Dish[] = [
-  {
-    id: '1',
-    name: '招牌红烧肉',
-    description: '五花肉 · 冰糖慢炖',
-    categoryId: 'cat-1',
-    code: 'D001',
-    price: 4800,
-    status: 1,
-    image: '🍖',
-    dishCategory: mockCategories[0],
-  },
-  {
-    id: '2',
-    name: '清蒸鲈鱼',
-    description: '鲜活 · 粤式蒸法',
-    categoryId: 'cat-1',
-    code: 'D002',
-    price: 8800,
-    status: 1,
-    image: '🐟',
-    dishCategory: mockCategories[0],
-  },
-  {
-    id: '3',
-    name: '蒜蓉时蔬',
-    description: '时令 · 清炒',
-    categoryId: 'cat-1',
-    code: 'D003',
-    price: 2200,
-    status: 1,
-    image: '🥬',
-    dishCategory: mockCategories[0],
-  },
-  {
-    id: '4',
-    name: '腊味煲仔饭',
-    description: '丝苗米 · 锅巴香',
-    categoryId: 'cat-3',
-    code: 'D004',
-    price: 3600,
-    status: 0,
-    image: '🍚',
-    dishCategory: mockCategories[2],
-  },
-  {
-    id: '5',
-    name: '酸梅汤',
-    description: '冰镇 · 解腻',
-    categoryId: 'cat-4',
-    code: 'D005',
-    price: 1200,
-    status: 1,
-    image: '🍹',
-    dishCategory: mockCategories[3],
-  },
+/** 演示扩展：沽清余量（真实契约无此字段，-1/undefined 表示不限） */
+export type MockDish = Dish & { remain?: number | null }
+
+export const mockDishes: MockDish[] = [
+  { id: 'D001', name: '招牌红烧肉', description: '五花肉 · 冰糖慢炖', categoryId: 'cat-rec', code: 'D001', price: 4800, status: 1, image: '🍖', remain: 3, dishCategory: mockCategories[0] },
+  { id: 'D002', name: '清蒸鲈鱼', description: '鲜活 · 粤式蒸法', categoryId: 'cat-rec', code: 'D002', price: 8800, status: 1, image: '🐟', remain: 0, dishCategory: mockCategories[0] },
+  { id: 'D003', name: '毛血旺', description: '麻辣 · 现煮', categoryId: 'cat-rec', code: 'D003', price: 6800, status: 1, image: '🍲', remain: 5, dishCategory: mockCategories[0] },
+  { id: 'D004', name: '蒜蓉时蔬', description: '时令 · 清炒', categoryId: 'cat-1', code: 'D004', price: 2200, status: 1, image: '🥬', remain: null, dishCategory: mockCategories[1] },
+  { id: 'D005', name: '宫保鸡丁', description: '经典 · 微辣', categoryId: 'cat-1', code: 'D005', price: 3800, status: 1, image: '🍗', remain: null, dishCategory: mockCategories[1] },
+  { id: 'D006', name: '凉拌黄瓜', description: '蒜香 · 爽脆', categoryId: 'cat-2', code: 'D006', price: 1800, status: 1, image: '🥒', remain: null, dishCategory: mockCategories[2] },
+  { id: 'D007', name: '夫妻肺片', description: '红油 · 卤香', categoryId: 'cat-2', code: 'D007', price: 3200, status: 1, image: '🌶️', remain: 4, dishCategory: mockCategories[2] },
+  { id: 'D008', name: '腊味煲仔饭', description: '丝苗米 · 锅巴香', categoryId: 'cat-3', code: 'D008', price: 3600, status: 0, image: '🍚', remain: null, dishCategory: mockCategories[3] },
+  { id: 'D009', name: '手工水饺', description: '猪肉白菜 · 12 只', categoryId: 'cat-3', code: 'D009', price: 2800, status: 1, image: '🥟', remain: null, dishCategory: mockCategories[3] },
+  { id: 'D010', name: '米饭', description: '东北大米', categoryId: 'cat-3', code: 'D010', price: 300, status: 1, image: '🍙', remain: null, dishCategory: mockCategories[3] },
+  { id: 'D011', name: '酸梅汤', description: '冰镇 · 解腻', categoryId: 'cat-4', code: 'D011', price: 1200, status: 1, image: '🍹', remain: null, dishCategory: mockCategories[4] },
+  { id: 'D012', name: '红糖冰粉', description: '手工 · 冰爽', categoryId: 'cat-4', code: 'D012', price: 1600, status: 1, image: '🍨', remain: null, dishCategory: mockCategories[4] },
+  { id: 'D013', name: '双人小聚套餐', description: '红烧肉 + 时蔬 + 酸梅汤 ×2', categoryId: 'cat-combo', code: 'D013', price: 12800, status: 1, image: '🍱', remain: null, dishCategory: mockCategories[5] },
+  { id: 'D014', name: '家庭四人餐', description: '鲈鱼 + 红烧肉 + 时蔬 + 主食 + 饮品', categoryId: 'cat-combo', code: 'D014', price: 26800, status: 1, image: '🎉', remain: 2, dishCategory: mockCategories[5] },
+  { id: 'D015', name: '青岛啤酒', description: '500ml · 冰镇', categoryId: 'cat-liquor', code: 'D015', price: 1000, status: 1, image: '🍺', remain: 20, dishCategory: mockCategories[6] },
 ]
 
 /* ---------------- 套餐（示意，价格单位：分） ---------------- */
@@ -98,9 +67,9 @@ export const mockSetMeals: SetMeal[] = [
     status: 1,
     categoryId: 'cat-1',
     dishList: [
-      { id: 'sd-1', setMealId: 'combo-1', dishId: '1', dishName: '招牌红烧肉', dishCopies: 1, index: 0 },
-      { id: 'sd-2', setMealId: 'combo-1', dishId: '3', dishName: '蒜蓉时蔬', dishCopies: 1, index: 1 },
-      { id: 'sd-3', setMealId: 'combo-1', dishId: '5', dishName: '酸梅汤', dishCopies: 2, index: 2 },
+      { id: 'sd-1', setMealId: 'combo-1', dishId: 'D001', dishName: '招牌红烧肉', dishCopies: 1, index: 0 },
+      { id: 'sd-2', setMealId: 'combo-1', dishId: 'D004', dishName: '蒜蓉时蔬', dishCopies: 1, index: 1 },
+      { id: 'sd-3', setMealId: 'combo-1', dishId: 'D011', dishName: '酸梅汤', dishCopies: 2, index: 2 },
     ],
   },
   {
@@ -111,11 +80,11 @@ export const mockSetMeals: SetMeal[] = [
     status: 1,
     categoryId: 'cat-1',
     dishList: [
-      { id: 'sd-4', setMealId: 'combo-2', dishId: '2', dishName: '清蒸鲈鱼', dishCopies: 1, index: 0 },
-      { id: 'sd-5', setMealId: 'combo-2', dishId: '1', dishName: '招牌红烧肉', dishCopies: 1, index: 1 },
-      { id: 'sd-6', setMealId: 'combo-2', dishId: '3', dishName: '蒜蓉时蔬', dishCopies: 1, index: 2 },
-      { id: 'sd-7', setMealId: 'combo-2', dishId: '4', dishName: '腊味煲仔饭', dishCopies: 1, index: 3 },
-      { id: 'sd-8', setMealId: 'combo-2', dishId: '5', dishName: '酸梅汤', dishCopies: 4, index: 4 },
+      { id: 'sd-4', setMealId: 'combo-2', dishId: 'D002', dishName: '清蒸鲈鱼', dishCopies: 1, index: 0 },
+      { id: 'sd-5', setMealId: 'combo-2', dishId: 'D001', dishName: '招牌红烧肉', dishCopies: 1, index: 1 },
+      { id: 'sd-6', setMealId: 'combo-2', dishId: 'D004', dishName: '蒜蓉时蔬', dishCopies: 1, index: 2 },
+      { id: 'sd-7', setMealId: 'combo-2', dishId: 'D008', dishName: '腊味煲仔饭', dishCopies: 1, index: 3 },
+      { id: 'sd-8', setMealId: 'combo-2', dishId: 'D011', dishName: '酸梅汤', dishCopies: 4, index: 4 },
     ],
   },
   {
@@ -126,8 +95,8 @@ export const mockSetMeals: SetMeal[] = [
     status: 0,
     categoryId: 'cat-1',
     dishList: [
-      { id: 'sd-9', setMealId: 'combo-3', dishId: '4', dishName: '腊味煲仔饭', dishCopies: 1, index: 0 },
-      { id: 'sd-10', setMealId: 'combo-3', dishId: '5', dishName: '酸梅汤', dishCopies: 1, index: 1 },
+      { id: 'sd-9', setMealId: 'combo-3', dishId: 'D008', dishName: '腊味煲仔饭', dishCopies: 1, index: 0 },
+      { id: 'sd-10', setMealId: 'combo-3', dishId: 'D011', dishName: '酸梅汤', dishCopies: 1, index: 1 },
     ],
   },
 ]
@@ -136,16 +105,21 @@ export const mockSetMeals: SetMeal[] = [
 
 export const mockTableAreas: TableArea[] = [
   { areaId: 'area-1', areaName: '大厅', indexNumber: 1 },
-  { areaId: 'area-2', areaName: '包间', indexNumber: 2 },
-  { areaId: 'area-3', areaName: '卡座', indexNumber: 3 },
+  { areaId: 'area-2', areaName: '卡座', indexNumber: 2 },
+  { areaId: 'area-3', areaName: '包间', indexNumber: 3 },
 ]
 
 export const mockTables: Table[] = [
-  { tableId: 't-1', areaId: 'area-1', tableName: 'A01 大厅', tableSeatNumber: 2, status: 0 },
-  { tableId: 't-2', areaId: 'area-1', tableName: 'A03 大厅', tableSeatNumber: 4, status: 1 },
-  { tableId: 't-3', areaId: 'area-1', tableName: 'A05 大厅', tableSeatNumber: 3, status: 0 },
-  { tableId: 't-4', areaId: 'area-2', tableName: 'B01 包间', tableSeatNumber: 8, status: 1 },
-  { tableId: 't-5', areaId: 'area-3', tableName: 'C02 卡座', tableSeatNumber: 6, status: 0 },
+  { tableId: 'A01', areaId: 'area-1', tableName: 'A01 大厅', tableSeatNumber: 2, status: 0 },
+  { tableId: 'A02', areaId: 'area-1', tableName: 'A02 大厅', tableSeatNumber: 4, status: 0 },
+  { tableId: 'A03', areaId: 'area-1', tableName: 'A03 大厅', tableSeatNumber: 4, status: 1 },
+  { tableId: 'A04', areaId: 'area-1', tableName: 'A04 大厅', tableSeatNumber: 3, status: 0 },
+  { tableId: 'A05', areaId: 'area-1', tableName: 'A05 大厅', tableSeatNumber: 2, status: 0 },
+  { tableId: 'C01', areaId: 'area-2', tableName: 'C01 卡座', tableSeatNumber: 6, status: 1 },
+  { tableId: 'C02', areaId: 'area-2', tableName: 'C02 卡座', tableSeatNumber: 6, status: 0 },
+  { tableId: 'C03', areaId: 'area-2', tableName: 'C03 卡座', tableSeatNumber: 4, status: 0 },
+  { tableId: 'B01', areaId: 'area-3', tableName: 'B01 包间', tableSeatNumber: 8, status: 1 },
+  { tableId: 'B02', areaId: 'area-3', tableName: 'B02 包间', tableSeatNumber: 10, status: 0 },
 ]
 
 /* ---------------- 订单（示意，金额单位：分） ---------------- */
@@ -154,7 +128,7 @@ export const mockOrders: OrderEntity[] = [
   {
     orderId: '1',
     orderNumber: 'FK-018',
-    tableId: 't-2',
+    tableId: 'A03',
     payType: 2,
     payStatus: 0,
     payAmount: 32800,
@@ -166,7 +140,7 @@ export const mockOrders: OrderEntity[] = [
   {
     orderId: '2',
     orderNumber: 'FK-017',
-    tableId: 't-4',
+    tableId: 'B01',
     payType: 5,
     payStatus: 0,
     payAmount: 124600,
@@ -178,7 +152,7 @@ export const mockOrders: OrderEntity[] = [
   {
     orderId: '3',
     orderNumber: 'FK-015',
-    tableId: 't-1',
+    tableId: 'A01',
     payType: 1,
     payStatus: 1,
     payAmount: 9600,
@@ -253,4 +227,58 @@ export const demoSoldoutRows: DemoSoldoutRow[] = [
   { id: 1, name: '招牌红烧肉', remain: '余 3', danger: false },
   { id: 2, name: '清蒸鲈鱼', remain: '余 0', danger: true },
   { id: 3, name: '蒜蓉时蔬', remain: '不限', danger: false },
+]
+
+/* ---------------- 企业账号 / 回收站（operator 域，示意） ---------------- */
+
+export type MockPlan = '基础版' | '标准版' | '旗舰版'
+
+/** 演示扩展：套餐/门店数（真实契约无此字段） */
+export type MockEnterpriseAccount = EnterpriseAccount & {
+  plan?: MockPlan
+  shopCount?: number
+}
+
+/** 演示扩展：删除时间/删除人（真实契约无此字段，仅回收站展示用） */
+export type MockRemovedEnterpriseAccount = MockEnterpriseAccount & {
+  deletedAt?: string
+  deletedBy?: string
+}
+
+export const mockEnterpriseAccounts: MockEnterpriseAccount[] = [
+  { enterpriseId: '1', enterpriseName: '心飞餐饮（国贸店）', shopId: '88010023', applicant: '李国栋', phone: '13801002301', shopCount: 3, plan: '旗舰版', status: 1, applicationTime: '2025-06-30 10:00:00', expireTime: '2027-06-30', lastUpdateTime: '2026-11-22 09:12:00' },
+  { enterpriseId: '2', enterpriseName: '心飞餐饮（望京店）', shopId: '88010024', applicant: '赵敏', phone: '13801002302', shopCount: 1, plan: '基础版', status: 0, applicationTime: '2026-11-15 10:00:00', expireTime: '2026-11-29', lastUpdateTime: '2026-11-20 18:40:00' },
+  { enterpriseId: '3', enterpriseName: '老城根火锅', shopId: '88010025', applicant: '孙浩', phone: '13801002303', shopCount: 2, plan: '标准版', status: 1, applicationTime: '2025-09-10 10:00:00', expireTime: '2027-01-15', lastUpdateTime: '2026-11-21 11:05:00' },
+  { enterpriseId: '4', enterpriseName: '川香居', shopId: '88010026', applicant: '周婷', phone: '138010024', shopCount: 1, plan: '基础版', status: -1, applicationTime: '2024-05-20 10:00:00', expireTime: '2026-05-20', lastUpdateTime: '2026-11-18 16:20:00' },
+  { enterpriseId: '5', enterpriseName: '蓝湾咖啡', shopId: '88010027', applicant: '吴斌', phone: '13801002305', shopCount: 4, plan: '标准版', status: 1, applicationTime: '2025-11-22 10:00:00', expireTime: '2027-03-01', lastUpdateTime: '2026-11-22 08:30:00' },
+]
+
+export const mockRemovedEnterpriseAccounts: MockRemovedEnterpriseAccount[] = [
+  { enterpriseId: '101', enterpriseName: '悦来小馆', shopId: '88010018', applicant: '郑爽', phone: '13801002306', shopCount: 1, plan: '基础版', status: -1, isDeleted: 1, applicationTime: '2025-03-11 10:00:00', expireTime: '2026-03-11', lastUpdateTime: '2026-11-18 16:20:00', deletedAt: '2026-11-18 16:20', deletedBy: '王运营' },
+  { enterpriseId: '102', enterpriseName: '巷口面馆', shopId: '88010019', applicant: '冯远', phone: '13801002307', shopCount: 2, plan: '标准版', status: -1, isDeleted: 1, applicationTime: '2025-08-02 10:00:00', expireTime: '2026-08-02', lastUpdateTime: '2026-11-20 09:05:00', deletedAt: '2026-11-20 09:05', deletedBy: '王运营' },
+]
+
+/* ---------------- 系统字典 / 运营人员（operator 域，示意） ---------------- */
+
+export const mockDictItems: SysDictionary[] = [
+  { dictId: '1', category: 'dish_category', dictName: '菜品分类', dictData: '热菜', info: '启用' },
+  { dictId: '2', category: 'dish_category', dictName: '菜品分类', dictData: '主食', info: '启用' },
+  { dictId: '3', category: 'order_status', dictName: '订单状态', dictData: '已结', info: '启用' },
+  { dictId: '4', category: 'order_status', dictName: '订单状态', dictData: '挂账', info: '启用' },
+  { dictId: '5', category: 'pay_type', dictName: '支付方式', dictData: '微信', info: '启用' },
+  { dictId: '6', category: 'shop_tag', dictName: '门店标签', dictData: '商场店', info: '停用' },
+]
+
+/** 演示扩展：角色/姓名/最近登录（真实契约仅有 uid/loginname） */
+export type MockOperatorUser = OperatorUser & {
+  name?: string
+  role?: string
+  status?: string
+  lastLogin?: string
+}
+
+export const mockOperatorUsers: MockOperatorUser[] = [
+  { uid: '1', loginname: 'admin', name: '王运营', role: '平台运营', status: '启用', lastLogin: '2026-11-22 09:12' },
+  { uid: '2', loginname: 'ops01', name: '陈晓', role: '运营', status: '启用', lastLogin: '2026-11-21 18:40' },
+  { uid: '3', loginname: 'ops02', name: '刘洋', role: '客服', status: '停用', lastLogin: '2026-10-30 11:05' },
 ]

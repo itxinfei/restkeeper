@@ -1,28 +1,28 @@
 <script setup lang="ts">
 import { XfTag } from '@xfcy/ui'
-import { formatYuan } from '../api/mock'
-import type { Dish } from '../api/mock'
+import { formatYuan } from '@xfcy/api'
+import type { PosDish } from '../api/pos'
 
-defineProps<{ dishes: Dish[] }>()
-const emit = defineEmits<{ (e: 'add', dish: Dish): void }>()
+defineProps<{ dishes: PosDish[] }>()
+const emit = defineEmits<{ (e: 'add', dish: PosDish): void }>()
 
-function soldOut(dish: Dish): boolean {
+function soldOut(dish: PosDish): boolean {
   return dish.status === '停售' || dish.remain === 0
 }
 
-function remainText(dish: Dish): string {
+function remainText(dish: PosDish): string {
   if (dish.status === '停售') return '停售'
   if (dish.remain === 0) return '沽清'
   if (dish.remain === null) return '不限'
   return `余 ${dish.remain}`
 }
 
-function remainTone(dish: Dish): 'danger' | 'neutral' {
+function remainTone(dish: PosDish): 'danger' | 'neutral' {
   if (dish.status === '停售') return 'danger'
   return 'neutral'
 }
 
-function onAdd(dish: Dish) {
+function onAdd(dish: PosDish) {
   if (soldOut(dish)) return
   emit('add', dish)
 }

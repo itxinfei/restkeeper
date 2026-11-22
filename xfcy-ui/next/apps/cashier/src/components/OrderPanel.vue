@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { XfButton, XfEmpty, XfModal, XfTag } from '@xfcy/ui'
-import { formatYuan } from '../api/mock'
+import { formatYuan } from '@xfcy/api'
 import { useOrderStore } from '../stores/order'
 import type { OrderStatus } from '../stores/order'
 
@@ -33,7 +33,7 @@ onBeforeUnmount(() => {
 
 function onHang() {
   order.markCredit()
-  showNotice('已挂账（示意），订单状态：挂账')
+  showNotice('已挂账（示意），订单状态：挂账；真实模式在结账时选择「挂账」提交')
 }
 
 function onPrint() {
@@ -54,10 +54,10 @@ function onRemoveLast() {
 const moveOpen = ref(false)
 const freeTables = computed(() => order.tables.filter((t) => t.status === '空闲'))
 
-function onMove(id: string) {
-  order.moveTable(id)
+async function onMove(id: string) {
+  await order.moveTable(id)
   moveOpen.value = false
-  showNotice(`已换台至 ${id}（示意）`)
+  showNotice(`已换台至 ${id}`)
 }
 </script>
 

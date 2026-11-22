@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { XfButton, XfInput, XfModal } from '@xfcy/ui'
-import { formatYuan } from '../api/mock'
+import { formatYuan } from '@xfcy/api'
 import type { PayMethod } from '../stores/order'
 
 const props = defineProps<{
@@ -27,9 +27,11 @@ const received = ref('')
 const error = ref('')
 
 const receivedNum = computed(() => (received.value.trim() === '' ? 0 : Number(received.value) || 0))
-const change = computed(() => receivedNum.value - props.total)
+/** 实收金额统一换算为「分」，与应收 total 对齐 */
+const receivedCents = computed(() => Math.round(receivedNum.value * 100))
+const change = computed(() => receivedCents.value - props.total)
 const canConfirm = computed(
-  () => props.total > 0 && (method.value !== '现金' || receivedNum.value >= props.total),
+  () => props.total > 0 && (method.value !== '现金' || receivedCents.value >= props.total),
 )
 
 watch(

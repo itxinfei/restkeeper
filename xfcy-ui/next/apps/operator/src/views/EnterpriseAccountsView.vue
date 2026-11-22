@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   XfButton,
   XfField,
@@ -11,8 +11,12 @@ import {
   XfTable,
   XfTag,
 } from '@xfcy/ui'
-import { enterpriseList, planOptions } from '../api/mock'
-import type { EnterpriseRow, EnterpriseStatus, Plan } from '../api/mock'
+import { isMockMode } from '@xfcy/api'
+import {
+  planOptions,
+  useEnterpriseStore,
+} from '../stores/enterprise'
+import type { EnterpriseDraft, EnterpriseRow, EnterpriseStatus, Plan } from '../stores/enterprise'
 
 type Column = {
   key: string
@@ -33,7 +37,8 @@ const columns: Column[] = [
   { key: 'action', label: '操作', width: '150px' },
 ]
 
-const enterprises = ref<EnterpriseRow[]>([...enterpriseList])
+const store = useEnterpriseStore()
+const enterprises = computed(() => store.enterpriseRows)
 const keyword = ref('')
 const statusFilter = ref('all')
 const planFilter = ref('all')
@@ -88,17 +93,14 @@ function resetFilters() {
   page.value = 1
 }
 
-function toggleStatus(row: EnterpriseRow) {
-  const index = enterprises.value.findIndex((item) => item.id === row.id)
-  if (index < 0) return
-  const next: EnterpriseStatus = row.status === '禁用' ? '正式' : '禁用'
-  enterprises.value[index] = { ...enterprises.value[index], status: next }
+async function toggleStatus(row: EnterpriseRow) {
+  await store.toggleStatus(row)
 }
 
 /* -------- 开通 / 编辑弹窗 -------- */
 
 type EnterpriseForm = {
-  id: number | null
+  id: string | null
   name: string
   contact: string
   phone: string
@@ -124,12 +126,15 @@ const form = ref<EnterpriseForm>(emptyForm())
 const nameError = ref('')
 const contactError = ref('')
 const phoneError = ref('')
+const saveError = ref('')
+const saving = ref(false)
 
 function openCreate() {
   form.value = emptyForm()
   nameError.value = ''
   contactError.value = ''
   phoneError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
@@ -139,22 +144,24 @@ function openEdit(row: EnterpriseRow) {
     name: row.name,
     contact: row.contact,
     phone: row.phone,
-    plan: row.plan,
+    plan: (row.plan as Plan) ?? '基础版',
     expireDate: row.expireDate,
   }
   nameError.value = ''
   contactError.value = ''
   phoneError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
-function save() {
+async function save() {
   const name = form.value.name.trim()
   const contact = form.value.contact.trim()
   const phone = form.value.phone.trim()
   nameError.value = ''
   contactError.value = ''
   phoneError.value = ''
+  saveError.value = ''
 
   if (!name) {
     nameError.value = '请填写企业名称'
@@ -169,41 +176,55 @@ function save() {
     return
   }
 
-  if (form.value.id != null) {
-    const index = enterprises.value.findIndex((item) => item.id === form.value.id)
-    if (index >= 0) {
-      enterprises.value[index] = {
-        ...enterprises.value[index],
-        name,
-        contact,
+  saving.value = true
+  try {
+    if (form.value.id != null) {
+      const row = enterprises.value.find((item) => item.id === form.value.id)
+      if (!row) throw new Error('未找到该企业')
+      const draft: EnterpriseDraft = {
+        enterpriseId: row.id,
+        enterpriseName: name,
+        shopId: row.code,
+        applicant: contact,
         phone,
-        plan: form.value.plan ?? enterprises.value[index].plan,
-        expireDate: form.value.expireDate,
+        expireTime: form.value.expireDate,
+        status: row.statusValue,
       }
+      if (isMockMode()) draft.plan = form.value.plan ?? '基础版'
+      await store.update(draft)
+    } else {
+      const maxCode = enterprises.value.reduce(
+        (max, item) => Math.max(max, Number(item.code) || 0),
+        88010000,
+      )
+      const draft: EnterpriseDraft = {
+        enterpriseId: '',
+        enterpriseName: name,
+        // 真实后端会生成商户号；mock 模式下本地生成演示编码
+        shopId: isMockMode() ? String(maxCode + 1).padStart(8, '0') : '',
+        applicant: contact,
+        phone,
+        expireTime: form.value.expireDate,
+        status: 0,
+      }
+      if (isMockMode()) {
+        draft.plan = form.value.plan ?? '基础版'
+        draft.shopCount = 0
+      }
+      await store.create(draft)
     }
-  } else {
-    const id = enterprises.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
-    const maxCode = enterprises.value.reduce(
-      (max, item) => Math.max(max, Number(item.code) || 0),
-      88010000,
-    )
-    enterprises.value.unshift({
-      id,
-      code: String(maxCode + 1).padStart(8, '0'),
-      name,
-      contact,
-      phone,
-      shopCount: 0,
-      plan: form.value.plan ?? '基础版',
-      status: '试用',
-      expireDate: form.value.expireDate,
-      createdAt: formatDate(new Date()),
-    })
+    modalOpen.value = false
+    page.value = 1
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : '保存失败'
+  } finally {
+    saving.value = false
   }
-
-  modalOpen.value = false
-  page.value = 1
 }
+
+onMounted(() => {
+  if (!store.loaded) void store.load()
+})
 </script>
 
 <template>
@@ -218,7 +239,11 @@ function save() {
       <XfSelect v-model="planFilter" :options="planFilterOptions" />
     </div>
     <XfButton variant="secondary" @click="resetFilters">重置</XfButton>
+    <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
+      {{ store.loading ? '刷新中…' : '刷新' }}
+    </XfButton>
     <div class="xfo-toolbar__grow"></div>
+    <span class="xfo-muted">{{ isMockMode() ? '数据源：@xfcy/api mock' : '数据源：真实后端' }}</span>
     <XfButton @click="openCreate">＋ 开通企业</XfButton>
   </div>
 
@@ -227,7 +252,7 @@ function save() {
       :columns="columns"
       :data="paged"
       row-key="id"
-      empty-text="暂无企业（示意）"
+      empty-text="暂无企业"
       empty-description="调整筛选条件，或点击右上角「开通企业」"
     >
       <template #code="{ row }">
@@ -267,7 +292,7 @@ function save() {
 
     <div class="xfo-pager">
       <span class="xfo-pager__summary">
-        共 {{ stat.total }} 家 · 试用 {{ stat.trial }} · 正式 {{ stat.official }} · 禁用 {{ stat.disabled }}（示意）
+        共 {{ stat.total }} 家 · 试用 {{ stat.trial }} · 正式 {{ stat.official }} · 禁用 {{ stat.disabled }}
       </span>
       <XfPagination v-model:page="page" :total="filtered.length" :page-size="pageSize" />
     </div>
@@ -275,7 +300,7 @@ function save() {
 
   <XfModal
     v-model:open="modalOpen"
-    :title="form.id ? '编辑企业（示意）' : '开通企业（示意）'"
+    :title="form.id ? '编辑企业' : '开通企业'"
   >
     <div class="xfo-form xfo-form--grid">
       <XfField class="xfo-form__full" label="企业名称" required :error="nameError || ''">
@@ -308,9 +333,10 @@ function save() {
         </template>
       </XfField>
     </div>
+    <p v-if="saveError" class="xfo-note">{{ saveError }}</p>
     <template #footer>
       <XfButton variant="secondary" @click="modalOpen = false">取消</XfButton>
-      <XfButton @click="save">保存</XfButton>
+      <XfButton :disabled="saving" @click="save">{{ saving ? '保存中…' : '保存' }}</XfButton>
     </template>
   </XfModal>
 </template>

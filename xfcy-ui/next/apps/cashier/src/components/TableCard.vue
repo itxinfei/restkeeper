@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { XfTag } from '@xfcy/ui'
-import type { PosTable, TableStatus } from '../api/mock'
+import type { PosTable, TableStatus } from '../api/pos'
 
 const props = defineProps<{ table: PosTable }>()
 const emit = defineEmits<{ (e: 'select', table: PosTable): void }>()

@@ -17,8 +17,10 @@
     "noEmit": true,
     "baseUrl": ".",
     "paths": {
-      "@xfcy/ui": ["../packages/ui/src/index.ts"],
-      "@xfcy/ui/*": ["../packages/ui/src/*"]
+      "@xfcy/api": ["../../packages/api/src/index.ts"],
+      "@xfcy/api/*": ["../../packages/api/src/*"],
+      "@xfcy/ui": ["../../packages/ui/src/index.ts"],
+      "@xfcy/ui/*": ["../../packages/ui/src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue"]

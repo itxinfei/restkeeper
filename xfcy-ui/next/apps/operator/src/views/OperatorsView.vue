@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import {
   XfButton,
   XfField,
@@ -10,8 +10,8 @@ import {
   XfTable,
   XfTag,
 } from '@xfcy/ui'
-import { operatorList, operatorRoles } from '../api/mock'
-import type { DictStatus, OperatorRole, OperatorRow } from '../api/mock'
+import { isMockMode, system } from '@xfcy/api'
+import type { OperatorUser } from '@xfcy/api'
 
 type Column = {
   key: string
@@ -19,6 +19,17 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+}
+
+type DictStatus = '启用' | '停用'
+
+type OperatorRow = {
+  id: string
+  account: string
+  name: string
+  role: string
+  status: DictStatus
+  lastLogin: string
 }
 
 const columns: Column[] = [
@@ -30,9 +41,13 @@ const columns: Column[] = [
   { key: 'action', label: '操作', width: '160px' },
 ]
 
-const rows = ref<OperatorRow[]>([...operatorList])
+const rows = ref<OperatorRow[]>([])
+const users = ref<OperatorUser[]>([])
+const loading = ref(false)
+/** 后端暂无运营人员写接口，写操作仅 mock 模式可用 */
+const writable = isMockMode()
 
-const roleOptions = operatorRoles.map((item) => ({ label: item, value: item }))
+const roleOptions = ['平台运营', '运营', '客服'].map((item) => ({ label: item, value: item }))
 const statusOptions = [
   { label: '启用', value: '启用' },
   { label: '停用', value: '停用' },
@@ -42,20 +57,53 @@ function enableTone(status: string) {
   return status === '启用' ? ('success' as const) : ('danger' as const)
 }
 
-function toggle(row: OperatorRow) {
-  const index = rows.value.findIndex((item) => item.id === row.id)
-  if (index < 0) return
-  const next: DictStatus = row.status === '启用' ? '停用' : '启用'
-  rows.value[index] = { ...rows.value[index], status: next }
+type Draft = OperatorUser & { name?: string; role?: string; status?: string; lastLogin?: string }
+
+function toRow(user: OperatorUser): OperatorRow {
+  const draft = user as Draft
+  return {
+    id: user.uid,
+    account: user.loginname,
+    name: draft.name ?? user.loginname,
+    role: draft.role ?? '—',
+    status: draft.status === '停用' ? '停用' : '启用',
+    lastLogin: draft.lastLogin ?? '—',
+  }
+}
+
+async function load() {
+  loading.value = true
+  try {
+    const result = await system.operatorPage(1, 1000)
+    users.value = result.records
+    rows.value = users.value.map(toRow)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function toggle(row: OperatorRow) {
+  if (!writable) return
+  const user = users.value.find((item) => item.uid === row.id)
+  if (!user) return
+  const draft = user as Draft
+  await system.operatorUpdate({
+    ...user,
+    status: row.status === '启用' ? '停用' : '启用',
+    name: draft.name,
+    role: draft.role,
+    lastLogin: draft.lastLogin,
+  })
+  await load()
 }
 
 /* -------- 新增 / 编辑弹窗 -------- */
 
 type OperatorForm = {
-  id: number | null
+  id: string | null
   account: string
   name: string
-  role: OperatorRole | ''
+  role: string
   status: DictStatus
   password: string
 }
@@ -73,6 +121,7 @@ const accountError = ref('')
 const nameError = ref('')
 const roleError = ref('')
 const passwordError = ref('')
+const saveError = ref('')
 
 function openCreate() {
   form.value = { id: null, account: '', name: '', role: '', status: '启用', password: '' }
@@ -80,6 +129,7 @@ function openCreate() {
   nameError.value = ''
   roleError.value = ''
   passwordError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
@@ -96,16 +146,18 @@ function openEdit(row: OperatorRow) {
   nameError.value = ''
   roleError.value = ''
   passwordError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
-function save() {
+async function save() {
   const account = form.value.account.trim()
   const name = form.value.name.trim()
   accountError.value = ''
   nameError.value = ''
   roleError.value = ''
   passwordError.value = ''
+  saveError.value = ''
 
   if (!account) {
     accountError.value = '请填写账号'
@@ -124,46 +176,55 @@ function save() {
     return
   }
 
-  if (form.value.id != null) {
-    const index = rows.value.findIndex((item) => item.id === form.value.id)
-    if (index >= 0) {
-      rows.value[index] = {
-        ...rows.value[index],
-        account,
+  try {
+    if (form.value.id != null) {
+      const user = users.value.find((item) => item.uid === form.value.id)
+      if (!user) throw new Error('未找到该运营人员')
+      await system.operatorUpdate({
+        uid: user.uid,
+        loginname: account,
         name,
         role: form.value.role,
         status: form.value.status,
+        lastLogin: (user as Draft).lastLogin,
+      })
+      if (form.value.password) {
+        await system.operatorResetPwd(user.uid, form.value.password)
       }
+    } else {
+      await system.operatorSave({
+        loginname: account,
+        loginpass: form.value.password,
+        name,
+        role: form.value.role,
+        status: form.value.status,
+        lastLogin: '—',
+      })
     }
-  } else {
-    const id = rows.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
-    rows.value.push({
-      id,
-      account,
-      name,
-      role: form.value.role,
-      status: form.value.status,
-      lastLogin: '—',
-    })
+    modalOpen.value = false
+    await load()
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : '保存失败'
   }
-
-  modalOpen.value = false
 }
+
+onMounted(load)
 </script>
 
 <template>
   <div class="xfo-toolbar">
-    <span class="xfo-muted">共 {{ rows.length }} 名运营人员（示意）</span>
+    <span class="xfo-muted">共 {{ rows.length }} 名运营人员 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}</span>
     <div class="xfo-toolbar__grow"></div>
-    <XfButton @click="openCreate">＋ 新增运营人员</XfButton>
+    <XfButton :disabled="!writable" @click="openCreate">＋ 新增运营人员</XfButton>
   </div>
 
   <XfPanel>
+    <p v-if="!writable" class="xfo-note">后端未提供运营人员写接口，新增/编辑/停用仅在 mock 模式可用。</p>
     <XfTable
       :columns="columns"
       :data="rows"
       row-key="id"
-      empty-text="暂无运营人员（示意）"
+      empty-text="暂无运营人员"
       empty-description="点击右上角「新增运营人员」创建"
     >
       <template #account="{ row }">
@@ -183,9 +244,12 @@ function save() {
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">
-          <XfButton size="sm" variant="ghost" @click="openEdit(row as OperatorRow)">编辑</XfButton>
+          <XfButton size="sm" variant="ghost" :disabled="!writable" @click="openEdit(row as OperatorRow)">
+            编辑
+          </XfButton>
           <XfButton
             size="sm"
+            :disabled="!writable"
             :variant="(row as OperatorRow).status === '启用' ? 'danger' : 'secondary'"
             @click="toggle(row as OperatorRow)"
           >
@@ -198,7 +262,7 @@ function save() {
 
   <XfModal
     v-model:open="modalOpen"
-    :title="form.id ? '编辑运营人员（示意）' : '新增运营人员（示意）'"
+    :title="form.id ? '编辑运营人员' : '新增运营人员'"
   >
     <div class="xfo-form">
       <XfField label="账号" required :error="accountError || ''">
@@ -225,7 +289,7 @@ function save() {
         :label="form.id ? '重置密码' : '初始密码'"
         :required="form.id == null"
         :error="passwordError || ''"
-        :hint="form.id ? '留空表示不修改（示意）' : '至少 6 位'"
+        :hint="form.id ? '留空表示不修改' : '至少 6 位'"
       >
         <template #default="{ id }">
           <XfInput
@@ -238,6 +302,7 @@ function save() {
         </template>
       </XfField>
     </div>
+    <p v-if="saveError" class="xfo-note">{{ saveError }}</p>
     <template #footer>
       <XfButton variant="secondary" @click="modalOpen = false">取消</XfButton>
       <XfButton @click="save">保存</XfButton>

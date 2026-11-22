@@ -29,8 +29,12 @@ export {
   demoSoldoutRows,
   demoTableStats,
   mockCategories,
+  mockDictItems,
   mockDishes,
+  mockEnterpriseAccounts,
+  mockOperatorUsers,
   mockOrders,
+  mockRemovedEnterpriseAccounts,
   mockSetMeals,
   mockTableAreas,
   mockTables,
@@ -41,6 +45,11 @@ export type {
   DemoOrderStatus,
   DemoSoldoutRow,
   DemoTableStat,
+  MockDish,
+  MockEnterpriseAccount,
+  MockOperatorUser,
+  MockPlan,
+  MockRemovedEnterpriseAccount,
   Trend,
 } from './mock/data'
 
@@ -48,9 +57,10 @@ import * as auth from './modules/auth'
 import * as dish from './modules/dish'
 import * as enterprise from './modules/enterprise'
 import * as order from './modules/order'
+import * as system from './modules/system'
 import * as table from './modules/table'
 
-export { auth, dish, enterprise, order, table }
+export { auth, dish, enterprise, order, system, table }
 
 /** 金额格式化：分 → 「¥x,xxx.xx」（展示层统一入口） */
 export function formatYuan(cents?: number | null): string {

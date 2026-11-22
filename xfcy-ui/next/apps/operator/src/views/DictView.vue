@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import {
   XfButton,
   XfField,
@@ -10,8 +10,8 @@ import {
   XfTable,
   XfTag,
 } from '@xfcy/ui'
-import { dictList, dictTypes } from '../api/mock'
-import type { DictRow, DictStatus } from '../api/mock'
+import { isMockMode, system } from '@xfcy/api'
+import type { SysDictionary } from '@xfcy/api'
 
 type Column = {
   key: string
@@ -19,6 +19,17 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+}
+
+type DictStatus = '启用' | '停用'
+
+type DictRow = {
+  id: string
+  type: string
+  code: string
+  value: string
+  sort: number
+  status: DictStatus
 }
 
 const columns: Column[] = [
@@ -30,10 +41,18 @@ const columns: Column[] = [
   { key: 'action', label: '操作', width: '160px' },
 ]
 
-const rows = ref<DictRow[]>([...dictList])
+const store = system
+const rows = ref<DictRow[]>([])
+const items = ref<SysDictionary[]>([])
 const keyword = ref('')
+const loading = ref(false)
+/** 后端暂无字典写接口，写操作仅 mock 模式可用 */
+const writable = isMockMode()
 
-const typeOptions = dictTypes.map((item) => ({ label: item, value: item }))
+const typeOptions = Object.entries(system.DICT_CATEGORY_LABELS).map(([value, label]) => ({
+  label,
+  value,
+}))
 const statusOptions = [
   { label: '启用', value: '启用' },
   { label: '停用', value: '停用' },
@@ -55,35 +74,67 @@ function enableTone(status: string) {
   return status === '启用' ? ('success' as const) : ('danger' as const)
 }
 
-function toggle(row: DictRow) {
-  const index = rows.value.findIndex((item) => item.id === row.id)
-  if (index < 0) return
-  const next: DictStatus = row.status === '启用' ? '停用' : '启用'
-  rows.value[index] = { ...rows.value[index], status: next }
+function categoryLabel(category: string): string {
+  return system.DICT_CATEGORY_LABELS[category] ?? category
+}
+
+function categoryOf(label: string): string {
+  const hit = Object.entries(system.DICT_CATEGORY_LABELS).find(([, value]) => value === label)
+  return hit?.[0] ?? label
+}
+
+async function load() {
+  loading.value = true
+  try {
+    items.value = await store.dictListAll()
+    const counters: Record<string, number> = {}
+    rows.value = items.value.map((item) => {
+      const category = item.category ?? ''
+      counters[category] = (counters[category] ?? 0) + 1
+      return {
+        id: item.dictId,
+        type: categoryLabel(category),
+        code: category,
+        value: item.dictData ?? '',
+        sort: counters[category],
+        status: item.info === '停用' ? '停用' : '启用',
+      }
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+async function toggle(row: DictRow) {
+  if (!writable) return
+  const item = items.value.find((entry) => entry.dictId === row.id)
+  if (!item) return
+  item.info = row.status === '启用' ? '停用' : '启用'
+  await store.dictUpdate(item)
+  await load()
 }
 
 /* -------- 新增 / 编辑弹窗 -------- */
 
 type DictForm = {
-  id: number | null
+  id: string | null
   type: string
-  code: string
   value: string
   sort: string
   status: DictStatus
 }
 
 const modalOpen = ref(false)
-const form = ref<DictForm>({ id: null, type: '', code: '', value: '', sort: '', status: '启用' })
+const form = ref<DictForm>({ id: null, type: '', value: '', sort: '', status: '启用' })
 const typeError = ref('')
-const codeError = ref('')
 const valueError = ref('')
+const saveError = ref('')
 
 function openCreate() {
-  form.value = { id: null, type: '', code: '', value: '', sort: '', status: '启用' }
+  form.value = { id: null, type: '', value: '', sort: '', status: '启用' }
   typeError.value = ''
-  codeError.value = ''
   valueError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
@@ -91,31 +142,25 @@ function openEdit(row: DictRow) {
   form.value = {
     id: row.id,
     type: row.type,
-    code: row.code,
     value: row.value,
     sort: String(row.sort),
     status: row.status,
   }
   typeError.value = ''
-  codeError.value = ''
   valueError.value = ''
+  saveError.value = ''
   modalOpen.value = true
 }
 
-function save() {
-  const type = form.value.type
-  const code = form.value.code.trim()
+async function save() {
+  const category = categoryOf(form.value.type)
   const value = form.value.value.trim()
   typeError.value = ''
-  codeError.value = ''
   valueError.value = ''
+  saveError.value = ''
 
-  if (!type) {
+  if (!category) {
     typeError.value = '请选择字典类型'
-    return
-  }
-  if (!code) {
-    codeError.value = '请填写编码'
     return
   }
   if (!value) {
@@ -123,35 +168,38 @@ function save() {
     return
   }
 
-  const sort = Number.parseInt(form.value.sort, 10)
-  const sortValue = Number.isFinite(sort) ? sort : rows.value.length + 1
+  const label = categoryLabel(category)
 
-  if (form.value.id != null) {
-    const index = rows.value.findIndex((item) => item.id === form.value.id)
-    if (index >= 0) {
-      rows.value[index] = {
-        ...rows.value[index],
-        type,
-        code,
-        value,
-        sort: sortValue,
-        status: form.value.status,
-      }
+  try {
+    if (form.value.id != null) {
+      const item = items.value.find((entry) => entry.dictId === form.value.id)
+      if (!item) throw new Error('未找到该字典项')
+      await store.dictUpdate({
+        ...item,
+        category,
+        dictName: label,
+        dictData: value,
+        info: form.value.status,
+      })
+    } else {
+      const maxId = items.value.reduce((max, entry) => Math.max(max, Number(entry.dictId) || 0), 0)
+      await store.dictSave({
+        dictId: String(maxId + 1),
+        category,
+        dictName: label,
+        dictData: value,
+        info: form.value.status,
+      })
     }
-  } else {
-    const id = rows.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
-    rows.value.push({
-      id,
-      type,
-      code,
-      value,
-      sort: sortValue,
-      status: form.value.status,
-    })
+    // 排序仅影响展示，重新拉取后按分类内顺序计算
+    modalOpen.value = false
+    await load()
+  } catch (error) {
+    saveError.value = error instanceof Error ? error.message : '保存失败'
   }
-
-  modalOpen.value = false
 }
+
+onMounted(load)
 </script>
 
 <template>
@@ -160,16 +208,19 @@ function save() {
       <XfInput v-model="keyword" placeholder="搜索类型 / 编码 / 值" />
     </div>
     <div class="xfo-toolbar__grow"></div>
-    <span class="xfo-muted">共 {{ rows.length }} 项（示意）</span>
-    <XfButton @click="openCreate">＋ 新增字典</XfButton>
+    <span class="xfo-muted">
+      共 {{ rows.length }} 项 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}
+    </span>
+    <XfButton :disabled="!writable" @click="openCreate">＋ 新增字典</XfButton>
   </div>
 
   <XfPanel>
+    <p v-if="!writable" class="xfo-note">后端未提供字典写接口，新增/编辑/停用仅在 mock 模式可用。</p>
     <XfTable
       :columns="columns"
       :data="filtered"
       row-key="id"
-      empty-text="暂无字典（示意）"
+      empty-text="暂无字典"
       empty-description="点击右上角「新增字典」创建"
     >
       <template #type="{ row }">
@@ -186,9 +237,12 @@ function save() {
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">
-          <XfButton size="sm" variant="ghost" @click="openEdit(row as DictRow)">编辑</XfButton>
+          <XfButton size="sm" variant="ghost" :disabled="!writable" @click="openEdit(row as DictRow)">
+            编辑
+          </XfButton>
           <XfButton
             size="sm"
+            :disabled="!writable"
             :variant="(row as DictRow).status === '启用' ? 'danger' : 'secondary'"
             @click="toggle(row as DictRow)"
           >
@@ -201,7 +255,7 @@ function save() {
 
   <XfModal
     v-model:open="modalOpen"
-    :title="form.id ? '编辑字典（示意）' : '新增字典（示意）'"
+    :title="form.id ? '编辑字典' : '新增字典'"
   >
     <div class="xfo-form">
       <XfField label="字典类型" required :error="typeError || ''">
@@ -209,17 +263,12 @@ function save() {
           <XfSelect :id="id" v-model="form.type" :options="typeOptions" placeholder="请选择字典类型" />
         </template>
       </XfField>
-      <XfField label="编码" required :error="codeError || ''">
-        <template #default="{ id }">
-          <XfInput :id="id" v-model="form.code" placeholder="如 dish_category" />
-        </template>
-      </XfField>
       <XfField label="值" required :error="valueError || ''">
         <template #default="{ id }">
           <XfInput :id="id" v-model="form.value" placeholder="如 热菜" />
         </template>
       </XfField>
-      <XfField label="排序" hint="数字越小越靠前">
+      <XfField label="排序" hint="数字越小越靠前（展示用）">
         <template #default="{ id }">
           <XfInput :id="id" v-model="form.sort" placeholder="如 1" />
         </template>
@@ -230,6 +279,7 @@ function save() {
         </template>
       </XfField>
     </div>
+    <p v-if="saveError" class="xfo-note">{{ saveError }}</p>
     <template #footer>
       <XfButton variant="secondary" @click="modalOpen = false">取消</XfButton>
       <XfButton @click="save">保存</XfButton>

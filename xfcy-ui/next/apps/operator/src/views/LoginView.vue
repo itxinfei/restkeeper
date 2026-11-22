@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { XfButton, XfField, XfInput } from '@xfcy/ui'
+import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 
 const route = useRoute()
@@ -11,8 +12,9 @@ const user = useUserStore()
 const username = ref('')
 const password = ref('')
 const error = ref('')
+const submitting = ref(false)
 
-function submit() {
+async function submit() {
   if (!username.value.trim()) {
     error.value = '请输入账号'
     return
@@ -22,10 +24,16 @@ function submit() {
     return
   }
   error.value = ''
-  user.login(username.value.trim(), password.value)
-
-  const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
-  router.replace(redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/enterprises')
+  submitting.value = true
+  try {
+    await user.login(username.value.trim(), password.value)
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    router.replace(redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/enterprises')
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '登录失败'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -36,7 +44,9 @@ function submit() {
         <span class="xfo-login__logo" aria-hidden="true">心</span>
         <span>
           <div class="xfo-login__title">心飞运营中心</div>
-          <div class="xfo-login__sub">平台运营 · 示意登录（任意账号密码可进入）</div>
+          <div class="xfo-login__sub">
+            平台运营 · {{ isMockMode() ? '示意登录（任意账号密码可进入）' : '请登录运营人员账号' }}
+          </div>
         </span>
       </div>
 
@@ -66,7 +76,9 @@ function submit() {
 
         <p v-if="error" class="xfo-login__error" role="alert">{{ error }}</p>
 
-        <XfButton size="lg" block>登录</XfButton>
+        <XfButton type="submit" size="lg" block :disabled="submitting">
+          {{ submitting ? '登录中…' : '登录' }}
+        </XfButton>
       </form>
     </div>
   </div>

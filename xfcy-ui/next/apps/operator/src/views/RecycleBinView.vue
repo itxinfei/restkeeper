@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { XfButton, XfModal, XfPanel, XfTable } from '@xfcy/ui'
-import { recycleList } from '../api/mock'
-import type { RecycleRow } from '../api/mock'
+import { isMockMode } from '@xfcy/api'
+import { useEnterpriseStore } from '../stores/enterprise'
+import type { RecycleRow } from '../stores/enterprise'
 
 type Column = {
   key: string
@@ -21,20 +22,30 @@ const columns: Column[] = [
   { key: 'action', label: '操作', width: '180px' },
 ]
 
-const rows = ref<RecycleRow[]>([...recycleList])
+const store = useEnterpriseStore()
+const rows = computed(() => store.recycleRows)
 
-/* 恢复 / 彻底删除（示意） */
+/* 恢复 / 彻底删除 */
 const noticeOpen = ref(false)
 const noticeText = ref('')
 const confirmOpen = ref(false)
 const pendingRow = ref<RecycleRow | null>(null)
+const busy = ref(false)
 
-const summary = computed(() => `共 ${rows.value.length}} 家已删除企业（示意）`)
+const summary = computed(() => `共 ${rows.value.length} 家已删除企业，数据保留 30 天`)
 
-function restore(row: RecycleRow) {
-  rows.value = rows.value.filter((item) => item.id !== row.id)
-  noticeText.value = `已恢复「${row.name}」（示意，仅本地生效）`
-  noticeOpen.value = true
+async function restore(row: RecycleRow) {
+  busy.value = true
+  try {
+    await store.restore(row.id)
+    noticeText.value = `已恢复「${row.name}」，并写回企业账号列表`
+    noticeOpen.value = true
+  } catch (error) {
+    noticeText.value = error instanceof Error ? error.message : '恢复失败'
+    noticeOpen.value = true
+  } finally {
+    busy.value = false
+  }
 }
 
 function askDelete(row: RecycleRow) {
@@ -42,19 +53,36 @@ function askDelete(row: RecycleRow) {
   confirmOpen.value = true
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   const row = pendingRow.value
-  if (row) {
-    rows.value = rows.value.filter((item) => item.id !== row.id)
-  }
   pendingRow.value = null
   confirmOpen.value = false
+  if (!row) return
+  busy.value = true
+  try {
+    await store.destroy(row.id)
+    noticeText.value = `已彻底删除「${row.name}」（mock 本地生效）`
+    noticeOpen.value = true
+  } catch (error) {
+    noticeText.value = error instanceof Error ? error.message : '删除失败'
+    noticeOpen.value = true
+  } finally {
+    busy.value = false
+  }
 }
+
+onMounted(() => {
+  if (!store.loaded) void store.load()
+})
 </script>
 
 <template>
   <div class="xfo-toolbar">
-    <span class="xfo-muted">{{ summary }}，数据保留 30 天（示意）</span>
+    <span class="xfo-muted">{{ summary }} · 数据源：{{ isMockMode() ? '@xfcy/api mock' : '真实后端' }}</span>
+    <div class="xfo-toolbar__grow"></div>
+    <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
+      {{ store.loading ? '刷新中…' : '刷新' }}
+    </XfButton>
   </div>
 
   <XfPanel>
@@ -62,7 +90,7 @@ function confirmDelete() {
       :columns="columns"
       :data="rows"
       row-key="id"
-      empty-text="回收站为空（示意）"
+      empty-text="回收站为空"
       empty-description="企业被删除后将进入回收站，可恢复或彻底删除"
     >
       <template #code="{ row }">
@@ -80,8 +108,12 @@ function confirmDelete() {
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">
-          <XfButton size="sm" variant="secondary" @click="restore(row as RecycleRow)">恢复</XfButton>
-          <XfButton size="sm" variant="danger" @click="askDelete(row as RecycleRow)">彻底删除</XfButton>
+          <XfButton size="sm" variant="secondary" :disabled="busy" @click="restore(row as RecycleRow)">
+            恢复
+          </XfButton>
+          <XfButton size="sm" variant="danger" :disabled="busy" @click="askDelete(row as RecycleRow)">
+            彻底删除
+          </XfButton>
         </div>
       </template>
     </XfTable>
@@ -94,9 +126,9 @@ function confirmDelete() {
     </template>
   </XfModal>
 
-  <XfModal v-model:open="confirmOpen" title="彻底删除（示意）">
+  <XfModal v-model:open="confirmOpen" title="彻底删除">
     <p class="xfo-muted">
-      彻底删除后不可恢复，确定删除「{{ pendingRow?.name ?? '' }}」？
+      彻底删除后不可恢复，确定删除「{{ pendingRow?.name ?? '' }}」？真实后端无物理删除接口，仅 mock 模式可用。
     </p>
     <template #footer>
       <XfButton variant="secondary" @click="confirmOpen = false">取消</XfButton>

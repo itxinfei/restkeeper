@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { XfButton, XfModal } from '@xfcy/ui'
-import { areas } from '../api/mock'
-import type { PosTable } from '../api/mock'
+import type { PosTable } from '../api/pos'
 import { useOrderStore } from '../stores/order'
 import TableCard from '../components/TableCard.vue'
 
@@ -11,6 +10,7 @@ const router = useRouter()
 const order = useOrderStore()
 
 const areaId = ref('all')
+const areas = computed(() => order.areas)
 
 const filteredTables = computed(() =>
   order.tables.filter((t) => areaId.value === 'all' || t.areaId === areaId.value),
@@ -40,13 +40,17 @@ function onSelect(table: PosTable) {
   guestTable.value = table
 }
 
-function confirmGuests() {
+async function confirmGuests() {
   const table = guestTable.value
   if (!table) return
-  order.openTable(table.id, guestCount.value)
+  await order.openTable(table.id, guestCount.value)
   guestTable.value = null
   router.push({ name: 'order', params: { tableId: table.id } })
 }
+
+onMounted(() => {
+  if (!order.loaded) void order.load()
+})
 
 function closeGuestModal() {
   guestTable.value = null

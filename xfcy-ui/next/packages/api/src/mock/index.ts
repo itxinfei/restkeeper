@@ -10,19 +10,26 @@ import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import type {
   CurrentAmountCollectDTO,
   Dish,
+  EnterpriseAccount,
   PageResult,
   ProviderResult,
   StoreDTO,
+  SysDictionary,
   TableArea,
 } from '../types'
 import {
   mockCategories,
+  mockDictItems,
   mockDishes,
+  mockEnterpriseAccounts,
+  mockOperatorUsers,
   mockOrders,
+  mockRemovedEnterpriseAccounts,
   mockSetMeals,
   mockTableAreas,
   mockTables,
 } from './data'
+import type { MockOperatorUser } from './data'
 
 /** 是否启用 mock（默认开启，便于前端独立演示） */
 export function isMockMode(): boolean {
@@ -152,24 +159,216 @@ const routes: MockRoute[] = [
     handler: () => ok(true, MOCK_TOKEN),
   },
 
-  /* ---------------- enterprise ---------------- */
+  /* ---------------- enterprise（operator 域） ---------------- */
+  {
+    method: 'GET',
+    pattern: /^\/enterprise\/account\/removed\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[5])
+      const size = Number(segments[6])
+      const name = params.enterpriseName ? String(params.enterpriseName).toLowerCase() : ''
+      const filtered = mockRemovedEnterpriseAccounts.filter(
+        (item) => !name || item.enterpriseName.toLowerCase().includes(name),
+      )
+      return paginate(filtered, page, size)
+    },
+  },
   {
     method: 'GET',
     pattern: /^\/enterprise\/account\/page\/\d+\/\d+$/,
-    handler: () =>
-      paginate(
-        [
-          {
-            enterpriseId: 'ent-demo',
-            enterpriseName: '心飞餐饮（示意）',
-            shopId: '12345678',
-            phone: '13800000000',
-            status: 1,
-          },
-        ],
-        1,
-        10,
-      ) as PageResult<unknown>,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[4])
+      const size = Number(segments[5])
+      const name = params.enterpriseName ? String(params.enterpriseName).toLowerCase() : ''
+      const filtered = mockEnterpriseAccounts.filter(
+        (item) => item.isDeleted !== 1 && (!name || item.enterpriseName.toLowerCase().includes(name)),
+      )
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/enterprise\/account\/add$/,
+    handler: ({ body }) => {
+      const account = (body ?? {}) as EnterpriseAccount
+      if (!account.enterpriseName) return false
+      const id = String(
+        mockEnterpriseAccounts.reduce((max, item) => Math.max(max, Number(item.enterpriseId) || 0), 0) + 1,
+      )
+      mockEnterpriseAccounts.unshift({ ...account, enterpriseId: id, isDeleted: 0 })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/enterprise\/account$/,
+    handler: ({ body }) => {
+      const account = (body ?? {}) as EnterpriseAccount
+      const index = mockEnterpriseAccounts.findIndex((item) => item.enterpriseId === account.enterpriseId)
+      if (index < 0) return false
+      mockEnterpriseAccounts[index] = { ...mockEnterpriseAccounts[index], ...account }
+      return true
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/enterprise\/account\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      const index = mockEnterpriseAccounts.findIndex((item) => item.enterpriseId === id)
+      if (index < 0) return false
+      const [removed] = mockEnterpriseAccounts.splice(index, 1)
+      mockRemovedEnterpriseAccounts.unshift({
+        ...removed,
+        isDeleted: 1,
+        deletedAt: new Date().toLocaleString('zh-CN', { hour12: false }),
+        deletedBy: '王运营',
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/enterprise\/account\/recovery\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      const index = mockRemovedEnterpriseAccounts.findIndex((item) => item.enterpriseId === id)
+      if (index < 0) return false
+      const [restored] = mockRemovedEnterpriseAccounts.splice(index, 1)
+      const { deletedAt: _deletedAt, deletedBy: _deletedBy, ...account } = restored
+      mockEnterpriseAccounts.unshift({ ...account, isDeleted: 0 })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/enterprise\/account\/forbidden\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      const account = mockEnterpriseAccounts.find((item) => item.enterpriseId === id)
+      if (!account) return false
+      account.status = -1
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/enterprise\/account\/resetPwd$/,
+    handler: ({ params }) => {
+      const id = params.id ? String(params.id) : ''
+      const account = mockEnterpriseAccounts.find((item) => item.enterpriseId === id)
+      if (!account) return false
+      account.password = params.password ? String(params.password) : account.password
+      return true
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/enterprise\/account\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      return (
+        mockEnterpriseAccounts.find((item) => item.enterpriseId === id) ??
+        mockRemovedEnterpriseAccounts.find((item) => item.enterpriseId === id) ??
+        null
+      )
+    },
+  },
+
+  /* ---------------- sys dict / operator user（operator 域） ---------------- */
+  {
+    method: 'GET',
+    pattern: /^\/sysDict\/list\/[^/]+$/,
+    handler: ({ url }) => {
+      const category = url.split('/').pop() as string
+      return mockDictItems.filter((item) => item.category === category)
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/operator\/user\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[4])
+      const size = Number(segments[5])
+      const name = params.name ? String(params.name).toLowerCase() : ''
+      const filtered = mockOperatorUsers.filter(
+        (item) => !name || item.loginname.toLowerCase().includes(name),
+      )
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/sysDict\/add$/,
+    handler: ({ body }) => {
+      const item = (body ?? {}) as SysDictionary
+      if (!item.dictName) return false
+      mockDictItems.push({
+        ...item,
+        dictId: String(mockDictItems.reduce((max, row) => Math.max(max, Number(row.dictId) || 0), 0) + 1),
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/sysDict$/,
+    handler: ({ body }) => {
+      const item = (body ?? {}) as { dictId?: string }
+      const index = mockDictItems.findIndex((row) => row.dictId === item.dictId)
+      if (index < 0) return false
+      mockDictItems[index] = { ...mockDictItems[index], ...item }
+      return true
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/sysDict\/[^/]+$/,
+    handler: ({ url }) => {
+      const dictId = url.split('/').pop() as string
+      const index = mockDictItems.findIndex((row) => row.dictId === dictId)
+      if (index < 0) return false
+      mockDictItems.splice(index, 1)
+      return true
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/operator\/user\/add$/,
+    handler: ({ body }) => {
+      const user = (body ?? {}) as MockOperatorUser
+      if (!user.loginname) return false
+      mockOperatorUsers.push({
+        ...user,
+        uid: String(mockOperatorUsers.reduce((max, row) => Math.max(max, Number(row.uid) || 0), 0) + 1),
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/operator\/user$/,
+    handler: ({ body }) => {
+      const user = (body ?? {}) as { uid?: string }
+      const index = mockOperatorUsers.findIndex((row) => row.uid === user.uid)
+      if (index < 0) return false
+      mockOperatorUsers[index] = { ...mockOperatorUsers[index], ...user }
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/operator\/user\/resetPwd$/,
+    handler: ({ params }) => {
+      const uid = params.uid ? String(params.uid) : ''
+      const user = mockOperatorUsers.find((row) => row.uid === uid)
+      if (!user) return false
+      user.loginpass = params.password ? String(params.password) : user.loginpass
+      return true
+    },
   },
 
   /* ---------------- dish ---------------- */
@@ -426,4 +625,15 @@ export const mockAdapter: AxiosAdapter = async (config: InternalAxiosRequestConf
 }
 
 /** 供外部读取的 mock 数据（演示/测试用） */
-export { mockCategories, mockDishes, mockOrders, mockSetMeals, mockTableAreas, mockTables }
+export {
+  mockCategories,
+  mockDictItems,
+  mockDishes,
+  mockEnterpriseAccounts,
+  mockOperatorUsers,
+  mockOrders,
+  mockRemovedEnterpriseAccounts,
+  mockSetMeals,
+  mockTableAreas,
+  mockTables,
+}
