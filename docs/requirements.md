@@ -1,7 +1,12 @@
 # 餐掌柜 RestKeeper 需求文档
 
-> 版本：v2.3（重构版）｜更新日期：2026-10-24
+> 版本：v2.4（重构版）｜更新日期：2026-11-22
 > 本文档基于代码事实梳理：5 个 api 模块 28 个 HTTP Interface 服务契约（含 2 个空占位契约）、5 个 provider 全部 Controller 与 ServiceImpl、三个 web 端既有业务入口、gateway/mq/job 现状，作为本轮技术栈升级、功能补全与前端重写的开发依据。
+>
+> **v2.4 相对 v2.3 的主要变化**（阶段 4/5 收口同步，2026-11-22）
+> 1. K9 业务规则已下沉 provider（开通/编辑/续费）；K8 店长登录加固；K1 两处契约注解已补（`GET /brand/list`、`GET /table/area/list`）；K12 网关改 8080、补 routes/CORS，阶段 5 已换 reactor Sa-Token AuthFilter；OSS 换 aliyun-sdk-oss；
+> 2. Sa-Token 1.46 全链路落地（四套登录 + 切店签发、网关校验注入租户头），JWTUtil 与 jjwt 依赖已删除；
+> 3. 10.1 阶段进度、10.3 端口现状、K8/K12 处置已同步；**未落地**：Resilience4j、K6/K14/K15/K17 与中间件冒烟。
 >
 > **v2.3 相对 v2.2 的主要变化**（运维与横切契约补证，全部回代码核实）
 > 1. 新增 6.1「注册名、端口与 context-path」（provider/mq/job 逐个实证；operator/shop/es 本地无 server.port，端口在 Nacos common.yml，仓库不可见）与 6.2「库表清单」：全仓 @TableName 去重共 **29 张表 + 1 视图**（业务侧 27 表 + v_order_detail_all，job 独有 t_his_order/t_his_order_detail）；全仓库无任何 .sql 文件，均为 Flyway V1 待产出输入；
@@ -56,7 +61,7 @@
 
 管家端登录页为「企业账号 / 门店经理」双身份，由 BFF 按身份分发到对应 provider 端点。四套登录已统一换 Sa-Token 签发（阶段 5，2026-11-22）：loginId 为业务主键，会话携带 shopId/storeId/loginUserId/loginUserName/userType，网关校验后经 x-tenant-* 头注入租户上下文；JWTUtil 与 jjwt 依赖已删除。
 
-> ⚠️ **登录参数命名不统一（K13）**：员工契约用 `password`，其余三套用 `loginPass`；旧 BFF 的 VO 字段恰好交叉错位（cash 传 loginPass、enterprise 传 password）。阶段 4 重写时必须统一前端 VO 与契约参数映射，否则直接 400。
+> ✅ **K13 阶段 4 已处理**：enterprise/operator BFF 已按契约映射（enterprise LoginController 注释实证），cash 端待联调逐口验证。契约参数命名不统一（员工 password / 其余 loginPass）为现状，前端须按契约映射。
 > ✅ **K8 已修（阶段 5，2026-11-22）**：登录查询排除 status=0；密码校验先于门店绑定校验，提示语改为「门店管理员不存在或已停用」。
 
 ### 2.3 多租户模型
@@ -74,7 +79,7 @@
 
 | 对象 | 取值 | 含义 / 规则 |
 |---|---|---|
-| 企业账号 status | 0 试用 / 1 正式 / **-1 停用** | 试用 7 天到期、到期重算、**正式禁改回试用**等规则目前只在旧 operator BFF（详见 K9）；停用后不可登录；**无独立启用端点** |
+| 企业账号 status | 0 试用 / 1 正式 / **-1 停用** | 试用 7 天到期、到期重算、**正式禁改回试用**等规则已下沉 provider（阶段 4，K9）；停用后不可登录；**无独立启用端点** |
 | 门店 status | 1 营业 / 0 停业 | 经理可管门店列表、按省分组只含营业门店；管理端分页含全部状态 |
 | 门店员工 status | 1 在职 / 0 停用 | t_staff 新增列（Flyway V1 落地，`default 1`）；停用/已删除员工禁止登录；启用走通用 `PUT /staff` 改回 status=1，无独立启用端点 |
 | 菜品 / 套餐 status | 1 起售 / 0 停售 | 停售菜品连带停售关联套餐；删除菜品前先停售关联套餐再逻辑删除 |
@@ -130,7 +135,7 @@
 
 | 功能 | 端点 | 说明 |
 |---|---|---|
-| 门店经理登录 | `POST /store/manager/login` | shopId/phone/loginPass，BCrypt；⚠️ 不拦截停用账号、须先有绑定门店（K8） |
+| 门店经理登录 | `POST /store/manager/login` | shopId/phone/loginPass，BCrypt；✅ 阶段 5 已修（K8）：排除 status=0、密码校验先于门店绑定校验 |
 | 当前经理可管门店 | `GET /store/manager/list` | 契约在 IStoreService（getStoreListByManagerId），无参，经理 id 取自 TenantContext.getLoginUserId，恒带 status=1 且 store_manager_id=当前经理，返回 List<StoreDTO> |
 | 切换当前操作门店 | `PUT /store/switch/{storeId}` | 返回 Result（字段见第七章），重签含 storeId 的令牌 |
 | 集团门店分页（管理用） | `GET /store/page/{pageNo}/{pageSize}?name=` | 路径变量名是 **pageNo**；含停业门店 |
@@ -139,7 +144,7 @@
 
 | 模块 | 功能与端点 |
 |---|---|
-| 品牌 | `GET /brand/page/{pageNo}/{pageSize}`、`POST /brand`；品牌下拉 `getBrandList()` ⚠️**缺方法级注解（K1），修复后预定 `GET /brand/list`** |
+| 品牌 | `GET /brand/page/{pageNo}/{pageSize}`、`POST /brand`；品牌下拉 `getBrandList()` ✅ 阶段 4 已补 `@GetExchange("/list")` |
 | 门店 | `GET /store/page`、`POST /store`、`GET /store/{id}`、`PUT /store`；🆕 `PUT /store/disable/{id}`、🆕 `PUT /store/enable/{id}`；`GET /store/province/list`、`GET /store/province/{province}`（province 为 "all" 或空串都表示全国，恒仅返回营业门店，返回 List<StoreDTO>） |
 | 门店经理 | `GET /store/manager/page/{pageNo}/{pageSize}?criteria=`（pageNo）、`POST /store/manager/add`（name/phone/storeIds:List&lt;String&gt;）、`PUT /store/manager/update`（storeManagerId/name/phone/storeIds，先清空原归属再按列表绑定）、`DELETE /store/manager/{storeManagerId}`、`PUT /store/manager/pause/{storeManagerId}`（契约方法名 pauseStoreManager，置 status=0，不校验存在，无独立启用端点） |
 
@@ -150,7 +155,7 @@
 | 菜品分类 | `POST /dish/category/add`（name,type）、`PUT /dish/category/{id}?name=`、`GET /dish/category/page/{pageNum}/{pageSize}`、`GET /dish/category/type/{type}`（1 菜品/2 套餐；返回 **List&lt;Map&lt;String,Object&gt;&gt;** 非实体）、`DELETE /dish/category/{id}`；分类改名/删除的增强 ⏸️ P2 |
 | 菜品 | `POST /dish`（DishWithFlavors）、`PUT /dish`、`GET /dish/{id}`（resultMap 带分类+口味）、`GET /dish/enable/list/{categoryId}?name=`（点餐端可售，name 可选、实现为精确 eq）、🆕 `GET /dish/manage/page/{pageNum}/{pageSize}?name=&categoryId=&status=`（2 个 path + 3 个可选 query；name 模糊，status 留空含停售）、`PUT /dish/forbidden`、`PUT /dish/enable`、`DELETE /dish`（@RequestBody List&lt;String&gt; ids） |
 | 套餐 | `GET /setMeal/page/{pageNum}/{pageSize}?name=`、`POST /setMeal`（SetMealWithDishes）、`PUT /setMeal`、`GET /setMeal/{id}`、`PUT /setMeal/forbidden`、`PUT /setMeal/enable`、`DELETE /setMeal`（ids 数组）；套餐菜品 `GET /setMeal/dish/list/{setMealId}`、`GET /setMeal/dish/copies?dishId=&setMealId=` |
-| 桌台与区域 | 区域 `POST /table/area/add`（接口共 2 个方法）、区域列表 `listTableArea()` ⚠️**缺注解（K1），修复后预定 `GET /table/area/list`**；桌台 `POST /table/add`、`GET /table/area/{areaId}/page/{pageNum}/{pageSize}`、`GET /table/count/{areaId}/{status}`、`GET /table/{id}`、`PUT /table`；开台见 4.3（在 ITableLogService）；桌台删除等增强 ⏸️ P2 |
+| 桌台与区域 | 区域 `POST /table/area/add`（接口共 2 个方法）、区域列表 `listTableArea()` ✅ 阶段 4 已补 `@GetExchange("/list")`；桌台 `POST /table/add`、`GET /table/area/{areaId}/page/{pageNum}/{pageSize}`、`GET /table/count/{areaId}/{status}`、`GET /table/{id}`、`PUT /table`；开台见 4.3（在 ITableLogService）；桌台删除等增强 ⏸️ P2 |
 | 员工 | `GET /staff/page/{pageNum}/{pageSize}?staffName=&phone=` 🆕、`POST /staff/add`（addStaff：生成 8 位密码 BCrypt，**不发短信**）、`POST /staff`（裸 save，直通 MP，不生成密码不加密，仅收银端快速入口使用）、🆕 `PUT /staff`（编辑/启用）、🆕 `PUT /staff/pause/{id}`（停用）、`POST /staff/login`（loginName=员工姓名） |
 | 沽清 | 🆕 `GET /sellCalculation/page/{pageNum}/{pageSize}?dishName=&dishType=`（dishType 为 Integer）、`GET /sellCalculation/remainder/{dishId}`（无记录返回 -1）、`PUT /sellCalculation/decrease?dishId=&dishNumber=`（**dishNumber:Integer**，封底 0，仅记录存在时扣）、`POST /sellCalculation/add?dishId=&dishNum=`（**dishNum:int**，只回加已存在记录，⚠️ K6 命名不一致 + NPE）、`POST /sellCalculation`（@RequestBody SellCalculation 裸保存）、`DELETE /sellCalculation`（ids 数组，物理删除） |
 | 挂账单位 | `POST /credit/add`（CreditWithCompanyUsers，含关联用餐人）、`GET /credit/page/{pageNum}/{pageSize}?userName=`、`GET /credit/{id}`（queryById 回显，带关联用餐人）、`GET /credit/get/{id}`（getById 单表）、`PUT /credit`（updateInfo 修改，CreditWithCompanyUsers）、`POST /credit/saveOrUpdate`（裸 Credit）；用餐人 `GET /credit/companyUser/list/{creditId}` |
@@ -197,7 +202,7 @@
 
 ## 五、核心业务流程
 
-1. **入驻开通**：运营开通企业（shopId 8 位随机数 + 6 位随机密码 BCrypt，经 RabbitMQ `ACCOUNT_QUEUE` 短信下发；**试用 status=0、到期时间 now+7 天由 BFF 层补齐，provider 当前不写——K9**）→ 企业登录维护品牌/门店/门店经理/菜品分类/菜品套餐/桌台区域/员工。
+1. **入驻开通**：运营开通企业（shopId 8 位随机数 + 6 位随机密码 BCrypt，经 RabbitMQ `ACCOUNT_QUEUE` 短信下发；**试用 status=0、到期时间 now+7 天由 provider 统一计算（阶段 4 已下沉，K9）**）→ 企业登录维护品牌/门店/门店经理/菜品分类/菜品套餐/桌台区域/员工。
 2. **堂食主线**：员工登录 → 开台（桌台须空闲、人数不超座位数；桌台置开台并写 TableLog）→ 点餐（Order 主单生成流水号 + OrderDetail 明细，逐菜做沽清校验与扣减，@GlobalTransactional）→ 加菜（同端点带 orderId）/退菜（插退菜标记明细、原明细 -1、仅冲 totalAmount、限量菜回补沽清）→ 结账（现金/挂账；桌台置空闲；套餐明细按优惠率拆单品写 OrderDetailMeal 供菜品维度报表）。
 3. **挂账结账（分布式事务）**：校验挂账单位与用餐人（个人比对姓名、公司比对成员表）→ order 库更新订单、store 库累加 Credit 额度并写 CreditLogs，两库由 Apache Seata 2.5 `@GlobalTransactional` 保证一致 → 后续管家端 `POST /credit/repayment` 还款（超额拒绝；只写 t_credit_repayment，不写 CreditLogs）。
 4. **反结账**：按流水号查已付订单（`GET /order/number/{orderNumber}`，含明细）→ 填原因提交 `POST /order/reverse`：订单 payStatus 回退 0，向 t_reverse_order 写留痕（操作人取租户头）。**实证：不校验原单已付、不恢复桌台、不回冲沽清、不写负向明细**——反结后桌台仍显示空闲，订单以未付态重新结账即可。
@@ -219,7 +224,7 @@
 
 复合请求体 DTO：DishWithFlavors、SetMealWithDishes、CreditWithCompanyUsers、CreditPayRequest；读模型 DTO：CurrentAmountCollectDTO、CurrentHourCollectDTO、PayTypeCollectDTO、PrivilegeDTO、DayAmountCollectDTO、OrderDetailAllView、StoreDTO、DetailDTO。
 
-辅助服务：`restkeeper_service_mq`（短信：阿里云 dysmsapi20170525，dev 打桩；消费 RabbitMQ 账号队列，链路见 7.8）、`restkeeper_service_job`（XXL-Job 3.5 定时任务，独立的报表聚合 + 历史归档实现，见 7.9）、`restkeeper_gateway`（统一入口、CORS 收口、Sa-Token reactor 鉴权——**均为目标态，现状见 K12**）。
+辅助服务：`restkeeper_service_mq`（短信：阿里云 dysmsapi20170525，dev 打桩；消费 RabbitMQ 账号队列，链路见 7.8）、`restkeeper_service_job`（XXL-Job 3.5 定时任务，独立的报表聚合 + 历史归档实现，见 7.9）、`restkeeper_gateway`（统一入口、CORS 收口、Sa-Token reactor 鉴权——阶段 5 已实现）。
 
 每个业务库独立 Flyway 迁移（`V1__init.sql`），DDL 按实体与现存 Mapper XML 逆向产出；**t_staff.status 新列随 V1 一并落地**。
 
@@ -234,7 +239,7 @@
 | order provider | order-dubbo-provider | **9992** | 同上 |
 | mq | restkeeper-mq | **8089** | 同上 |
 | job | restkeeper-job | **8001**；XXL-Job executor 通信口 **9999**（双数据源） | 同上 |
-| 三个 web + gateway | — | 8081 / 8083 / 8085（gateway 与 cash 冲突） | 见 10.3 |
+| 三个 web + gateway | — | 8081 / 8083 / 8085；gateway 8080（K12 已改） | 见 10.3 |
 | microapp_web（规划） | — | 8087 | `/microApp` |
 
 provider 均无 servlet context-path 配置，路径前缀全部由契约类级 `@HttpExchange` 承担；全部服务注册中心指向既有 Nacos（192.168.200.128:8848，内网，**本轮不改动该环境**）。
@@ -259,12 +264,12 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 1. **契约即接口**：`@HttpExchange` 接口由 provider 端 `@RestController implements` 继承映射（不重复注解），web 端由 HttpServiceProxyFactory + `@LoadBalanced` RestClient.Builder 生成代理；RestClient.Builder 每次 clone 后再挂租户拦截器，避免拦截器重复累积。
 2. **返回体分层（实证）**：
    - **provider 层裸返回**：登录/切店返回 `com.restkeeper.utils.Result`，真实字段为 **`status`(int)、`desc`、`data`(Object)、`token`**（不是 code/message）；写操作直接返回 boolean；列表分页 PageResult；ES SearchResult；业务错误直接抛 `BussinessException`（common 模块，仅 message）。**五个 provider + mq + job 全仓无任何 @ControllerAdvice/@ExceptionHandler，pom 也不依赖 web_common**——异常落到 Spring 默认错误体，无统一错误码与信封（K17）。
-   - **BFF 层统一信封**：web_common 的 `ResponseAdvisor`（@RestControllerAdvice(basePackages="com.restkeeper") + ResponseBodyAdvice）把 Result 原样透传、Boolean 包 BaseResponse（false → code 300）、PageVO 包装、异常包 400；`BaseResponse` 字段 success/message/code/data（200 成功 / 300 操作失败 / 400 异常，@JsonInclude(NON_NULL)）；`GlobalExceptionHandler` 兜底 BussinessException、NotLoginException、NotRole/NotPermissionException 与兜底 Exception。阶段 4 web 重写时决定该套包装去留，**前端契约以 BFF 信封为准，直连 provider 的返回不做包装**。
+   - **BFF 层统一信封**：web_common 的 `ResponseAdvisor`（@RestControllerAdvice(basePackages="com.restkeeper") + ResponseBodyAdvice）把 Result 原样透传、Boolean 包 BaseResponse（false → code 300）、PageVO 包装、异常包 400；`BaseResponse` 字段 success/message/code/data（200 成功 / 300 操作失败 / 400 异常，@JsonInclude(NON_NULL)）；`GlobalExceptionHandler` 兜底 BussinessException、NotLoginException、NotRole/NotPermissionException 与兜底 Exception。阶段 4 已确认保留（`ResponseAdvisor`/`GlobalExceptionHandler` 仍在 web_common），**前端契约以 BFF 信封为准，直连 provider 的返回不做包装**。
 3. **参数风格**：集合/复杂体 @RequestBody（停起售、删除收 List&lt;String&gt; ids）；多散参用 @RequestParam；路径变量命名 pageNo（shop 域）与 pageNum（其余）并存，迁移时以契约为准。
 4. **日期格式分化**：报表查询参数 LocalDate + `@DateTimeFormat(iso=DATE)`（yyyy-MM-dd，必填）；挂账流水 list 的 start/end 为 LocalDateTime + `yyyy-MM-dd HH:mm:ss`（可选）。
 5. **事务**：本地 @Transactional 在 Service 层；跨库 @GlobalTransactional 标在 OrderServiceImpl 的 addOrder 与 payByCredit 两个方法上。
 6. **ES**：Spring Data Elasticsearch（Elasticsearch Java Client）+ ES 8.17 + IK；`DishEs @Document(indexName="dish")`，查询以 shop_id/store_id/is_deleted 走 filter、code/dish_name 用 wildcard 保持 SQL like 语义、按 last_update_time 倒序。**现状 es provider 仅只读检索：全仓无任何索引写入/同步代码（无 save/index/Repository、无 MQ 监听、无 Logstash 配置），索引初始数据来源缺失（K16）**——"菜品/套餐变更同步索引"是待建设能力，不是现状。
-7. **服务韧性**：Resilience4j 超时/重试/熔断（阶段 4 接入）。
+7. **服务韧性**：Resilience4j 超时/重试/熔断（**未接入，遗留**；10.4-1 原计划阶段 4 接入，实际未落地）。
 8. **短信 MQ 链路（实证）**：RabbitMQ 队列名 `account_queue`（SystemCode.SMS_ACCOUNT_QUEUE）。三个发送方——operator `EnterpriseAccountServiceImpl:62`（开通/重置密码）、shop `StoreManagerServiceImpl:236`（店长开通）、store `StaffServiceImpl:142`（**private 预留，当前无调用方**）——均为 `convertAndSend("account_queue", json)` 单参形式，**走默认交换机按队列名直投**；restkeeper-mq 的 `SmsMessageListener` @RabbitListener 消费后调阿里云 dysmsapi 发送。operator 的 RabbitMQConfig 另声明了 `sms_exchange` + `account_queue_key` 绑定，但**没有任何发送方使用该交换机（K18）**；listener 的 catch 中使用 printStackTrace，违反 java.md。
 9. **定时任务链路（实证）**：XXL-Job 3.5，执行器名 restkeeper-job，handler 名 `generateReportHandler`（须与 xxl-job-admin 中配置一致）。执行顺序：reportPay 汇总写 t_report_pay → reportDish 汇总写 t_report_dish → `OrderHistoryServiceImpl.exportToHistory` 把 lastUpdateTime < 今天的订单搬入 t_his_order / t_his_order_detail，**并物理删除 t_order / t_order_detail / t_order_detail_meal 原记录**（单事务 @Transactional(rollbackFor=Exception)、无分页全量搬运）。归档时 dishType=1 明细拷贝后删除、套餐只搬 meal 拆单记录，**套餐主明细（dishType=2）既不迁历史也不删除，主单被删后成为孤儿数据（K19）**；job 内用 System.out.println 打日志，与 K18 的 printStackTrace 一并在后置阶段整改。
 
@@ -284,7 +289,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 - 通信：Spring HTTP Interface + RestClient；Apache Seata 2.5.0（自动代理）；Resilience4j 2.4.0
 - 数据：MyBatis-Plus 3.5.17（boot4 starter）、HikariCP、mysql-connector-j、Flyway、Redis(Lettuce)、Spring Data Elasticsearch + ES 8.17 + IK
 - 认证/文档：Sa-Token 1.46（servlet/reactor/redis-jackson）、spring-security-crypto(BCrypt)、springdoc 3.1.1
-- 工具：fastjson2 2.0.66、EasyExcel 4.0.3、jjwt 0.12.7（过渡期）、XXL-Job 3.5.0、dysmsapi20170525、aliyun-sdk-oss 3.18.5、Lombok 1.18.48
+- 工具：fastjson2 2.0.66、EasyExcel 4.0.3、XXL-Job 3.5.0、dysmsapi20170525、aliyun-sdk-oss 3.18.5、Lombok 1.18.48
 - 前端：pnpm workspace（apps/operator、enterprise、h5 + packages/shared）、Vue 3.5/TS/Vite 8/Element Plus/Pinia/ECharts 6；Taro 4.3.1 + React 18 + NutUI（先双端 spike）
 
 ## 十、分阶段计划、迁移对照与当前进度
@@ -293,10 +298,10 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 | 阶段 | 内容 | 状态（2026-11-22） |
 |---|---|---|
-| 1 | 地基三层升级（BOM/JDK25、common 桥接、租户透传三件套、叶子 pom 锁版） | ✅ 完成（待提交） |
-| 2 | api 契约层 @HttpExchange 化（28 契约、PageResult、复合 DTO、@Schema 迁移） | ✅ 完成（待提交） |
-| 3 | provider 适配（薄 Controller、MP 3.5.17、双租户、Seata 2.5、ES Spring Data、BCrypt 登录） | ✅ 主体完成（待提交） |
-| P0/P1 补端点 | 8 个缺口端点 + 员工登录加固 + 账号注释勘误 | ✅ 完成（编译验证通过，待提交） |
+| 1 | 地基三层升级（BOM/JDK25、common 桥接、租户透传三件套、叶子 pom 锁版） | ✅ 完成（已提交） |
+| 2 | api 契约层 @HttpExchange 化（28 契约、PageResult、复合 DTO、@Schema 迁移） | ✅ 完成（已提交） |
+| 3 | provider 适配（薄 Controller、MP 3.5.17、双租户、Seata 2.5、ES Spring Data、BCrypt 登录） | ✅ 主体完成（已提交） |
+| P0/P1 补端点 | 8 个缺口端点 + 员工登录加固 + 账号注释勘误 | ✅ 完成（已提交） |
 | 4 | web BFF 适配 + 网关 | ✅ 完成（已提交） |
 | 5 | Sa-Token 全链路落地 + 中间件环境冒烟 | 🚧 进行中（Sa-Token 全链路已落地并编译通过；中间件冒烟待环境就绪） |
 | 6 | 新增 restkeeper_microapp_web（8087、/microApp、C 端 StpLogic） | 未开始 |
@@ -344,14 +349,14 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 | operator_web | 8083 | bootstrap.yml:21-33 残留整段 dubbo 配置，阶段 4 删除 |
 | enterprise_web | 8081 | 无 context-path；OSS 老 starter 硬编码 2.1.1.RELEASE |
 | cash_web | **8085** | 无 context-path |
-| gateway | **8085** | **与 cash_web 冲突（K12），阶段 4 必须改一个**；仓库内无 routes（在 Nacos dataId `gateway.yml`，迁移前需补录）、无 CORS、无 Sa-Token，仅自研 JWT AuthFilter；pom 残留 openfeign |
+| gateway | **8080** | ✅ K12 已修：端口改 8080、routes 已补录、CORS 收口、阶段 5 已换 reactor Sa-Token AuthFilter、openfeign 已删 |
 | microapp_web（规划） | 8087 | context-path `/microApp` |
 
 三个 web 的本地 bootstrap.yml 均**未配置** server.servlet.context-path，旧路径前缀全部由类级 @RequestMapping 承担；Nacos common.yml 中是否另有 context-path 需在中间件阶段核实。
 
 ### 10.4 阶段 4 任务清单
 
-1. 三个 web 的 19 个 `@Reference` 文件（operator 2 / enterprise 12 / cash 5）全部换 HttpServiceProxyFactory 客户端 Bean（租户拦截器 + Resilience4j）；当前三 web pom 已无 dubbo 依赖，模块处于编译不过状态；
+1. 三个 web 的 19 个 `@Reference` 文件（operator 2 / enterprise 12 / cash 5）全部换 HttpServiceProxyFactory 客户端 Bean（租户拦截器已接入；**Resilience4j 未接入，遗留**）；
 2. 按 10.2 对照表逐端点改写 Controller；挂账结账编排拆为 pay/payByCredit 两个调用；
 3. 登录参数映射统一（K13：password/loginPass + 旧 VO 交叉错位）；沽清散参命名统一（dishNum/dishNumber）；
 4. PageVO → PageResult；javax → jakarta（EasyExcel 导出保留在 enterprise CreditController#export）；Guava/commons-lang 旧调用改 JDK；
@@ -366,27 +371,39 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 > ✅ **阶段 5 第一批收口（2026-11-22）**：Sa-Token 1.46 全链路落地——operator/shop/store provider 与 gateway 引入 sa-token starter（redis-jackson 共享会话；token-name=Authorization、有效期 3 天、并发/共享/读头不读 Cookie）；运营/企业/店长/员工四套登录与切店改 `StpUtil.login` 签发 + 会话属性（shopId/storeId/loginUserId/loginUserName/userType）；网关 AuthFilter 改 reactor `SaReactorSyncHolder` + `StpUtil.checkLogin()` 校验并经 x-tenant-* 头注入租户；K8 已修；删除 JWTUtil 与 jjwt 依赖。全反应堆 `mvn compile -DskipTests` 通过。**遗留**：K17 provider 统一异常 advice、Resilience4j 接入 web_common、中间件环境冒烟（Nacos/Redis/MySQL/RabbitMQ/ES）与端到端登录联调，待环境就绪。
 
+### 10.5 阶段 5 遗留与待排期（2026-11-22 审查）
+
+| 项 | 现状 | 处置 |
+|---|---|---|
+| K6 沽清回加 | `SellCalculationServiceImpl#add` 仍 `dishNum` 命名、`getByDishId` 为 null 时 NPE、只 update 不 insert | 补 upsert（无记录则 insert）+ 统一参数名 dishNumber；阶段 4 未执行，重新排期 |
+| K14 挂账流水 | `OrderServiceImpl:240-243` creditAmount 重复赋值；orderAmount/receivedAmount 取订单总额 | 与业务核对字段语义后修正 |
+| K15 常量注释 | `SystemCode:32-33` TABLE_STATUS 注释与值错位 | 顺手修注释 |
+| K17 provider 异常 | 五 provider + mq + job 无 @ControllerAdvice，异常走 Spring 默认错误体 | 引入公共异常 advice（复用 BussinessException、对齐错误码）或 BFF 统一转换 |
+| Resilience4j | 全仓无依赖与配置（10.4-1 原计划阶段 4） | 在 web_common HTTP 客户端接入超时/重试/熔断 |
+| 员工 `POST /staff` 裸 save | 直通 MP 不生成密码不加密（StaffController#save） | 风险项：建议停用或改为走 addStaff 加密 |
+| 中间件冒烟 | Nacos/Redis/MySQL/RabbitMQ/ES 未就绪 | 环境就绪后验证 Sa-Token Redis 会话、reactor 上下文、端到端登录 |
+
 **后置（用户确认「以后再说」）**：docker-compose 全套、Nacos 配置清单（含 gateway.yml 路由、common.yml context-path 核实）、正式部署文档、Prometheus/Grafana/Zipkin 面板；mq 短信真实通道联调；5 库 Flyway DDL 在数据层改造时随代码产出（t_staff.status 含在内）。
 
 ## 十一、已知缺口与后置项（实证）
 
 | 编号 | 问题 | 影响 | 处置 |
 |---|---|---|---|
-| K1 | `IBrandService.getBrandList()`、`ITableAreaService.listTableArea()` 契约与 Controller 方法上均无方法级映射注解 | 品牌下拉、区域列表 HTTP 不可达 | 阶段 4 首批补 `@GetExchange("/list")` 并回归 |
+| K1 | `IBrandService.getBrandList()`、`ITableAreaService.listTableArea()` 契约与 Controller 方法上均无方法级映射注解 | 品牌下拉、区域列表 HTTP 不可达 | ✅ 阶段 4 已补 `@GetExchange("/list")`（代码实证） |
 | K2 | t_staff 无 status 列，实体已加字段 | 员工停用/登录加固运行时依赖该列 | Flyway V1 补 `status int default 1`，此前勿联调员工登录 |
 | K3 | 三个 web 共 19 个文件仍 import Dubbo @Reference、3 份 @EnableSwagger2 配置、swagger2 注解遍布，而 pom 已无 dubbo 依赖 | 三 web 模块当前编译不过，前端无 BFF 可调 | 阶段 4 整体重写（10.4） |
 | K4 | 企业账号「启用」无独立端点 | 启用须选试用/正式并重算到期 | 产品决策：走编辑接口，非缺陷 |
 | K5 | 菜品管理端分页经类级 resultMap 嵌套 select 装配分类/口味，存在 N+1（每页约 20 次子查询） | 教学规模可接受 | 后续优化改分步查询或 XML join |
-| K6 | `SellCalculationServiceImpl.add` 按 dishId 查不到记录时直接 NPE，只 update 不 insert/upsert；且 add 散参 dishNum 与 decrease 的 dishNumber 命名不一致 | 对未建沽清记录的菜品退菜回加会 500 | 阶段 4 前补 upsert 并统一参数名 |
+| K6 | `SellCalculationServiceImpl.add` 按 dishId 查不到记录时直接 NPE，只 update 不 insert/upsert；且 add 散参 dishNum 与 decrease 的 dishNumber 命名不一致 | 对未建沽清记录的菜品退菜回加会 500 | ⚠️ **未修**（阶段 4 未执行）：补 upsert + 统一参数名 dishNumber，见 10.5 |
 | K7 | `ReverseOrderServiceImpl.reverse` 不校验原单 payStatus 是否已付 | 裸调端点可反结未付订单 | 前端入口已由 `GET /order/number/{orderNumber}` 限已付；建议 provider 补已付前置校验 |
 | K8 | 门店经理登录不排除 status=0/-1（停用者仍可登录）；且「至少绑定一家门店」校验先于密码校验 | 停用店长可登录；无门店时密码错误也提示门店问题 | ✅ 阶段 5 已修：StoreManagerServiceImpl 登录查询加 status≠0 条件、校验顺序调整、新增经理补 status=ENABLED |
 | K9 | provider 的企业 add 不写 status/expireTime/applicationTime、update 不重算到期；7 天试用、续费基准 now、正式禁改试用只存在于旧 Dubbo BFF | 直连新端点开通的账号 status=null 无法登录；BFF 不重写则业务规则丢失 | ✅ 阶段 4 已下沉 provider：EnterpriseAccountServiceImpl#add/updateById 单点计算与校验（7 天试用 / 基准 now / 正式禁改试用） |
 | K10 | 退菜只冲订单 totalAmount，不回冲 payAmount/抹零/赠菜/免单 | 已付后退菜产生实收与应收差额 | 与产品确认是否接受；如需红冲需补账单差额处理 |
 | K11 | 全工程无 @Version，开台/换台/清台仅按 status 现值判断 | 并发操作存在竞态覆盖 | 教学项目可接受；前端勿缓存桌台状态，必要时加乐观锁 |
 | K12 | gateway 与 cash_web 同占 8085；网关仓库内无 routes、无 CORS、仍用自研 JWT AuthFilter、pom 残留 openfeign | 同机启动端口冲突；鉴权/CORS 与目标态不符 | ✅ 阶段 4 改端口 8080、补路由、CORS 收口、删 openfeign；阶段 5 已换 reactor Sa-Token AuthFilter |
-| K13 | 登录参数命名不统一（员工 password / 其余 loginPass），旧 BFF VO 字段交叉错位；分页路径变量 pageNo/pageNum 并存 | BFF 迁移时极易 400 | 10.4-3 统一映射并在联调时逐口验证 |
-| K14 | 挂账结账写 CreditLogs 时 creditAmount 重复赋值、orderAmount/receivedAmount 取订单总额而非本次实收；还款不写 CreditLogs | 挂账流水金额字段语义可疑；流水页统计不到还款 | 阶段 4 联调时与业务核对字段语义后修正 |
-| K15 | `SystemCode` 桌台常量注释与值错位（TABLE_STATUS_LOCKED=2 注释写「1 锁定」、OPENED=1 注释写「2 已开桌」）；shopId 仅递归查重无 DB 唯一约束 | 不影响按常量名使用；shopId 极小概率重复 | 顺手修注释；shopId 唯一约束随 Flyway V1 评估 |
+| K13 | 登录参数命名不统一（员工 password / 其余 loginPass），旧 BFF VO 字段交叉错位；分页路径变量 pageNo/pageNum 并存 | BFF 迁移时极易 400 | ✅ 阶段 4 已映射（enterprise/operator，代码实证）；cash 待联调逐口验证 |
+| K14 | 挂账结账写 CreditLogs 时 creditAmount 重复赋值、orderAmount/receivedAmount 取订单总额而非本次实收；还款不写 CreditLogs | 挂账流水金额字段语义可疑；流水页统计不到还款 | ⚠️ **未修**（代码实证 OrderServiceImpl:240-243）：待与业务核对字段语义后修正 |
+| K15 | `SystemCode` 桌台常量注释与值错位（TABLE_STATUS_LOCKED=2 注释写「1 锁定」、OPENED=1 注释写「2 已开桌」）；shopId 仅递归查重无 DB 唯一约束 | 不影响按常量名使用；shopId 极小概率重复 | ⚠️ **未修**（SystemCode:32-33 注释仍错位）：顺手修注释；shopId 唯一约束随 Flyway V1 评估 |
 | K16 | ES `dish` 索引无任何写入/同步代码：es provider 只用 ElasticsearchOperations 只读查询，全仓无 save/index/Repository、无变更监听、无全量重建入口 | 索引没有数据来源，中间件环境搭好后收银端检索依然查不到菜品 | 中间件阶段定同步方案（推荐：菜品写后 MQ 异步双写 + 提供全量重建接口），并补索引 mapping 与 IK 词典初始化 |
 | K17 | 五个 provider + mq + job 全仓无 @ControllerAdvice/@ExceptionHandler，pom 不依赖 web_common；BussinessException 抛出后走 Spring 默认错误体（无统一 code/信封） | HTTP Interface 客户端难以按结构解析业务错误；BFF 直连 provider 后两层错误格式不一致 | 阶段 4/5 决策：provider 引入公共异常 advice（复用 common 的 BussinessException、对齐错误码），或在 BFF 层统一转换；第七章第 2 条已记录两层现状 |
 | K18 | MQ 三个发送方全部直投默认交换机的 account_queue；RabbitMQConfig 声明的 `sms_exchange`/`account_queue_key` 绑定从未被使用；SmsMessageListener catch 后 `e.printStackTrace()` 吞异常 | 交换机/绑定是死配置；短信发送失败只留标准错误流、无重试无告警 | 后置：统一改走命名交换机或删除死配置；catch 改 slf4j 占位符日志并按需配置死信队列 |
