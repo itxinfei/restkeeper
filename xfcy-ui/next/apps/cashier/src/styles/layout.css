@@ -1,0 +1,903 @@
+/**
+ * 心飞收银端 · 触屏布局与页面样式
+ * 依据 DESIGN.md §5.2（顶栏 64px + 左菜品网格 + 右订单面板）、§2 状态色、§6 组件规范。
+ * 触屏保证：命中区 ≥48px、按钮间距 ≥12px、关键金额 ≥28px、桌台卡片 ≥96px、菜品大卡 ≥120px。
+ * 仅引用 @xfcy/ui 的设计 token，不写规范外色值。
+ */
+
+/* ---------- 数字等宽（§3） ---------- */
+.xfc-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ---------- 框架（§5.2） ---------- */
+.xfc-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--c-bg);
+}
+
+.xfc-topbar {
+  flex: none;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.xfc-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.xfc-brand__logo {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--c-primary);
+  color: var(--c-surface);
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  font-weight: var(--weight-strong);
+}
+
+.xfc-brand__text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.xfc-brand__text b {
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-brand__text small {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-topbar__title {
+  font-size: 18px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-topbar__table {
+  height: 28px;
+  font-size: 13px;
+}
+
+.xfc-topbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.xfc-topbar__time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+}
+
+.xfc-topbar__time b {
+  font-size: 16px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-topbar__time small {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--c-primary);
+  color: var(--c-surface);
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.xfc-avatar:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.xfc-user {
+  position: relative;
+}
+
+.xfc-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 50;
+  min-width: 160px;
+  padding: 4px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+
+.xfc-menu__head {
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--c-border);
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-menu__item {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-xs);
+  text-align: left;
+  font-size: 14px;
+  color: var(--c-text);
+  cursor: pointer;
+}
+
+.xfc-menu__item:hover {
+  background: var(--c-surface-2);
+}
+
+.xfc-menu__item.is-danger {
+  color: var(--c-danger);
+}
+
+.xfc-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ---------- 登录（复用统一登录样式） ---------- */
+.xfc-login {
+  height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--c-bg);
+}
+
+.xfc-login__card {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.xfc-login__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.xfc-login__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--c-primary);
+  color: var(--c-surface);
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: var(--weight-strong);
+}
+
+.xfc-login__title {
+  font-size: 22px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-login__sub {
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--c-text-3);
+}
+
+.xfc-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.xfc-login__error {
+  font-size: 13px;
+  color: var(--c-danger);
+}
+
+/* ---------- 桌台盘点 ---------- */
+.xfc-tables {
+  height: 100%;
+  overflow-y: auto;
+  padding: 20px 24px 32px;
+}
+
+.xfc-tables__bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.xfc-areas {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.xfc-area {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.xfc-area.is-active {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: var(--c-surface);
+  font-weight: var(--weight-emphasis);
+}
+
+.xfc-area__count {
+  font-size: 13px;
+  opacity: 0.85;
+}
+
+.xfc-legend {
+  margin-left: auto;
+  display: flex;
+  gap: 16px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfc-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.xfc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.xfc-dot.is-free {
+  background: var(--c-success);
+}
+
+.xfc-dot.is-opened {
+  background: var(--c-warning);
+}
+
+.xfc-dot.is-locked {
+  background: var(--c-text-3);
+}
+
+.xfc-tgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.xfc-tcard {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  text-align: left;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.xfc-tcard:hover {
+  border-color: var(--c-primary);
+}
+
+.xfc-tcard:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.xfc-tcard.is-locked {
+  background: var(--c-surface-2);
+  cursor: not-allowed;
+}
+
+.xfc-tcard.is-locked:hover {
+  border-color: var(--c-border);
+}
+
+.xfc-tcard__name {
+  font-size: 20px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-tcard.is-locked .xfc-tcard__name {
+  color: var(--c-text-3);
+}
+
+.xfc-tcard__meta {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfc-tcard__foot {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xfc-tcard__hint {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+/* ---------- 通用步进按钮（命中区 48px） ---------- */
+.xfc-step {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.xfc-step:hover:not(:disabled) {
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+}
+
+.xfc-step:disabled {
+  background: var(--c-bg);
+  color: var(--c-text-3);
+  cursor: not-allowed;
+}
+
+.xfc-step:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+/* ---------- 开台人数 ---------- */
+.xfc-guests {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.xfc-guests__label {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfc-guests__stepper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.xfc-guests__num {
+  min-width: 64px;
+  text-align: center;
+  font-size: 28px;
+  font-weight: var(--weight-strong);
+  color: var(--c-text);
+}
+
+.xfc-guests__quick {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.xfc-guests__quickbtn {
+  min-width: 64px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text-2);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.xfc-guests__quickbtn.is-active {
+  background: var(--c-primary-soft);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+  font-weight: var(--weight-emphasis);
+}
+
+/* ---------- 点餐收银 ---------- */
+.xfc-pos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  height: 100%;
+}
+
+.xfc-pos__left {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border-right: 1px solid var(--c-border);
+}
+
+.xfc-cats {
+  flex: none;
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  overflow-x: auto;
+}
+
+.xfc-cat {
+  flex: none;
+  min-height: 48px;
+  padding: 0 20px;
+  border-radius: var(--radius-pill);
+  border: 1px solid transparent;
+  background: var(--c-neutral-soft);
+  color: var(--c-text-2);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.xfc-cat.is-active {
+  background: var(--c-primary);
+  color: var(--c-surface);
+  font-weight: var(--weight-emphasis);
+}
+
+.xfc-dishes {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.xfc-group {
+  margin-bottom: 20px;
+}
+
+.xfc-group__title {
+  margin-bottom: 12px;
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+/* 菜品大卡（≥120px，命中区 ≥48px） */
+.xfc-dgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.xfc-dish {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  text-align: left;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+}
+
+.xfc-dish:hover {
+  border-color: var(--c-primary);
+}
+
+.xfc-dish:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.xfc-dish.is-disabled {
+  background: var(--c-bg);
+  cursor: not-allowed;
+}
+
+.xfc-dish.is-disabled:hover {
+  border-color: var(--c-border);
+}
+
+.xfc-dish__thumb {
+  width: 100%;
+  height: 64px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, var(--c-neutral-soft), var(--c-border));
+  display: grid;
+  place-items: center;
+  font-size: 28px;
+}
+
+.xfc-dish__name {
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-dish.is-disabled .xfc-dish__name {
+  color: var(--c-text-3);
+}
+
+.xfc-dish__desc {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-dish__row {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.xfc-dish__price {
+  font-size: 16px;
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- 订单面板 ---------- */
+.xfc-order {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+  background: var(--c-surface);
+}
+
+.xfc-order__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.xfc-order__headtext {
+  min-width: 0;
+}
+
+.xfc-order__title {
+  font-size: 16px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-order__table {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-order__notice {
+  flex: none;
+  margin: 0;
+  padding: 8px 16px;
+  background: var(--c-primary-soft);
+  color: var(--c-primary);
+  font-size: 13px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.xfc-order__lines {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 8px 16px;
+}
+
+.xfc-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.xfc-line:last-child {
+  border-bottom: none;
+}
+
+.xfc-line__info {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xfc-line__name {
+  font-size: 14px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xfc-line__sub {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfc-line__qty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.xfc-line__num {
+  min-width: 28px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-line__sum {
+  min-width: 64px;
+  text-align: right;
+  font-size: 14px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfc-order__total {
+  flex: none;
+  padding: 12px 16px;
+  border-top: 1px solid var(--c-border);
+  background: var(--c-surface-2);
+}
+
+.xfc-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.xfc-row:last-child {
+  margin-bottom: 0;
+}
+
+.xfc-row--big {
+  font-size: 16px;
+  color: var(--c-text);
+}
+
+.xfc-row--big .xfc-num {
+  font-size: 28px;
+  font-weight: var(--weight-strong);
+  color: var(--c-text);
+}
+
+.is-success {
+  color: var(--c-success);
+}
+
+.xfc-order__ops {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px 16px;
+}
+
+/* 主操作「结账」：成功色（§5.2 主操作按钮 --c-primary 或 --c-success） */
+.xfc-pay-btn {
+  grid-column: 1 / -1;
+  --c-primary: var(--c-success);
+  --c-primary-hover: color-mix(in srgb, var(--c-success) 85%, #000000);
+  --c-primary-soft: var(--c-success-soft);
+}
+
+/* ---------- 换台 ---------- */
+.xfc-order__muted {
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfc-movetables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.xfc-movetable {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.xfc-movetable:hover {
+  border-color: var(--c-primary);
+}
+
+.xfc-movetable b {
+  font-size: 15px;
+  color: var(--c-text);
+}
+
+.xfc-movetable span {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+/* ---------- 结账弹窗 ---------- */
+.xfc-checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.xfc-checkout__amount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--c-surface-2);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.xfc-checkout__total {
+  font-size: 28px;
+  font-weight: var(--weight-strong);
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.xfc-checkout__label {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfc-checkout__methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.xfc-paymethod {
+  min-height: 56px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.xfc-paymethod.is-active {
+  background: var(--c-primary-soft);
+  border-color: var(--c-primary);
+  color: var(--c-primary);
+  font-weight: var(--weight-emphasis);
+}
+
+.xfc-checkout__change {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--c-success-soft);
+  color: var(--c-success);
+  font-size: 14px;
+}
+
+.xfc-checkout__change.is-short {
+  background: var(--c-danger-soft);
+  color: var(--c-danger);
+}
+
+.xfc-checkout__change b {
+  font-size: 20px;
+  font-weight: var(--weight-strong);
+  font-variant-numeric: tabular-nums;
+}
+
+.xfc-checkout__error {
+  font-size: 13px;
+  color: var(--c-danger);
+}
+
+/* ---------- 响应式（§7：1024–1280 两栏） ---------- */
+@media (max-width: 1100px) {
+  .xfc-pos {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+@media (max-width: 900px) {
+  .xfc-topbar {
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+
+  .xfc-pos {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 45%);
+  }
+
+  .xfc-pos__left {
+    border-right: none;
+    border-bottom: 1px solid var(--c-border);
+  }
+}
