@@ -1,0 +1,28 @@
+spring:
+  application:
+    name: microapp-web
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.200.128:8848
+      config:
+        server-addr: 192.168.200.128:8848
+        file-extension: yml
+        sharedDataids: common.yml
+        refreshable-dataids: common.yml
+server:
+  port: 8087
+  servlet:
+    context-path: /microApp
+
+# Sa-Token：与 B 端同一 token 头，但 C 端使用独立 StpLogic（见 MicroappStpLogicConfig）
+sa-token:
+  token-name: Authorization
+  timeout: 259200
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  is-read-header: true
+  is-read-cookie: false

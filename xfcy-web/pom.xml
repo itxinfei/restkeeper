@@ -16,6 +16,7 @@
         <module>xfcy-operator-web</module>
         <module>xfcy-enterprise-web</module>
         <module>xfcy-cash-web</module>
+        <module>xfcy-microapp-web</module>
     </modules>
 
     <dependencies>
