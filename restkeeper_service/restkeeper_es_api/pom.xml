@@ -11,5 +11,20 @@
 
     <artifactId>restkeeper_es_api</artifactId>
 
+    <dependencies>
+        <!-- 与其余 4 个 api 模块保持一致：经 service_common 获得 spring-web / swagger v3 / jackson 注解 -->
+        <dependency>
+            <groupId>com.restkeeper</groupId>
+            <artifactId>restkeeper_service_common</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <!-- 仅 DishEs 上的 @Document/@Field 注解编译需要；optional 不向 web 调用方传递 -->
+        <dependency>
+            <groupId>org.springframework.data</groupId>
+            <artifactId>spring-data-elasticsearch</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
 
 </project>

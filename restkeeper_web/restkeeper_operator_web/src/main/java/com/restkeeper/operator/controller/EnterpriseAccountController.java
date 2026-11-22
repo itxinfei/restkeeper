@@ -1,170 +1,125 @@
 package com.restkeeper.operator.controller;
 
+import com.restkeeper.http.PageResult;
 import com.restkeeper.operator.entity.EnterpriseAccount;
 import com.restkeeper.operator.service.IEnterpriseAccountService;
 import com.restkeeper.operator.vo.AddEnterpriseAccountVO;
-import com.restkeeper.operator.vo.ResetPwdVO;
 import com.restkeeper.operator.vo.UpdateEnterpriseAccountVO;
-import com.restkeeper.response.vo.PageVO;
 import com.restkeeper.utils.AccountStatus;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestClientResponseException;
 
-import java.time.LocalDateTime;
-
-@Api(tags = {"企业帐号管理"})
+/**
+ * 企业账号接口（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ * 端点路径对齐 provider 契约 {@link IEnterpriseAccountService}。
+ * K9：7 天试用 / 到期重算（基准 now）/ 正式禁改试用已下沉 provider。
+ */
+@Tag(name = "企业账号")
 @RestController
-@RequestMapping("/enterprise")
 public class EnterpriseAccountController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IEnterpriseAccountService enterpriseAccountService;
+    private final IEnterpriseAccountService enterpriseAccountService;
 
-    @ApiOperation("查询企业帐号列表")
-    @GetMapping("/pageList/{page}/{pageSize}")
-    public PageVO<EnterpriseAccount> findListByPage(@PathVariable("page") int page,
-                                                    @PathVariable("pageSize") int pageSize,
-                                                    @RequestParam(value = "enterpriseName",required = false) String enterpriseName){
-        return new PageVO<EnterpriseAccount>(enterpriseAccountService.queryPageByName(page, pageSize, enterpriseName));
+    public EnterpriseAccountController(IEnterpriseAccountService enterpriseAccountService) {
+        this.enterpriseAccountService = enterpriseAccountService;
     }
 
-    @ApiOperation("新增帐号")
-    @PostMapping("/add")
-    public boolean add(@RequestBody AddEnterpriseAccountVO addEnterpriseAccountVO){
+    @Operation(summary = "企业账号分页")
+    @GetMapping("/enterprise/account/page/{pageNum}/{pageSize}")
+    public PageResult<EnterpriseAccount> queryPageByName(@PathVariable("pageNum") int pageNum,
+                                                         @PathVariable("pageSize") int pageSize,
+                                                         @RequestParam(value = "enterpriseName", required = false) String enterpriseName) {
+        return enterpriseAccountService.queryPageByName(pageNum, pageSize, enterpriseName);
+    }
 
-        //bean拷贝
+    @Operation(summary = "回收站分页")
+    @GetMapping("/enterprise/account/removed/page/{pageNum}/{pageSize}")
+    public PageResult<EnterpriseAccount> queryRemovedPage(@PathVariable("pageNum") int pageNum,
+                                                          @PathVariable("pageSize") int pageSize,
+                                                          @RequestParam(value = "enterpriseName", required = false) String enterpriseName) {
+        return enterpriseAccountService.queryRemovedPage(pageNum, pageSize, enterpriseName);
+    }
+
+    @Operation(summary = "开通企业")
+    @PostMapping("/enterprise/account/add")
+    public boolean add(@RequestBody AddEnterpriseAccountVO addEnterpriseAccountVO) {
         EnterpriseAccount enterpriseAccount = new EnterpriseAccount();
-        BeanUtils.copyProperties(addEnterpriseAccountVO,enterpriseAccount);
-
-        //设置时间
-        LocalDateTime localDateTime = LocalDateTime.now();
-        enterpriseAccount.setApplicationTime(localDateTime);
-
-        //设置过期时间
-        LocalDateTime expireTime = null;
-        //试用期默认为7天
-        if (addEnterpriseAccountVO.getStatus() == 0){
-            //试用帐号
-            expireTime = localDateTime.plusDays(7);
-        }
-        if (addEnterpriseAccountVO.getStatus() == 1){
-            //设置到期时间
-            expireTime = localDateTime.plusDays(addEnterpriseAccountVO.getValidityDay());
-        }
-
-        if (expireTime != null){
-            enterpriseAccount.setExpireTime(expireTime);
-        }else{
-            throw new RuntimeException("帐号类型信息设置有误");
-        }
-
-        return enterpriseAccountService.add(enterpriseAccount);
+        BeanUtils.copyProperties(addEnterpriseAccountVO, enterpriseAccount);
+        // K9：申请时间、7 天试用或正式 validityDay 的到期时间由 provider 统一计算
+        return enterpriseAccountService.add(enterpriseAccount, addEnterpriseAccountVO.getValidityDay());
     }
 
-    //根据id查询帐号信息
-    @ApiOperation("帐号查询")
-    @GetMapping("/getById/{id}")
-    public EnterpriseAccount getById(@PathVariable("id") String id){
+    @Operation(summary = "按主键查询")
+    @GetMapping("/enterprise/account/{id}")
+    public EnterpriseAccount getById(@PathVariable("id") String id) {
         return enterpriseAccountService.getById(id);
     }
 
-    //帐号编辑
-    @ApiOperation("帐号编辑")
-    @PutMapping("/update")
-    public Result update(@RequestBody UpdateEnterpriseAccountVO updateEnterpriseAccountVO){
-
+    @Operation(summary = "按主键更新")
+    @PutMapping("/enterprise/account")
+    public Result update(@RequestBody UpdateEnterpriseAccountVO updateEnterpriseAccountVO) {
         Result result = new Result();
 
-        //查询原有企业账户信息
-        EnterpriseAccount enterpriseAccount = enterpriseAccountService.getById(updateEnterpriseAccountVO.getEnterpriseId());
-        if (enterpriseAccount == null){
+        EnterpriseAccount enterpriseAccount = new EnterpriseAccount();
+        BeanUtils.copyProperties(updateEnterpriseAccountVO, enterpriseAccount);
+
+        try {
+            // K9：正式禁改试用、到期以 now 重算均由 provider 校验/计算
+            boolean flag = enterpriseAccountService.updateById(enterpriseAccount, updateEnterpriseAccountVO.getValidityDay());
+            result.setStatus(flag ? ResultCode.success : ResultCode.error);
+            result.setDesc(flag ? "修改成功" : "修改失败");
+        } catch (RestClientResponseException e) {
             result.setStatus(ResultCode.error);
-            result.setDesc("修改账户不存在");
-            return result;
+            result.setDesc("修改失败，请检查帐号状态");
         }
-
-        //修改状态信息
-        if (updateEnterpriseAccountVO.getStatus() != null){
-
-            //正式期不能修改为试用期
-            if (updateEnterpriseAccountVO.getStatus() ==0 && enterpriseAccount.getStatus() ==1){
-                result.setStatus(ResultCode.error);
-                result.setDesc("不能将正式帐号修改为试用帐号");
-                return result;
-            }
-
-            //试用改为正式
-            if (updateEnterpriseAccountVO.getStatus() == 1 && enterpriseAccount.getStatus() ==0){
-                //到期时间
-                LocalDateTime localDateTime = LocalDateTime.now();
-                //到期时间
-                LocalDateTime expireTime = localDateTime.plusDays(updateEnterpriseAccountVO.getValidityDay());
-                enterpriseAccount.setApplicationTime(localDateTime);
-                enterpriseAccount.setExpireTime(expireTime);
-            }
-
-            //正式添加延期
-            if (updateEnterpriseAccountVO.getStatus() ==1 && enterpriseAccount.getStatus() == 1){
-                LocalDateTime now = LocalDateTime.now();
-                //设置到期时间
-                LocalDateTime expireTime = now.plusDays(updateEnterpriseAccountVO.getValidityDay());
-                enterpriseAccount.setExpireTime(expireTime);
-            }
-        }
-
-        //其他字段，bean拷贝
-        BeanUtils.copyProperties(updateEnterpriseAccountVO,enterpriseAccount);
-
-        //执行修改
-        boolean flag = enterpriseAccountService.updateById(enterpriseAccount);
-        if (flag){
-            //修改成功
-            result.setStatus(ResultCode.success);
-            result.setDesc("修改成功");
-            return result;
-        }else{
-            //修改失败
-            result.setStatus(ResultCode.error);
-            result.setDesc("修改失败");
-            return result;
-        }
+        return result;
     }
 
-    //帐号删除
-    @ApiOperation("帐号删除")
-    @DeleteMapping("/deleteById/{id}")
-    public boolean deleteById(@PathVariable("id") String id){
+    @Operation(summary = "逻辑删除")
+    @DeleteMapping("/enterprise/account/{id}")
+    public boolean removeById(@PathVariable("id") String id) {
         return enterpriseAccountService.removeById(id);
     }
 
-    //帐号还原
-    @ApiOperation("帐号还原")
-    @PutMapping("/recovery/{id}")
-    public boolean recovery(@PathVariable("id") String id){
+    @Operation(summary = "账号还原")
+    @PutMapping("/enterprise/account/recovery/{id}")
+    public boolean recovery(@PathVariable("id") String id) {
         return enterpriseAccountService.recovery(id);
     }
 
-    //帐号禁用
-    @ApiOperation("帐号禁用")
-    @PutMapping("/forbidden/{id}")
-    public boolean forbidden(@PathVariable("id") String id){
-
-        //查询原有账户信息
+    @Operation(summary = "停用账号")
+    @PutMapping("/enterprise/account/forbidden/{id}")
+    public boolean forbidden(@PathVariable("id") String id) {
         EnterpriseAccount enterpriseAccount = enterpriseAccountService.getById(id);
         enterpriseAccount.setStatus(AccountStatus.Forbidden.getStatus());
-        return enterpriseAccountService.updateById(enterpriseAccount);
+        // 停用不涉及到期重算，validityDay 传 null
+        return enterpriseAccountService.updateById(enterpriseAccount, null);
     }
 
-    //重置密码
-    @ApiOperation("重置密码")
-    @PutMapping("/resetPwd")
-    public boolean resetPwd(@RequestBody ResetPwdVO resetPwdVO){
-        return enterpriseAccountService.restPwd(resetPwdVO.getId(),resetPwdVO.getPwd());
+    @Operation(summary = "重置密码")
+    @PutMapping("/enterprise/account/resetPwd")
+    public boolean restPwd(@RequestParam("id") String id,
+                           @RequestParam("password") String password) {
+        return enterpriseAccountService.restPwd(id, password);
     }
 
+    @Operation(summary = "企业账号登录")
+    @PostMapping("/enterprise/account/login")
+    public Result login(@RequestParam("shopId") String shopId,
+                        @RequestParam("phone") String phone,
+                        @RequestParam("loginPass") String loginPass) {
+        return enterpriseAccountService.login(shopId, phone, loginPass);
+    }
 }

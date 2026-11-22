@@ -2,195 +2,167 @@ package com.restkeeper.store.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.exception.BussinessException;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.Dish;
 import com.restkeeper.store.entity.DishFlavor;
 import com.restkeeper.store.entity.SetMeal;
 import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.mapper.DishMapper;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@org.springframework.stereotype.Service("dishService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> implements IDishService {
+/**
+ * 菜品本地服务
+ */
+@Service("dishService")
+public class DishServiceImpl extends ServiceImpl<DishMapper, Dish> {
 
     @Autowired
-    @Qualifier("dishFlavorService")
-    private IDishFlavorService dishFlavorService;
+    private DishFlavorServiceImpl dishFlavorService;
 
-    @Override
+    @Autowired
+    private SetMealDishServiceImpl setMealDishService;
+
+    @Autowired
+    private SetMealServiceImpl setMealService;
+
+    /**
+     * 新增菜品及口味
+     */
     @Transactional
     public boolean save(Dish dish, List<DishFlavor> dishFlavorList) {
+        this.save(dish);
 
-        try {
-            //保存菜品
-            this.save(dish);
-
-            //保存口味
-            dishFlavorList.forEach((dishFlavor)->{
-                dishFlavor.setDishId(dish.getId());
-            });
-            dishFlavorService.saveBatch(dishFlavorList);
-
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        dishFlavorList.forEach(dishFlavor -> dishFlavor.setDishId(dish.getId()));
+        dishFlavorService.saveBatch(dishFlavorList);
+        return true;
     }
 
-    @Override
+    /**
+     * 修改菜品及口味（先删后建）
+     */
     @Transactional
     public boolean update(Dish dish, List<DishFlavor> dishFlavorList) {
+        this.updateById(dish);
 
-        try {
-            //修改菜品基础信息
-            this.updateById(dish);
+        QueryWrapper<DishFlavor> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(DishFlavor::getDishId, dish.getId());
+        dishFlavorService.remove(queryWrapper);
 
-            //删除原有的口味列表
-            QueryWrapper<DishFlavor> queryWrapper = new QueryWrapper<>();
-            queryWrapper.lambda().eq(DishFlavor::getDishId,dish.getId());
-            dishFlavorService.remove(queryWrapper);
-
-            //新增口味列表信息
-            dishFlavorList.forEach((dishFlavor)->{
-                dishFlavor.setDishId(dish.getId());
-            });
-            dishFlavorService.saveBatch(dishFlavorList);
-
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
+        dishFlavorList.forEach(dishFlavor -> dishFlavor.setDishId(dish.getId()));
+        dishFlavorService.saveBatch(dishFlavorList);
+        return true;
     }
 
-    @Override
+    /**
+     * 根据分类与名称查询可售菜品（下拉用精简列）
+     */
     public List<Map<String, Object>> findEnableDishListInfo(String categoryId, String name) {
-
         QueryWrapper<Dish> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().select(Dish::getId,Dish::getName,Dish::getStatus,Dish::getPrice);
+        queryWrapper.lambda().select(Dish::getId, Dish::getName, Dish::getStatus, Dish::getPrice);
 
-        if (StringUtils.isNotEmpty(categoryId)){
-            queryWrapper.lambda().eq(Dish::getCategoryId,categoryId);
+        if (StringUtils.hasText(categoryId)) {
+            queryWrapper.lambda().eq(Dish::getCategoryId, categoryId);
         }
-
-        if (StringUtils.isNotEmpty(name)){
-            queryWrapper.lambda().eq(Dish::getName,name);
+        if (StringUtils.hasText(name)) {
+            queryWrapper.lambda().eq(Dish::getName, name);
         }
-
         queryWrapper.lambda().eq(Dish::getStatus, SystemCode.ENABLED);
-
         return this.listMaps(queryWrapper);
     }
 
-    @Autowired
-    @Qualifier("setMealDishService")
-    private ISetMealDishService setMealDishService;
-
-    @Autowired
-    @Qualifier("setMealService")
-    private ISetMealService setMealService;
-
-    @Override
-    @Transactional
-    public boolean forbiddenDishes(List<String> ids) {
-
-        try {
-            //校验参数
-            if (ids == null || ids.isEmpty()){
-                throw new BussinessException("校验参数失败");
-            }
-
-            //批量修改菜品为停用状态
-            UpdateWrapper<Dish> updateWrapper = new UpdateWrapper<>();
-            updateWrapper.lambda().set(Dish::getStatus,SystemCode.FORBIDDEN).in(Dish::getId,ids);
-            this.update(updateWrapper);
-
-            //判断是否存在关联的套餐
-            QueryWrapper<SetMealDish> queryWrapper= new QueryWrapper<>();
-            queryWrapper.select("DISTINCT setmeal_id").lambda().in(SetMealDish::getDishId,ids);
-            List<SetMealDish> setMealDishList = setMealDishService.list(queryWrapper);
-
-            List<String> setMealIds = setMealDishList.stream().map(d -> d.getSetMealId()).collect(Collectors.toList());
-
-            if (setMealIds!=null && !setMealIds.isEmpty()){
-
-                //如果有，修改关联的套餐为停用状态
-                UpdateWrapper<SetMeal> updateWrapper1 = new UpdateWrapper<>();
-                updateWrapper1.lambda().set(SetMeal::getStatus,SystemCode.FORBIDDEN).in(SetMeal::getId,setMealIds);
-                setMealService.update(updateWrapper1);
-            }
-
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    /**
+     * 管理端菜品分页：与点餐端 findEnableDishListInfo 不同，不强制 status=1，name 用 like。
+     * 经 Dish 类级 resultMap 以嵌套 select 装配分类与口味，每页少量数据，N+1 在教学项目可接受。
+     */
+    public PageResult<Dish> queryManagePage(int pageNum, int pageSize, String name, String categoryId, Integer status) {
+        Page<Dish> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<Dish> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.hasText(name)) {
+            queryWrapper.lambda().like(Dish::getName, name);
         }
-
-
-
+        if (StringUtils.hasText(categoryId)) {
+            queryWrapper.lambda().eq(Dish::getCategoryId, categoryId);
+        }
+        if (status != null) {
+            queryWrapper.lambda().eq(Dish::getStatus, status);
+        }
+        return PageResult.of(this.page(page, queryWrapper));
     }
 
-    @Override
+    /**
+     * 批量停售菜品，并连带停售关联套餐
+     */
     @Transactional
-    public boolean enableDishes(List<String> ids) {
-
-        //校验参数
-        if (ids == null || ids.isEmpty()){
+    public boolean forbiddenDishes(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
             throw new BussinessException("校验参数失败");
         }
 
-        //批量修改菜品状态为起售
         UpdateWrapper<Dish> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.lambda().set(Dish::getStatus,SystemCode.ENABLED).in(Dish::getId,ids);
+        updateWrapper.lambda().set(Dish::getStatus, SystemCode.FORBIDDEN).in(Dish::getId, ids);
+        this.update(updateWrapper);
 
+        List<String> setMealIds = listRelatedSetMealIds(ids);
+        if (!setMealIds.isEmpty()) {
+            UpdateWrapper<SetMeal> setMealUpdateWrapper = new UpdateWrapper<>();
+            setMealUpdateWrapper.lambda().set(SetMeal::getStatus, SystemCode.FORBIDDEN).in(SetMeal::getId, setMealIds);
+            setMealService.update(setMealUpdateWrapper);
+        }
+        return true;
+    }
+
+    /**
+     * 批量起售菜品
+     */
+    @Transactional
+    public boolean enableDishes(List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            throw new BussinessException("校验参数失败");
+        }
+
+        UpdateWrapper<Dish> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.lambda().set(Dish::getStatus, SystemCode.ENABLED).in(Dish::getId, ids);
         return this.update(updateWrapper);
     }
 
-    @Override
+    /**
+     * 批量逻辑删除菜品，关联套餐先停售
+     */
     @Transactional
     public boolean deleteDishes(List<String> ids) {
-
-        try {
-            //校验参数
-            if (ids == null || ids.isEmpty()){
-                throw new BussinessException("校验参数失败");
-            }
-
-            //查询关联的套餐信息
-            QueryWrapper<SetMealDish> queryWrapper = new QueryWrapper<>();
-            queryWrapper.select("DISTINCT setmeal_id").lambda().in(SetMealDish::getDishId,ids);
-            List<SetMealDish> setMealDishList = setMealDishService.list(queryWrapper);
-            List<String> setMealIds = setMealDishList.stream().map(d -> d.getSetMealId()).collect(Collectors.toList());
-            if (!setMealIds.isEmpty()){
-                //如果有的话，停售相关的套餐信息
-                UpdateWrapper<SetMeal> updateWrapper = new UpdateWrapper<>();
-                updateWrapper.lambda().set(SetMeal::getStatus,SystemCode.FORBIDDEN).in(SetMeal::getId,setMealIds);
-                setMealService.update(updateWrapper);
-            }
-
-            //批量逻辑删除菜品信息
-            this.removeByIds(ids);
-
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+        if (ids == null || ids.isEmpty()) {
+            throw new BussinessException("校验参数失败");
         }
 
+        List<String> setMealIds = listRelatedSetMealIds(ids);
+        if (!setMealIds.isEmpty()) {
+            UpdateWrapper<SetMeal> updateWrapper = new UpdateWrapper<>();
+            updateWrapper.lambda().set(SetMeal::getStatus, SystemCode.FORBIDDEN).in(SetMeal::getId, setMealIds);
+            setMealService.update(updateWrapper);
+        }
+
+        this.removeByIds(ids);
+        return true;
     }
 
-
+    /**
+     * 查询与给定菜品关联的去重套餐 id
+     */
+    private List<String> listRelatedSetMealIds(List<String> dishIds) {
+        QueryWrapper<SetMealDish> queryWrapper = new QueryWrapper<>();
+        queryWrapper.select("DISTINCT setmeal_id").lambda().in(SetMealDish::getDishId, dishIds);
+        List<SetMealDish> setMealDishList = setMealDishService.list(queryWrapper);
+        return setMealDishList.stream().map(SetMealDish::getSetMealId).collect(Collectors.toList());
+    }
 }

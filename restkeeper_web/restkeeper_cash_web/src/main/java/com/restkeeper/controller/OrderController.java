@@ -1,9 +1,7 @@
 package com.restkeeper.controller;
 
-import com.google.common.collect.Lists;
-import com.restkeeper.constants.OrderPayType;
 import com.restkeeper.constants.SystemCode;
-import com.restkeeper.dto.CreditDTO;
+import com.restkeeper.dto.CreditPayRequest;
 import com.restkeeper.dto.DetailDTO;
 import com.restkeeper.entity.OrderDetailEntity;
 import com.restkeeper.entity.OrderEntity;
@@ -20,76 +18,90 @@ import com.restkeeper.utils.ResultCode;
 import com.restkeeper.utils.SequenceUtils;
 import com.restkeeper.vo.OrderDetailVO;
 import com.restkeeper.vo.OrderVO;
-import com.restkeeper.vo.PayVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Api(tags = {"订单接口"})
+/**
+ * 订单（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ * 下单与加菜合并为同一端点 {@code POST /order/add}：body 带 orderId 为加菜，不带为下单。
+ */
+@Tag(name = "订单")
 @RestController
-@RequestMapping("/order")
 public class OrderController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IOrderService orderService;
+    private final IOrderService orderService;
+    private final IDishService dishService;
+    private final ISetMealService setMealService;
+    private final IReverseOrderService reverseOrderService;
 
-    @Reference(version = "1.0.0",check = false)
-    private IDishService dishService;
+    public OrderController(IOrderService orderService,
+                           IDishService dishService,
+                           ISetMealService setMealService,
+                           IReverseOrderService reverseOrderService) {
+        this.orderService = orderService;
+        this.dishService = dishService;
+        this.setMealService = setMealService;
+        this.reverseOrderService = reverseOrderService;
+    }
 
-    @Reference(version = "1.0.0",check = false)
-    private IReverseOrderService reverseOrderService;
-
-    @Reference(version = "1.0.0",check = false)
-    private ISetMealService setMealService;
-
-    @ApiOperation("下单")
-    @PostMapping("/add")
-    public Result addOrder(@RequestBody OrderVO orderVO){
+    @Operation(summary = "下单 / 加菜（带 orderId 为加菜）")
+    @PostMapping("/order/add")
+    public Result addOrder(@RequestBody OrderVO orderVO) {
+        if (orderVO.getOrderId() != null && !orderVO.getOrderId().isEmpty()) {
+            return plusDish(orderVO);
+        }
 
         OrderEntity orderEntity = new OrderEntity();
-
         orderEntity.setTableId(orderVO.getTableId());
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_NOTPAY);
-        orderEntity.setOperatorName(TenantContext.getLoginUserName());    orderEntity.setOrderSource(SystemCode.ORDER_SOURCE_STORE);
+        orderEntity.setOperatorName(TenantContext.getLoginUserName());
+        orderEntity.setOrderSource(SystemCode.ORDER_SOURCE_STORE);
         orderEntity.setTotalAmount(orderVO.getTotalAmount());
         orderEntity.setPersonNumbers(orderVO.getPersonNumbers());
         orderEntity.setOrderRemark(orderVO.getOrderRemark());
         orderEntity.setCreateTime(LocalDateTime.now());
 
-
-        List<OrderDetailEntity> orderDetails = Lists.newArrayList();
-
-        orderVO.getDishes().forEach(dishVO->{
-
+        List<OrderDetailEntity> orderDetails = new ArrayList<>();
+        orderVO.getDishes().forEach(dishVO -> {
             OrderDetailEntity orderDetailEntity = new OrderDetailEntity();
-
             orderDetailEntity.setDishName(dishVO.getDishName());
             orderDetailEntity.setDishType(dishVO.getType());
             orderDetailEntity.setDishId(dishVO.getDishId());
-            orderDetailEntity.setDishAmount(dishVO.getDishNumber()*dishVO.getPrice());
+            orderDetailEntity.setDishAmount(dishVO.getDishNumber() * dishVO.getPrice());
             orderDetailEntity.setDishNumber(dishVO.getDishNumber());
             orderDetailEntity.setFlavorRemark(dishVO.getFlavorList().toString());
             orderDetailEntity.setTableId(orderVO.getTableId());
             orderDetailEntity.setDishPrice(dishVO.getPrice());
-            DishCategory dishCategory = null;
-            if (orderDetailEntity.getDishType() == 1){
-                dishCategory = dishService.getById(dishVO.getDishId()).getDishCategory();
-            }else{
-                dishCategory = setMealService.getById(dishVO.getDishId()).getCategory();
-            }
 
-            if (dishCategory!=null){
+            DishCategory dishCategory = null;
+            if (dishVO.getType() != null && dishVO.getType() == 1) {
+                Dish dish = dishService.getById(dishVO.getDishId());
+                if (dish != null) {
+                    dishCategory = dish.getDishCategory();
+                }
+            } else {
+                var setMeal = setMealService.getById(dishVO.getDishId());
+                if (setMeal != null && setMeal.getCategory() != null) {
+                    orderDetailEntity.setDishCategoryName(setMeal.getCategory().getName());
+                }
+            }
+            if (dishCategory != null) {
                 orderDetailEntity.setDishCategoryName(dishCategory.getName());
             }
             orderDetails.add(orderDetailEntity);
         });
         orderEntity.setOrderDetails(orderDetails);
-
 
         String orderId = orderService.addOrder(orderEntity);
 
@@ -99,20 +111,14 @@ public class OrderController {
         return result;
     }
 
-    @ApiOperation("加菜")
-    @PostMapping("/plusDish/orderId/{orderId}")
-    public Result plusDish(@PathVariable String orderId, @RequestBody List<OrderDetailVO> details){
-
-        OrderEntity orderEntity = orderService.getById(orderId);
+    private Result plusDish(OrderVO orderVO) {
+        OrderEntity orderEntity = orderService.getById(orderVO.getOrderId());
 
         List<OrderDetailEntity> orderDetailEntities = new ArrayList<>();
+        int amount = 0;
 
-        int amount =0;
-
-        for (OrderDetailVO detail : details) {
-
+        for (OrderDetailVO detail : orderVO.getDishes()) {
             OrderDetailEntity orderDetailEntity = new OrderDetailEntity();
-
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
             orderDetailEntity.setTableId(orderEntity.getTableId());
@@ -123,26 +129,23 @@ public class OrderController {
             orderDetailEntity.setDishName(detail.getDishName());
             orderDetailEntity.setDishPrice(detail.getPrice());
             orderDetailEntity.setDishNumber(detail.getDishNumber());
-            orderDetailEntity.setDishAmount(detail.getDishNumber()*detail.getPrice());
+            orderDetailEntity.setDishAmount(detail.getDishNumber() * detail.getPrice());
             orderDetailEntity.setDishRemark(detail.getDishRemark());
             orderDetailEntity.setFlavorRemark(detail.getFlavorList().toString());
 
             Dish dish = dishService.getById(detail.getDishId());
-            if (dish != null){
+            if (dish != null && dish.getDishCategory() != null) {
                 orderDetailEntity.setDishCategoryName(dish.getDishCategory().getName());
             }
 
-            amount+=orderDetailEntity.getDishAmount();
-
-
+            amount += orderDetailEntity.getDishAmount();
             orderDetailEntities.add(orderDetailEntity);
         }
 
-
         orderEntity.setOrderDetails(orderDetailEntities);
-        orderEntity.setTotalAmount(amount+orderEntity.getTotalAmount());
+        orderEntity.setTotalAmount(amount + orderEntity.getTotalAmount());
 
-        orderId = orderService.addOrder(orderEntity);
+        String orderId = orderService.addOrder(orderEntity);
 
         Result result = new Result();
         result.setStatus(ResultCode.success);
@@ -151,69 +154,40 @@ public class OrderController {
         return result;
     }
 
-    /**
-     * 退菜
-     * @param detailId
-     * @param remarks
-     * @return
-     */
-    @PostMapping("/returnDish/{detailId}")
-    public boolean returnDish(@PathVariable String detailId, @RequestBody List<String> remarks){
-        DetailDTO detailDTO = new DetailDTO();
-        detailDTO.setRemarks(remarks);
-        detailDTO.setDetailId(detailId);
-        return  orderService.returnDish(detailDTO);
+    @Operation(summary = "退菜")
+    @PostMapping("/order/returnDish")
+    public boolean returnDish(@RequestBody DetailDTO detailDTO) {
+        return orderService.returnDish(detailDTO);
     }
 
-    /**
-     * 结账
-     * @param payVO
-     * @return
-     */
-    @PostMapping("/pay/orderId/{orderId}")
-    public boolean pay(@PathVariable String orderId, @RequestBody PayVO payVO){
-        OrderEntity orderEntity= orderService.getById(orderId);
-        orderEntity.setPayAmount(payVO.getPayAmount());
-        orderEntity.setSmallAmount(payVO.getSmallAmount());
-        orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
-        orderEntity.setPayType(payVO.getPayType());
-
-        //挂账
-        if (payVO.getPayType() == OrderPayType.CREDIT.getType()){
-            CreditDTO creditDTO =new CreditDTO();
-            creditDTO.setCreditId(payVO.getCreditId());
-            creditDTO.setCreditAmount(payVO.getCreditAmount());
-            creditDTO.setCreditUserName(payVO.getCreditUserName());
-            return orderService.pay(orderEntity,creditDTO);
-        }
+    @Operation(summary = "现金结账")
+    @PostMapping("/order/pay")
+    public boolean pay(@RequestBody OrderEntity orderEntity) {
         return orderService.pay(orderEntity);
     }
 
-    /**
-     * 换桌
-     * @param orderId
-     * @param targetTableId
-     * @return
-     */
-    @GetMapping("/changeTable/{orderId}/{targetTableId}")
-    public boolean changeTable(@PathVariable String orderId,@PathVariable String targetTableId){
-        return orderService.changeTable(orderId,targetTableId);
+    @Operation(summary = "挂账结账")
+    @PostMapping("/order/pay/credit")
+    public boolean payByCredit(@RequestBody CreditPayRequest request) {
+        return orderService.payByCredit(request);
     }
 
-    /**
-     * 反结账
-     * @param orderId 反结账订单
-     * @param remarks 反结账原因
-     * @return
-     */
-    @PostMapping("/reverse/{orderId}")
-    public boolean reverse(@PathVariable String orderId, @RequestBody  List<String> remarks){
-        ReverseOrder reverseOrder=new ReverseOrder();
-        reverseOrder.setOrderId(orderId);
-        reverseOrder.setRemark(remarks.toString());
+    @Operation(summary = "换台")
+    @PutMapping("/order/changeTable")
+    public boolean changeTable(@RequestParam("orderId") String orderId,
+                               @RequestParam("targetTableId") String targetTableId) {
+        return orderService.changeTable(orderId, targetTableId);
+    }
+
+    @Operation(summary = "按流水号查已付订单（反结账入口）")
+    @GetMapping("/order/number/{orderNumber}")
+    public OrderEntity getByOrderNumber(@PathVariable("orderNumber") String orderNumber) {
+        return orderService.getByOrderNumber(orderNumber);
+    }
+
+    @Operation(summary = "反结账")
+    @PostMapping("/order/reverse")
+    public boolean reverse(@RequestBody ReverseOrder reverseOrder) {
         return reverseOrderService.reverse(reverseOrder);
     }
-
-
-
 }

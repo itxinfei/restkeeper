@@ -1,61 +1,92 @@
 package com.restkeeper.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.common.collect.Lists;
-import com.restkeeper.aop.TenantAnnotation;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.OrderDetailType;
 import com.restkeeper.constants.OrderPayType;
 import com.restkeeper.constants.SystemCode;
-import com.restkeeper.dto.*;
+import com.restkeeper.dto.CurrentAmountCollectDTO;
+import com.restkeeper.dto.CurrentHourCollectDTO;
+import com.restkeeper.dto.CreditDTO;
+import com.restkeeper.dto.CreditPayRequest;
+import com.restkeeper.dto.DetailDTO;
+import com.restkeeper.dto.PayType;
+import com.restkeeper.dto.PayTypeCollectDTO;
+import com.restkeeper.dto.PrivilegeDTO;
 import com.restkeeper.entity.OrderDetailEntity;
 import com.restkeeper.entity.OrderDetailMealEntity;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.order.mapper.OrderMapper;
-import com.restkeeper.service.IOrderDetailMealService;
-import com.restkeeper.service.IOrderDetailService;
-import com.restkeeper.service.IOrderService;
-import com.restkeeper.store.entity.*;
-import com.restkeeper.store.service.*;
+import com.restkeeper.store.entity.Credit;
+import com.restkeeper.store.entity.CreditCompanyUser;
+import com.restkeeper.store.entity.CreditLogs;
+import com.restkeeper.store.entity.Dish;
+import com.restkeeper.store.entity.Table;
+import com.restkeeper.store.entity.TableLog;
+import com.restkeeper.store.service.ICreditCompanyUserService;
+import com.restkeeper.store.service.ICreditLogService;
+import com.restkeeper.store.service.ICreditService;
+import com.restkeeper.store.service.ISellCalculationService;
+import com.restkeeper.store.service.ISetMealDishService;
+import com.restkeeper.store.service.ITableLogService;
+import com.restkeeper.store.service.ITableService;
 import com.restkeeper.tenant.TenantContext;
 import com.restkeeper.utils.SequenceUtils;
-import io.seata.spring.annotation.GlobalTransactional;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Reference;
-import org.apache.dubbo.config.annotation.Service;
-import org.apache.dubbo.rpc.RpcContext;
+import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-@org.springframework.stereotype.Service("orderService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> implements IOrderService {
+/**
+ * 订单本地服务：订单库写入走 MyBatis-Plus；沽清、桌台、挂账等门店库操作经 HTTP Interface 代理。
+ * 跨库写操作（下单、挂账结账）由 Apache Seata 2.5 {@link GlobalTransactional} 保证最终一致。
+ */
+@Service("orderService")
+public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
     @Autowired
-    @Qualifier("orderDetailService")
-    private IOrderDetailService orderDetailService;
+    private OrderDetailServiceImpl orderDetailService;
 
-    @Reference(version = "1.0.0",check = false)
+    @Autowired
+    private OrderDetailMealServiceImpl orderDetailMealService;
+
+    @Autowired
     private ISellCalculationService sellCalculationService;
 
-    @Override
-    //@Transactional
+    @Autowired
+    private ITableService tableService;
+
+    @Autowired
+    private ICreditService creditService;
+
+    @Autowired
+    private ICreditCompanyUserService creditCompanyUserService;
+
+    @Autowired
+    private ICreditLogService creditLogService;
+
+    @Autowired
+    private ITableLogService tableLogService;
+
+    @Autowired
+    private ISetMealDishService setMealDishService;
+
+    //下单（跨订单/门店两库，Seata 全局事务）
     @GlobalTransactional
     public String addOrder(OrderEntity orderEntity) {
 
-
-
         //生成订单流水号
-        if (StringUtils.isEmpty(orderEntity.getOrderNumber())){
-            String storeId = RpcContext.getContext().getAttachment("storeId");
+        if (!StringUtils.hasText(orderEntity.getOrderNumber())){
+            String storeId = TenantContext.getStoreId();
             orderEntity.setOrderNumber(SequenceUtils.getSequence(storeId));
         }
         this.saveOrUpdate(orderEntity);
@@ -67,11 +98,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
 
-            //沽清检查
-            //手动的向TenantContext中设置相关的租户信息
-            TenantContext.addAttachment("shopId",RpcContext.getContext().getAttachment("shopId"));
-            TenantContext.addAttachment("storeId",RpcContext.getContext().getAttachment("storeId"));
-
+            //沽清检查（租户上下文由 TenantContextHeaderFilter 从请求头还原，HTTP 客户端拦截器透传）
             Integer remainder = sellCalculationService.getRemainderCount(orderDetailEntity.getDishId());
             if (remainder != -1){
                 if (remainder < orderDetailEntity.getDishNumber()){
@@ -81,8 +108,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
 
             //沽清扣减
             sellCalculationService.decrease(orderDetailEntity.getDishId(),orderDetailEntity.getDishNumber());
-
-            //int i =1/0;
         });
         orderDetailService.saveBatch(orderDetailEntities);
 
@@ -90,9 +115,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return orderEntity.getOrderId();
     }
 
-    @Override
+    //退菜
     @Transactional
-    @TenantAnnotation
     public boolean returnDish(DetailDTO detailDTO) {
 
         //获取到原有的订单详情信息
@@ -129,10 +153,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
             orderEntity.setTotalAmount(orderEntity.getTotalAmount()-detailEntity.getDishPrice());
             this.updateById(orderEntity);
 
-            //沽清  store
-            /*TenantContext.addAttachment("shopId",RpcContext.getContext().getAttachment("shopId"));
-            TenantContext.addAttachment("storeId",RpcContext.getContext().getAttachment("storeId"));*/
-
+            //退菜回补沽清
             Integer remainderCount = sellCalculationService.getRemainderCount(detailEntity.getDishId());
             if (remainderCount > 0){
                 //沽清中有该菜品信息
@@ -148,12 +169,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return true;
     }
 
-    @Reference(version = "1.0.0",check = false)
-    private ITableService tableService;
-
-    @Override
+    //现金结账
     @Transactional
-    @TenantAnnotation
     public boolean pay(OrderEntity orderEntity) {
 
         //修改订单主表的信息
@@ -169,19 +186,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return true;
     }
 
-    @Reference(version = "1.0.0",check = false)
-    private ICreditService creditService;
+    //挂账结账（跨 order/store 两库，Seata 全局事务）
+    @GlobalTransactional
+    public boolean payByCredit(CreditPayRequest request) {
 
-    @Reference(version = "1.0.0",check = false)
-    private ICreditCompanyUserService creditCompanyUserService;
-
-    @Reference(version = "1.0.0",check = false)
-    private ICreditLogService creditLogService;
-
-    @Override
-    @Transactional
-    @TenantAnnotation
-    public boolean pay(OrderEntity orderEntity, CreditDTO creditDTO) {
+        OrderEntity orderEntity = request.getOrder();
+        CreditDTO creditDTO = request.getCredit();
 
         this.updateById(orderEntity);
 
@@ -207,10 +217,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
             //公司用户
             List<CreditCompanyUser> companyUsers = null;
             if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
-
-                /*QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();
-                queryWrapper.lambda().eq(CreditCompanyUser::getCreditId,creditId);
-                List<CreditCompanyUser> list = creditCompanyUserService.list(queryWrapper);*/
 
                 List<CreditCompanyUser> companyUserList = creditCompanyUserService.getInfoList(creditId);
 
@@ -263,15 +269,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return true;
     }
 
-    @Reference(version = "1.0.0",check = false)
-    private ITableLogService tableLogService;
-
-    @Override
+    //换台
     @Transactional
-    @TenantAnnotation
     public boolean changeTable(String orderId, String targetTableId) {
 
-        String loginUserName = RpcContext.getContext().getAttachment("loginUserName");
+        String loginUserName = TenantContext.getLoginUserName();
 
         //获取目标桌台信息
         Table targetTable = tableService.getById(targetTableId);
@@ -304,7 +306,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         tableLog.setUserNumbers(orderEntity.getPersonNumbers());
         tableLog.setUserId(loginUserName);
         tableLogService.save(tableLog);
-        int i=1/0;
 
         //重新设置订单与桌台的关联
         orderEntity.setTableId(targetTableId);
@@ -312,7 +313,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return this.updateById(orderEntity);
     }
 
-    @Override
+    /**
+     * 按订单流水号查询已结账订单并装载明细（管家端反结账入口）。
+     * 只查 pay_status=1 的订单；明细必须按 order_id 关联——
+     * 明细自身的 orderNumber 是带前缀的派生流水号，不能用于关联主单。
+     */
+    public OrderEntity getByOrderNumber(String orderNumber) {
+        QueryWrapper<OrderEntity> orderWrapper = new QueryWrapper<>();
+        orderWrapper.lambda()
+                .eq(OrderEntity::getOrderNumber, orderNumber)
+                .eq(OrderEntity::getPayStatus, SystemCode.ORDER_STATUS_PAYED);
+        OrderEntity orderEntity = this.getOne(orderWrapper);
+        if (orderEntity == null) {
+            return null;
+        }
+
+        QueryWrapper<OrderDetailEntity> detailWrapper = new QueryWrapper<>();
+        detailWrapper.lambda().eq(OrderDetailEntity::getOrderId, orderEntity.getOrderId());
+        orderEntity.setOrderDetails(orderDetailService.list(detailWrapper));
+        return orderEntity;
+    }
+
+    //指定日期区间经营数据统计
     public CurrentAmountCollectDTO getCurrentAmount(LocalDate start, LocalDate end) {
         CurrentAmountCollectDTO result  = new CurrentAmountCollectDTO();
 
@@ -323,7 +345,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_PAYED);
         OrderEntity totalPayAmount = this.getOne(totalPayQueryWrapper);
-        result.setPayTotal(totalPayAmount!=null?totalPayAmount.getTotalAmount():0);
+        result.setPayTotal(totalPayAmount!=null && totalPayAmount.getTotalAmount()!=null ? totalPayAmount.getTotalAmount():0);
 
         //查询并设置已付款总单数
         QueryWrapper<OrderEntity> totalPayCountWrapper = new QueryWrapper<>();
@@ -331,8 +353,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .ge(OrderEntity::getLastUpdateTime,start)
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_PAYED);
-        int totalPayCount = this.count(totalPayCountWrapper);
-        result.setPayTotalCount(totalPayCount);
+        result.setPayTotalCount(Math.toIntExact(this.count(totalPayCountWrapper)));
 
         //未付款总金额
         QueryWrapper<OrderEntity> noPayQueryWrapper = new QueryWrapper<>();
@@ -341,7 +362,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_NOTPAY);
         OrderEntity noPayTotalAmount = this.getOne(noPayQueryWrapper);
-        result.setNoPayTotal(noPayTotalAmount!=null?noPayTotalAmount.getTotalAmount():0);
+        result.setNoPayTotal(noPayTotalAmount!=null && noPayTotalAmount.getTotalAmount()!=null ? noPayTotalAmount.getTotalAmount():0);
 
 
         //未付款总单数
@@ -350,8 +371,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .ge(OrderEntity::getLastUpdateTime,start)
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_NOTPAY);
-        int noPayTotalCount = this.count(noPayCountWrapper);
-        result.setNoPayTotalCount(noPayTotalCount);
+        result.setNoPayTotalCount(Math.toIntExact(this.count(noPayCountWrapper)));
 
         //当日已结账就餐总人数
         QueryWrapper<OrderEntity> payedTotalPersionWrapper = new QueryWrapper<>();
@@ -360,7 +380,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_PAYED);
         OrderEntity payedTotalPersion = this.getOne(payedTotalPersionWrapper);
-        result.setTotalPerson(payedTotalPersion!=null?payedTotalPersion.getPersonNumbers():0);
+        result.setTotalPerson(payedTotalPersion!=null && payedTotalPersion.getPersonNumbers()!=null ? payedTotalPersion.getPersonNumbers():0);
 
 
         //未结账就餐总人数
@@ -370,13 +390,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
                 .lt(OrderEntity::getLastUpdateTime,end)
                 .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_NOTPAY);
         OrderEntity noPayedTotalPersion = this.getOne(noPayedTotalPersionWrapper);
-        result.setCurrentPerson(noPayedTotalPersion!=null?noPayedTotalPersion.getPersonNumbers():0);
+        result.setCurrentPerson(noPayedTotalPersion!=null && noPayedTotalPersion.getPersonNumbers()!=null ? noPayedTotalPersion.getPersonNumbers():0);
 
 
         return result;
     }
 
-    @Override
+    //各时间段销售数据，type：1 销售额金额统计，2 销售总单数统计
     public List<CurrentHourCollectDTO> getCurrentHourCollect(LocalDate start, LocalDate end, Integer type) {
 
         QueryWrapper<OrderEntity> wrapper = new QueryWrapper<>();
@@ -398,7 +418,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
 
         //针对时间分组汇总
         wrapper.groupBy("current_date_hour").orderByAsc("current_date_hour");
-        List<CurrentHourCollectDTO> result = Lists.newArrayList();
+        List<CurrentHourCollectDTO> result = new ArrayList<>();
 
         this.getBaseMapper().selectList(wrapper).forEach(o->{
 
@@ -428,10 +448,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return result;
     }
 
-    @Override
+    //收款方式构成
     public List<PayTypeCollectDTO> getPayTypeCollect(LocalDate start, LocalDate end) {
 
-        List<PayTypeCollectDTO> result = Lists.newArrayList();
+        List<PayTypeCollectDTO> result = new ArrayList<>();
 
         QueryWrapper<OrderEntity> wrapper = new QueryWrapper<>();
 
@@ -456,7 +476,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
         return result;
     }
 
-    @Override
+    //优惠数据统计
     public PrivilegeDTO getPrivilegeCollect(LocalDate start, LocalDate end) {
 
         PrivilegeDTO dto = new PrivilegeDTO();
@@ -470,22 +490,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
 
         OrderEntity orderEntity = this.getBaseMapper().selectOne(wrapper);
 
-        dto.setPresentAmount(orderEntity.getPresentAmount());
-        dto.setSmallAmount(orderEntity.getSmallAmount());
-        dto.setFreeAmount(orderEntity.getFreeAmount());
+        //区间内无已付款订单时聚合结果为 null，按 0 处理避免拆箱 NPE
+        dto.setPresentAmount(orderEntity != null && orderEntity.getPresentAmount() != null ? orderEntity.getPresentAmount() : 0);
+        dto.setSmallAmount(orderEntity != null && orderEntity.getSmallAmount() != null ? orderEntity.getSmallAmount() : 0);
+        dto.setFreeAmount(orderEntity != null && orderEntity.getFreeAmount() != null ? orderEntity.getFreeAmount() : 0);
 
         return dto;
     }
 
-    @Reference(version = "1.0.0",check = false)
-    private ISetMealDishService setMealDishService;
-
-    @Autowired
-    @Qualifier("orderDetailMealService")
-    private IOrderDetailMealService orderDetailMealService;
-
-    //向t_order_detail_meal中添加数据
-    @TenantAnnotation
+    //向t_order_detail_meal中添加数据（结账时把套餐明细拆成单品，供报表按菜品维度统计）
     private void saveOrderDetailMealInfo(String orderId){
 
         //获取订单明细表中的套餐信息
@@ -499,13 +512,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
             //通过套餐id获取该套餐下的菜品信息
             List<Dish> dishList = setMealDishService.getAllDishBySetMealId(orderSetMeal.getDishId());
 
-            //插入到orderdetailmeal中（套餐下的每一个菜品信息）
-            OrderDetailMealEntity orderDetailMealEntity = new OrderDetailMealEntity();
-
-            //复制共有信息
-            BeanUtils.copyProperties(orderSetMeal,orderDetailMealEntity);
-
-
             //当前套餐的优惠比率 = 套餐支付金额 / 套餐中所有菜品的原价总和
             float allDishPriceInSetMeal = dishList.stream().map(d->d.getPrice()*setMealDishService.getDishCopiesInSetMeal(d.getId(),orderSetMeal.getDishId()))
                     .reduce(Integer::sum).get() * orderSetMeal.getDishNumber();
@@ -514,6 +520,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> impl
 
             //循环补充其他信息
             dishList.forEach(d->{
+                OrderDetailMealEntity orderDetailMealEntity = new OrderDetailMealEntity();
+
+                //复制共有信息
+                BeanUtils.copyProperties(orderSetMeal,orderDetailMealEntity);
+
                 //去除相关重复的信息
                 orderDetailMealEntity.setDetailId(null);
                 orderDetailMealEntity.setShopId(null);

@@ -1,6 +1,6 @@
 package com.restkeeper.vo;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -8,16 +8,16 @@ import lombok.Data;
  */
 @Data
 public class SellCalculationVO {
-    @ApiModelProperty(value = "菜品或者套餐id")
+    @Schema(description = "菜品或者套餐id")
     private String dishId;
 
-    @ApiModelProperty(value = "类型 1 菜品 2 套餐")
+    @Schema(description = "类型 1 菜品 2 套餐")
     private Integer dishType;
 
-    @ApiModelProperty(value = "名称")
+    @Schema(description = "名称")
     private String dishName;
 
-    @ApiModelProperty(value = "估清数目")
+    @Schema(description = "估清数目")
     private Integer numbers;
 
 }

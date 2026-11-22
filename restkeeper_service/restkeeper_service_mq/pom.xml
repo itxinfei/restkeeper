@@ -25,9 +25,11 @@
         </dependency>
 
 
+        <!-- TODO 阶段3：SCA 2025.1 已移除该 starter，换新 dysmsapi20170525 SDK；临时锁版本仅为反应堆模型有效 -->
         <dependency>
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alicloud-sms</artifactId>
+            <version>2.1.1.RELEASE</version>
         </dependency>
 
         <dependency>

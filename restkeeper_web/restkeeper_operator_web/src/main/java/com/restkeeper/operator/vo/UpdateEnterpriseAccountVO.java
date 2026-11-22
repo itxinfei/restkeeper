@@ -1,6 +1,6 @@
 package com.restkeeper.operator.vo;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -8,6 +8,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 public class UpdateEnterpriseAccountVO extends AddEnterpriseAccountVO {
 
-    @ApiModelProperty("企业id")
+    @Schema(description = "企业id")
     private String enterpriseId;
 }

@@ -6,48 +6,47 @@ import com.restkeeper.shop.service.IStoreManagerService;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
 import com.restkeeper.vo.LoginVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 管家端登录入口：按用户类型分流到企业账号 / 门店经理 provider 端点。
+ * <p>阶段 4：Dubbo @Reference → HTTP Interface 契约代理；
+ * K13：旧 BFF VO 字段为 password，契约参数名为 loginPass，此处统一映射。
+ */
 @RestController
 @Slf4j
-@Api("登录接口")
+@Tag(name = "登录接口")
 public class LoginController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IEnterpriseAccountService enterpriseAccountService;
+    private final IEnterpriseAccountService enterpriseAccountService;
+    private final IStoreManagerService storeManagerService;
 
-    @Reference(version = "1.0.0",check = false)
-    private IStoreManagerService storeManagerService;
+    public LoginController(IEnterpriseAccountService enterpriseAccountService,
+                           IStoreManagerService storeManagerService) {
+        this.enterpriseAccountService = enterpriseAccountService;
+        this.storeManagerService = storeManagerService;
+    }
 
-    @ApiOperation(value = "登录入口")
-    @ApiImplicitParam(name = "Authorization", value = "jwt token", required = false, dataType = "String",paramType="header")
+    @Operation(summary = "登录入口（按用户类型分流）")
     @PostMapping("/login")
-    public Result login(@RequestBody LoginVO loginVO){
-
-        if (SystemCode.USER_TYPE_SHOP.equals(loginVO.getType())){
-            //集团用户
-            return enterpriseAccountService.login(loginVO.getShopId(),loginVO.getPhone(),loginVO.getPassword());
+    public Result login(@RequestBody LoginVO loginVO) {
+        if (SystemCode.USER_TYPE_SHOP.equals(loginVO.getType())) {
+            // 集团用户
+            return enterpriseAccountService.login(loginVO.getShopId(), loginVO.getPhone(), loginVO.getPassword());
         }
-
-        if (SystemCode.USER_TYPE_STORE_MANAGER.equals(loginVO.getType())){
-            //店长
-            return storeManagerService.login(loginVO.getShopId(),loginVO.getPhone(),loginVO.getPassword());
+        if (SystemCode.USER_TYPE_STORE_MANAGER.equals(loginVO.getType())) {
+            // 店长
+            return storeManagerService.login(loginVO.getShopId(), loginVO.getPhone(), loginVO.getPassword());
         }
 
         Result result = new Result();
         result.setStatus(ResultCode.error);
         result.setDesc("不支持当前用户类型登录");
         return result;
-
-
-
-
     }
 }

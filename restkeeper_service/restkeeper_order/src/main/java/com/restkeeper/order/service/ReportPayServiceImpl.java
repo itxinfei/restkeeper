@@ -1,28 +1,28 @@
 package com.restkeeper.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.common.collect.Lists;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.dto.DayAmountCollectDTO;
 import com.restkeeper.dto.PayType;
 import com.restkeeper.dto.PayTypeCollectDTO;
 import com.restkeeper.dto.PrivilegeDTO;
 import com.restkeeper.entity.ReportPay;
 import com.restkeeper.order.mapper.ReportPayMapper;
-import com.restkeeper.service.IReportPayService;
-import org.apache.dubbo.config.annotation.Service;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-@Service(version = "1.0.0",protocol = "dubbo")
-@org.springframework.stereotype.Service("reportPayService")
+/**
+ * 收款报表本地服务
+ */
+@Service("reportPayService")
+public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay> {
 
-public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay> implements IReportPayService {
-
-    @Override
+    //销售趋势（应收概况）：无数据日期补零
     public List<DayAmountCollectDTO> getDayAmountCollect(LocalDate start, LocalDate end) {
 
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
@@ -42,13 +42,13 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
         }).collect(Collectors.toList());
 
 
-        List<DayAmountCollectDTO> result = Lists.newArrayList();
+        List<DayAmountCollectDTO> result = new ArrayList<>();
         result.addAll(fromQuery);
 
         //得到日期天数差
         long daysCount = end.toEpochDay()-start.toEpochDay();
 
-        // for(int start;start<=daysCount;start++)
+        //区间内缺失的日期补零
         Stream.iterate(start,i->i.plusDays(1)).limit(daysCount)
                 .map(d->{
                     DayAmountCollectDTO dayAmountCollectDTO = new DayAmountCollectDTO();
@@ -79,7 +79,7 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
         return result;
     }
 
-    @Override
+    //收款构成
     public List<PayTypeCollectDTO> getPayTypeCollect(LocalDate start, LocalDate end) {
 
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
@@ -99,7 +99,7 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
         }).collect(Collectors.toList());
     }
 
-    @Override
+    //优惠统计
     public PrivilegeDTO getPrivilegeCollectByDate(LocalDate start, LocalDate end) {
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
         wrapper.select("sum(present_amount) as present_amount","sum(small_amount) as small_amount","sum(free_amount) as free_amount")

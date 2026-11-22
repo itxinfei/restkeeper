@@ -14,7 +14,7 @@ public class BeanListUtils {
         List<Object> sList = (List<Object>) sourceList;
         List<Object> tList = new ArrayList<Object>();
         for (Object t : sList) {
-            Object dto = beanClass.newInstance();
+            Object dto = beanClass.getDeclaredConstructor().newInstance();
             org.springframework.beans.BeanUtils.copyProperties(t, dto);
             tList.add(dto);
         }

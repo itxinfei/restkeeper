@@ -1,29 +1,53 @@
 package com.restkeeper.shop.service;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.shop.entity.StoreManager;
 import com.restkeeper.utils.Result;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
+import org.springframework.web.service.annotation.PutExchange;
 
 import java.util.List;
 
-public interface IStoreManagerService extends IService<StoreManager> {
+@Tag(name = "门店经理服务")
+@HttpExchange("/store/manager")
+public interface IStoreManagerService {
 
-    //分页查询
-    IPage<StoreManager> queryPageByCriteria(int pageNo,int pageSize,String criteria);
+    //按条件分页查询
+    @GetExchange("/page/{pageNo}/{pageSize}")
+    PageResult<StoreManager> queryPageByCriteria(@PathVariable("pageNo") int pageNo,
+                                                 @PathVariable("pageSize") int pageSize,
+                                                 @RequestParam(value = "criteria", required = false) String criteria);
 
-    //增加门店管理员
-    boolean addStoreManager(String name, String phone, List<String> storeIds);
+    //增加门店经理
+    @PostExchange("/add")
+    boolean addStoreManager(@RequestParam("name") String name,
+                            @RequestParam("phone") String phone,
+                            @RequestParam("storeIds") List<String> storeIds);
 
-    //修改门店管理员
-    boolean updateStoreManager(String storeManagerId,String name,String phone,List<String> storeIds);
+    //修改门店经理
+    @PutExchange("/update")
+    boolean updateStoreManager(@RequestParam("storeManagerId") String storeManagerId,
+                               @RequestParam("name") String name,
+                               @RequestParam("phone") String phone,
+                               @RequestParam("storeIds") List<String> storeIds);
 
-    //店长逻辑删除
-    boolean deleteStoreManager(String storeManagerId);
+    //逻辑删除门店经理
+    @DeleteExchange("/{storeManagerId}")
+    boolean deleteStoreManager(@PathVariable("storeManagerId") String storeManagerId);
 
-    //店长暂停
-    boolean pauseStoreManager(String storeManagerId);
+    //停用门店经理
+    @PutExchange("/pause/{storeManagerId}")
+    boolean pauseStoreManager(@PathVariable("storeManagerId") String storeManagerId);
 
     //登录
-    Result login(String shopId,String phone,String loginPass);
+    @PostExchange("/login")
+    Result login(@RequestParam("shopId") String shopId,
+                 @RequestParam("phone") String phone,
+                 @RequestParam("loginPass") String loginPass);
 }

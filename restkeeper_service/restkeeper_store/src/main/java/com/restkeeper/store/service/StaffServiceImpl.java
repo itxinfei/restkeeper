@@ -1,136 +1,144 @@
 package com.restkeeper.store.service;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.sms.SmsObject;
 import com.restkeeper.store.entity.Staff;
 import com.restkeeper.store.mapper.StaffMapper;
 import com.restkeeper.utils.JWTUtil;
-import com.restkeeper.utils.MD5CryptUtil;
+import com.restkeeper.utils.PasswordUtil;
+import com.restkeeper.utils.RandomCodeUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.Md5Crypt;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 门店员工本地服务
+ */
 @Slf4j
-@Service(version = "1.0.0",protocol = "dubbo")
-public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> implements IStaffService {
+@Service
+public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
 
-    @Override
-    @Transactional
-    public boolean addStaff(Staff staff) {
-
-        //密码
-        String password = staff.getPassword();
-        if (StringUtils.isEmpty(password)){
-            password = RandomStringUtils.randomNumeric(8);
-        }
-
-        //密码加密
-        staff.setPassword(Md5Crypt.md5Crypt(password.getBytes()));
-
-        try {
-            this.save(staff);
-
-            //短信发送
-            //this.sendMessage(staff.getPhone(),staff.getShopId(),staff.getPassword());
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        return false;
-    }
-
-    @Value("{gateway.secret}")
+    @Value("${gateway.secret:restkeeper}")
     private String secret;
 
-    @Override
-    public Result login(String shopId, String loginName, String password) {
+    @Value("${sms.operator.signName:}")
+    private String signName;
 
+    @Value("${sms.operator.templateCode:}")
+    private String templateCode;
+
+    @Autowired
+    private RabbitTemplate rabbitTemplate;
+
+    /**
+     * 员工分页：姓名、手机号均为可选模糊条件；shop_id/store_id 由双租户插件自动追加
+     */
+    public PageResult<Staff> queryPage(int pageNum, int pageSize, String staffName, String phone) {
+        Page<Staff> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<Staff> queryWrapper = new QueryWrapper<>();
+        if (StringUtils.hasText(staffName)) {
+            queryWrapper.lambda().like(Staff::getStaffName, staffName);
+        }
+        if (StringUtils.hasText(phone)) {
+            queryWrapper.lambda().like(Staff::getPhone, phone);
+        }
+        return PageResult.of(this.page(page, queryWrapper));
+    }
+
+    /**
+     * 停用员工（status 置 0）；重新启用走通用 updateById
+     */
+    @Transactional
+    public boolean pause(String id) {
+        Staff staff = this.getById(id);
+        if (staff == null) {
+            return false;
+        }
+        staff.setStatus(SystemCode.FORBIDDEN);
+        return this.updateById(staff);
+    }
+
+    /**
+     * 新增员工：未指定密码时生成 8 位随机初始密码，BCrypt 加密入库
+     */
+    @Transactional
+    public boolean addStaff(Staff staff) {
+        String password = staff.getPassword();
+        if (!StringUtils.hasText(password)) {
+            password = RandomCodeUtil.randomNumeric(8);
+        }
+        staff.setPassword(PasswordUtil.encode(password));
+        return this.save(staff);
+    }
+
+    /**
+     * 员工登录
+     */
+    public Result login(String shopId, String loginName, String password) {
         Result result = new Result();
 
-        //查询员工信息
-        QueryWrapper<Staff> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(Staff::getStaffName,loginName).eq(Staff::getShopId,shopId);
-
-
-        //Staff staff = this.getOne(queryWrapper);
+        //自定义登录 SQL 已豁免租户插件并显式带 shop_id
         Staff staff = this.getBaseMapper().login(shopId, loginName);
-
-        if (staff == null){
+        if (staff == null) {
             result.setStatus(ResultCode.error);
             result.setDesc("员工信息不存在");
             return result;
         }
 
-        //校验密码
-        String salts = MD5CryptUtil.getSalts(staff.getPassword());
-        if (!Md5Crypt.md5Crypt(password.getBytes(),salts).equals(staff.getPassword())){
+        if (!PasswordUtil.matches(password, staff.getPassword())) {
             result.setStatus(ResultCode.error);
             result.setDesc("密码不正确");
             return result;
         }
 
-        //生成令牌
-        Map<String,Object> tokenMap = new HashMap<>();
-        tokenMap.put("shopId",shopId);
-        tokenMap.put("storeId",staff.getStoreId());
-        tokenMap.put("loginUserId",staff.getStaffId());
-        tokenMap.put("loginUserName",loginName);
-        tokenMap.put("userType",SystemCode.USER_TYPE_STAFF);
+        Map<String, Object> tokenMap = new HashMap<>();
+        tokenMap.put("shopId", shopId);
+        tokenMap.put("storeId", staff.getStoreId());
+        tokenMap.put("loginUserId", staff.getStaffId());
+        tokenMap.put("loginUserName", loginName);
+        tokenMap.put("userType", SystemCode.USER_TYPE_STAFF);
 
-        String tokenInfo = "";
         try {
-            tokenInfo = JWTUtil.createJWTByObj(tokenMap,secret);
-        } catch (IOException e) {
+            String tokenInfo = JWTUtil.createJWTByObj(tokenMap, secret);
+            result.setStatus(ResultCode.success);
+            result.setDesc("ok");
+            result.setData(staff);
+            result.setToken(tokenInfo);
+        } catch (Exception e) {
+            log.error("员工登录令牌生成失败, loginName={}", loginName, e);
             result.setStatus(ResultCode.error);
             result.setDesc("加密失败");
-            return result;
         }
-
-        result.setStatus(ResultCode.success);
-        result.setDesc("ok");
-        result.setData(staff);
-        result.setToken(tokenInfo);
-
         return result;
     }
 
-    @Autowired
-    private RabbitTemplate rabbitTemplate;
-
-    @Value("${sms.operator.signName}")
-    private String signName;
-
-    @Value("${sms.operator.templateCode}")
-    private String templateCode;
-
+    /**
+     * 发送账号下发短信（预留，开通员工短信通知时在 addStaff 事务提交后调用）
+     */
     private void sendMessage(String phone, String shopId, String pwd) {
         SmsObject smsObject = new SmsObject();
         smsObject.setPhoneNumber(phone);
         smsObject.setSignName(signName);
-        smsObject.setSignName(templateCode);
+        smsObject.setTemplateCode(templateCode);
         JSONObject jsonObject = new JSONObject();
         jsonObject.put("shopId", shopId);
         jsonObject.put("password", pwd);
         smsObject.setTemplateJsonParam(jsonObject.toJSONString());
-
         rabbitTemplate.convertAndSend(SystemCode.SMS_ACCOUNT_QUEUE, JSON.toJSONString(smsObject));
     }
 }

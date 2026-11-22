@@ -1,103 +1,85 @@
 package com.restkeeper.operator.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.common.collect.Maps;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.operator.entity.OperatorUser;
 import com.restkeeper.operator.mapper.OperatorUserMapper;
 import com.restkeeper.utils.JWTUtil;
-import com.restkeeper.utils.MD5CryptUtil;
+import com.restkeeper.utils.PasswordUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
-import org.apache.commons.codec.digest.Md5Crypt;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.Map;
 
-//@Service("operatorUserService")
-@Service(version = "1.0.0",protocol = "dubbo")
+/**
+ * 运营人员本地业务服务（去 Dubbo 后不再实现 api 契约；HTTP 入口在 Controller 层）
+ */
+@Slf4j
+@Service
 @RefreshScope
-public class OperatorUserServiceImpl extends ServiceImpl<OperatorUserMapper, OperatorUser> implements IOperatorUserService{
+public class OperatorUserServiceImpl extends ServiceImpl<OperatorUserMapper, OperatorUser> {
 
-    @Value("${gateway.secret}")
+    @Value("${gateway.secret:restkeeper}")
     private String secret;
 
-
-    //根据name进行分页数据查询
-    @Override
-    public IPage<OperatorUser> queryPageByName(int pageNum, int pageSize, String name) {
-
-
-        IPage<OperatorUser> page = new Page<>(pageNum,pageSize);
-
+    //按名称分页查询
+    public PageResult<OperatorUser> queryPageByName(int pageNum, int pageSize, String name) {
+        Page<OperatorUser> page = new Page<>(pageNum, pageSize);
         QueryWrapper<OperatorUser> queryWrapper = new QueryWrapper<>();
-        if (StringUtils.isNotEmpty(name)){
-            queryWrapper.like("loginname",name);
+        if (StringUtils.hasText(name)) {
+            queryWrapper.like("loginname", name);
         }
-        return this.page(page,queryWrapper);
+        return PageResult.of(this.page(page, queryWrapper));
     }
 
-    @Override
+    //登录
     public Result login(String loginName, String loginPass) {
         Result result = new Result();
 
-        //参数校验
-        if (StringUtils.isEmpty(loginName)){
+        if (!StringUtils.hasText(loginName)) {
             result.setStatus(ResultCode.error);
             result.setDesc("用户名不存在");
             return result;
         }
-        if (StringUtils.isEmpty(loginPass)){
+        if (!StringUtils.hasText(loginPass)) {
             result.setStatus(ResultCode.error);
             result.setDesc("密码不存在");
             return result;
         }
 
-        //查询用户是否存在
         QueryWrapper<OperatorUser> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("loginname",loginName);
+        queryWrapper.eq("loginname", loginName);
         OperatorUser operatorUser = this.getOne(queryWrapper);
-        if (operatorUser == null){
+        if (operatorUser == null) {
             result.setStatus(ResultCode.error);
             result.setDesc("用户不存在");
             return result;
         }
 
-        //密码校验
-        String salts = MD5CryptUtil.getSalts(operatorUser.getLoginpass());
-        if (!Md5Crypt.md5Crypt(loginPass.getBytes(),salts).equals(operatorUser.getLoginpass())){
+        //BCrypt 密码校验
+        if (!PasswordUtil.matches(loginPass, operatorUser.getLoginpass())) {
             result.setStatus(ResultCode.error);
             result.setDesc("密码不正确");
             return result;
         }
 
-        //jwt令牌生成
-        Map<String,Object> tokenInfo = Maps.newHashMap();
-        tokenInfo.put("loginName",operatorUser.getLoginname());
-        tokenInfo.put("loginPass",operatorUser.getLoginpass());
-        String token = null;
-        try{
-            //生成令牌
-            token =JWTUtil.createJWTByObj(tokenInfo,secret);
-        }catch (Exception e){
-            e.printStackTrace();
-            result.setStatus(ResultCode.error);
-            result.setDesc("生成令牌失败");
-            return result;
-        }
+        //令牌生成（阶段 5 切换 Sa-Token 后移除 JWTUtil）
+        Map<String, Object> tokenInfo = new HashMap<>();
+        tokenInfo.put("loginName", operatorUser.getLoginname());
+        String token = JWTUtil.createJWTByObj(tokenInfo, secret);
 
         result.setStatus(ResultCode.success);
         result.setDesc("ok");
         result.setData(operatorUser);
         result.setToken(token);
-
         return result;
     }
-
-
 }

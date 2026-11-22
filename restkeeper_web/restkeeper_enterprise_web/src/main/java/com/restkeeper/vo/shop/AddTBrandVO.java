@@ -1,26 +1,26 @@
 package com.restkeeper.vo.shop;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
 public class AddTBrandVO {
 
-    @ApiModelProperty(value = "品牌名称")
+    @Schema(description = "品牌名称")
     private String brandName;
 
-    @ApiModelProperty(value = "所属业态")
+    @Schema(description = "所属业态")
     private String category;
 
-    @ApiModelProperty(value = "品牌Logo")
+    @Schema(description = "品牌Logo")
     private String logo;
 
-    @ApiModelProperty(value = "负责人")
+    @Schema(description = "负责人")
     private String contact;
 
-    @ApiModelProperty(value = "联系方式")
+    @Schema(description = "联系方式")
     private String contactPhone;
 
-    @ApiModelProperty(value = "描述信息")
+    @Schema(description = "描述信息")
     private String info;
 }

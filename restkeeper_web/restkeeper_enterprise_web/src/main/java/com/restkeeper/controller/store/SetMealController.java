@@ -1,161 +1,133 @@
 package com.restkeeper.controller.store;
 
-import com.google.common.collect.Lists;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.exception.BussinessException;
-import com.restkeeper.response.vo.PageVO;
+import com.restkeeper.http.PageResult;
+import com.restkeeper.store.dto.SetMealWithDishes;
 import com.restkeeper.store.entity.SetMeal;
 import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.service.ISetMealService;
-import com.restkeeper.vo.store.SaleStatusVO;
 import com.restkeeper.vo.store.SetMealDishVO;
 import com.restkeeper.vo.store.SetMealVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * 套餐管理。端点路径对齐 provider 契约 {@link ISetMealService}。
+ */
 @Slf4j
-@Api(tags = {"套餐管理"})
+@Tag(name = "套餐管理")
 @RestController
 @RequestMapping("/setMeal")
 public class SetMealController {
 
-    @Reference(version = "1.0.0",check = false)
-    private ISetMealService setMealService;
+    private final ISetMealService setMealService;
 
-    @ApiOperation("套餐分页查询")
-    @GetMapping("/queryPage/{page}/{pageSize}")
-    public PageVO<SetMeal> queryPage(@PathVariable("page") Integer page,
-                                     @PathVariable("pageSize") Integer pageSize,
-                                     @RequestParam(value="name",required=false) String name){
-        return new PageVO<>(setMealService.queryPage(page, pageSize, name));
+    public SetMealController(ISetMealService setMealService) {
+        this.setMealService = setMealService;
     }
 
-    @ApiOperation("添加套餐")
-    @PostMapping("/add")
-    public boolean add(@RequestBody SetMealVO setMealVO){
+    @Operation(summary = "套餐分页查询")
+    @GetMapping("/page/{pageNum}/{pageSize}")
+    public PageResult<SetMeal> queryPage(@PathVariable("pageNum") Integer pageNum,
+                                         @PathVariable("pageSize") Integer pageSize,
+                                         @RequestParam(value = "name", required = false) String name) {
+        return setMealService.queryPage(pageNum, pageSize, name);
+    }
 
-        //设置套餐信息
+    @Operation(summary = "添加套餐")
+    @PostMapping
+    public boolean add(@RequestBody SetMealVO setMealVO) {
         SetMeal setMeal = new SetMeal();
-        BeanUtils.copyProperties(setMealVO,setMeal);
-        setMeal.setDishList(null);
+        BeanUtils.copyProperties(setMealVO, setMeal);
+        return setMealService.add(buildRequest(setMeal, setMealVO.getDishList()));
+    }
 
-        //设置相关的菜品信息
-        List<SetMealDish> setMealDishList = Lists.newArrayList();
+    @Operation(summary = "根据id查询套餐信息")
+    @GetMapping("/{id}")
+    public SetMealVO getInfo(@PathVariable("id") String id) {
+        SetMeal setMeal = setMealService.getById(id);
+        if (setMeal == null) {
+            throw new BussinessException("套餐不存在");
+        }
 
-        if (setMealVO.getDishList() != null){
+        SetMealVO setMealVO = new SetMealVO();
+        BeanUtils.copyProperties(setMeal, setMealVO);
 
-            setMealVO.getDishList().forEach((d)->{
+        List<SetMealDishVO> setMealDishVOList = new ArrayList<>();
+        List<SetMealDish> setMealDishList = setMeal.getDishList();
+        if (setMealDishList != null) {
+            for (SetMealDish setMealDish : setMealDishList) {
+                SetMealDishVO setMealDishVO = new SetMealDishVO();
+                setMealDishVO.setDishId(setMealDish.getDishId());
+                setMealDishVO.setDishName(setMealDish.getDishName());
+                setMealDishVO.setCopies(setMealDish.getDishCopies());
+                setMealDishVOList.add(setMealDishVO);
+            }
+        }
+        setMealVO.setDishList(setMealDishVOList);
+        return setMealVO;
+    }
+
+    @Operation(summary = "修改套餐")
+    @PutMapping
+    public boolean update(@RequestBody SetMealVO setMealVO) {
+        SetMeal setMeal = setMealService.getById(setMealVO.getId());
+        if (setMeal == null) {
+            throw new BussinessException("套餐不存在");
+        }
+        BeanUtils.copyProperties(setMealVO, setMeal);
+        return setMealService.update(buildRequest(setMeal, setMealVO.getDishList()));
+    }
+
+    @Operation(summary = "套餐停售")
+    @PutMapping("/forbidden")
+    public boolean forbidden(@RequestBody List<String> ids) {
+        return setMealService.forbiddenSetMeals(ids);
+    }
+
+    @Operation(summary = "套餐起售")
+    @PutMapping("/enable")
+    public boolean enable(@RequestBody List<String> ids) {
+        return setMealService.enableSetMeals(ids);
+    }
+
+    @Operation(summary = "删除套餐")
+    @DeleteMapping
+    public boolean delete(@RequestBody List<String> ids) {
+        return setMealService.removeByIds(ids);
+    }
+
+    private SetMealWithDishes buildRequest(SetMeal setMeal, List<SetMealDishVO> dishList) {
+        List<SetMealDish> setMealDishList = new ArrayList<>();
+        if (dishList != null) {
+            dishList.forEach(d -> {
                 SetMealDish setMealDish = new SetMealDish();
                 setMealDish.setIndex(0);
                 setMealDish.setDishCopies(d.getCopies());
                 setMealDish.setDishId(d.getDishId());
                 setMealDish.setDishName(d.getDishName());
-
                 setMealDishList.add(setMealDish);
             });
         }
 
-        return setMealService.add(setMeal,setMealDishList);
-    }
-
-    @ApiOperation("根据id查询套餐信息")
-    @GetMapping("/{id}")
-    public SetMealVO getInfo(@PathVariable("id") String id){
-
-        SetMealVO setMealVO = new SetMealVO();
-
-        //套餐基础信息
-        SetMeal setMeal = setMealService.getById(id);
-        if (setMeal == null){
-            throw new BussinessException("套餐不存在");
-        }
-        BeanUtils.copyProperties(setMeal,setMealVO);
-
-
-        //相关的菜品集合信息
-        List<SetMealDishVO> setMealDishVOList = Lists.newArrayList();
-
-        List<SetMealDish> setMealDishList = setMeal.getDishList();
-
-        for (SetMealDish setMealDish : setMealDishList) {
-
-            SetMealDishVO setMealDishVO = new SetMealDishVO();
-
-            //设置相关信息
-            setMealDishVO.setDishId(setMealDish.getDishId());
-            setMealDishVO.setDishName(setMealDish.getDishName());
-            setMealDishVO.setCopies(setMealDish.getDishCopies());
-
-            setMealDishVOList.add(setMealDishVO);
-        }
-
-        setMealVO.setDishList(setMealDishVOList);
-
-        return setMealVO;
-    }
-
-    @ApiOperation("修改套餐")
-    @PutMapping("/update")
-    public boolean update(@RequestBody SetMealVO setMealVO){
-
-        //设置套餐的基础信息
-        SetMeal setMeal = setMealService.getById(setMealVO.getId());
-        BeanUtils.copyProperties(setMealVO,setMeal);
-        setMeal.setDishList(null);
-
-
-        List<SetMealDish> setMealDishes = Lists.newArrayList();
-
-        if (setMealVO.getDishList() != null){
-
-            setMealVO.getDishList().forEach((d)->{
-
-                SetMealDish setMealDish = new SetMealDish();
-
-                setMealDish.setIndex(0);
-                setMealDish.setDishCopies(d.getCopies());
-                setMealDish.setDishId(d.getDishId());
-                setMealDish.setDishName(d.getDishName());
-
-                setMealDishes.add(setMealDish);
-            });
-        }
-
-        return setMealService.update(setMeal,setMealDishes);
-    }
-
-    /**
-     * 设置售卖状态
-     * @param saleStateVO
-     * @return
-     */
-    @ApiOperation(value = "套餐停/起售")
-    @PutMapping("/updateStatus")
-    public boolean updateStatus(@RequestBody SaleStatusVO saleStateVO){
-        if(SystemCode.FORBIDDEN==saleStateVO.getStatus()){
-            return setMealService.forbiddenSetMeals(saleStateVO.getIds());
-        }
-
-        if(SystemCode.ENABLED==saleStateVO.getStatus()){
-            return setMealService.enableSetMeals(saleStateVO.getIds());
-        }
-        return false;
-    }
-
-    /**
-     * 删除套餐
-     * @param ids
-     * @return
-     */
-    @ApiOperation(value = "删除套餐")
-    @DeleteMapping("/delete")
-    public boolean delete(@RequestBody List<String> ids){
-        return setMealService.removeByIds(ids);
+        SetMealWithDishes request = new SetMealWithDishes();
+        request.setSetMeal(setMeal);
+        request.setDishList(setMealDishList);
+        return request;
     }
 }

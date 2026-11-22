@@ -2,30 +2,32 @@ package com.restkeeper.controller.store;
 
 import com.restkeeper.store.entity.Staff;
 import com.restkeeper.store.service.IStaffService;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * 员工管理。端点路径对齐 provider 契约 {@link IStaffService}。
+ */
 @Slf4j
-@Api(tags = {"员工管理"})
+@Tag(name = "员工管理")
 @RestController
 @RequestMapping("/staff")
 public class StaffController {
 
-    @Reference(version = "1.0.0", check=false)
-    private IStaffService staffService;
+    private final IStaffService staffService;
 
-    /**
-     * 新增员工
-     */
-    @ApiOperation(value = "新增员工")
-    @PostMapping(value = "/add")
-    public boolean add(@RequestBody Staff staff){
-        return staffService.save(staff);
+    public StaffController(IStaffService staffService) {
+        this.staffService = staffService;
+    }
+
+    @Operation(summary = "新增员工")
+    @PostMapping("/add")
+    public boolean add(@RequestBody Staff staff) {
+        return staffService.addStaff(staff);
     }
 }

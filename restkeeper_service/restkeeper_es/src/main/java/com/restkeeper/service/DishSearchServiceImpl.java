@@ -1,199 +1,102 @@
 package com.restkeeper.service;
 
-import com.alibaba.druid.sql.ast.SQLExpr;
-import com.alibaba.druid.sql.ast.expr.SQLQueryExpr;
-import com.alibaba.druid.sql.dialect.mysql.ast.statement.MySqlSelectQueryBlock;
-import com.alibaba.druid.sql.parser.ParserException;
-import com.alibaba.druid.sql.parser.SQLExprParser;
-import com.alibaba.druid.sql.parser.Token;
-import com.alibaba.fastjson.JSON;
-import com.google.common.collect.Lists;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import com.restkeeper.entity.DishEs;
 import com.restkeeper.entity.SearchResult;
 import com.restkeeper.exception.BussinessException;
-import joptsimple.internal.Strings;
+import com.restkeeper.tenant.TenantContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
-import org.apache.dubbo.rpc.RpcContext;
-import org.apache.http.HttpHost;
-import org.elasticsearch.action.search.SearchRequest;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.nlpcn.es4sql.domain.Where;
-import org.nlpcn.es4sql.exception.SqlParseException;
-import org.nlpcn.es4sql.parse.ElasticSqlExprParser;
-import org.nlpcn.es4sql.parse.SqlParser;
-import org.nlpcn.es4sql.parse.WhereParser;
-import org.nlpcn.es4sql.query.maker.QueryMaker;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.elasticsearch.client.elc.NativeQuery;
+import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
+import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
+/**
+ * 菜品检索本地服务：基于 Spring Data Elasticsearch（新版 Elasticsearch Java Client）。
+ * 双租户字段 shop_id/store_id 作为 filter 条件，商品码/名称用 wildcard 保持原 SQL like 语义。
+ */
 @Slf4j
-@Service(version = "1.0.0",protocol = "dubbo")
-public class DishSearchServiceImpl implements IDishSearchService{
+@Service("dishSearchService")
+public class DishSearchServiceImpl {
 
+    private static final String INDEX_DISH = "dish";
 
+    @Autowired
+    private ElasticsearchOperations elasticsearchOperations;
 
-    @Override
+    //根据商品码与类型检索
     public SearchResult<DishEs> searchAllByCode(String code, int type, int pageNum, int pageSize) {
-
-        String shopId = RpcContext.getContext().getAttachment("shopId");
-        String storeId = RpcContext.getContext().getAttachment("storeId");
-        if (StringUtils.isEmpty(shopId)){
-            throw new BussinessException("商户号不存在");
-        }
-        if (StringUtils.isEmpty(storeId)){
-            throw new BussinessException("门店号不存在");
-        }
-
-        return this.queryIndexContent("dish","code like '%"+code+"%' and type='"+type+"' and is_deleted=0 and shop_id='"+shopId+"' and store_id='"+storeId+"' order by last_update_time desc",pageNum,pageSize);
+        return queryDish("code", code, true, type, pageNum, pageSize);
     }
 
-    @Value("${es.host}")
-    private String host;
-
-    @Value("${es.port}")
-    private int port;
-
-
-    private SearchResult<DishEs> queryIndexContent(String indexName, String condition, int pageNum, int pageSize) {
-
-        //构建查询
-        RestHighLevelClient client= new RestHighLevelClient(RestClient.builder(new HttpHost(host,port,"http")));
-
-        SearchRequest request = new SearchRequest(indexName);
-
-        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
-
-        //设置分页
-        int start = (pageNum-1)*pageSize;
-        searchSourceBuilder.from(start);
-        searchSourceBuilder.size(pageSize);
-        //是否跟踪查询的总命中数
-        searchSourceBuilder.trackTotalHits(true);
-
-        //设置查询条件
-        BoolQueryBuilder boolQueryBuilder = this.createQueryBuilder(indexName,condition);
-        searchSourceBuilder.query(boolQueryBuilder);
-
-        request.source(searchSourceBuilder);
-
-        //获取查询结果并操作
-        SearchResponse searchResponse = null;
-        try {
-            searchResponse = client.search(request,RequestOptions.DEFAULT);
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-
-        SearchHits hits = searchResponse.getHits();
-        SearchHit[] searchHits = hits.getHits();
-
-        List<DishEs> listData = Lists.newArrayList();
-
-        for (SearchHit hit : searchHits) {
-
-            Map<String, Object> datas = hit.getSourceAsMap();
-            String jsonMap = JSON.toJSONString(datas);
-
-            DishEs dishEs = JSON.parseObject(jsonMap, DishEs.class);
-            listData.add(dishEs);
-        }
-
-        //关闭客户端连接
-        try {
-            client.close();
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
-
-
-        //封装返回结果
-        SearchResult<DishEs> result = new SearchResult<DishEs>();
-        result.setRecords(listData);
-        result.setTotal(searchResponse.getHits().getTotalHits().value);
-        return result;
-
-    }
-
-    private BoolQueryBuilder createQueryBuilder(String indexName, String condition) {
-
-        BoolQueryBuilder boolQuery = null;
-
-
-        try {
-            SqlParser sqlParser = new SqlParser();
-            String sql ="select * from "+indexName;
-            String whereTemp = "";
-            if (!Strings.isNullOrEmpty(condition)){
-                whereTemp =" where 1=1 and "+condition;
-            }
-
-            SQLQueryExpr sqlQueryExpr = (SQLQueryExpr) this.toSqlExpr(sql+whereTemp);
-
-            MySqlSelectQueryBlock query = (MySqlSelectQueryBlock) sqlQueryExpr.getSubQuery().getQuery();
-
-            WhereParser whereParser = new WhereParser(sqlParser,query);
-            Where where = whereParser.findWhere();
-            if (where != null){
-                boolQuery = QueryMaker.explan(where);
-            }
-        } catch (SqlParseException e) {
-            log.error(e.getMessage());
-        }
-
-
-        return boolQuery;
-
-    }
-
-    private SQLExpr toSqlExpr(String sql) {
-
-        SQLExprParser parser = new ElasticSqlExprParser(sql);
-        SQLExpr expr = parser.expr();
-        if (parser.getLexer().token() != Token.EOF){
-            throw new ParserException("illegal sql expr :"+sql);
-        }
-        return expr;
-    }
-
-    @Override
+    //根据商品码检索菜品（不限类型）
     public SearchResult<DishEs> searchDishByCode(String code, int pageNum, int pageSize) {
-
-        String shopId = RpcContext.getContext().getAttachment("shopId");
-        String storeId = RpcContext.getContext().getAttachment("storeId");
-        if (StringUtils.isEmpty(shopId)){
-            throw new BussinessException("商户号不存在");
-        }
-        if (StringUtils.isEmpty(storeId)){
-            throw new BussinessException("门店号不存在");
-        }
-
-        return this.queryIndexContent("dish","code like '%"+code+"%' and is_deleted=0 and shop_id='"+shopId+"' and store_id = '"+storeId+"' order by last_update_time desc",pageNum,pageSize);
+        return queryDish("code", code, false, 0, pageNum, pageSize);
     }
 
-    @Override
+    //根据商品名称与类型检索
     public SearchResult<DishEs> searchDishByName(String name, int type, int pageNum, int pageSize) {
+        return queryDish("dish_name", name, true, type, pageNum, pageSize);
+    }
 
-        String shopId = RpcContext.getContext().getAttachment("shopId");
-        String storeId = RpcContext.getContext().getAttachment("storeId");
-        if (StringUtils.isEmpty(shopId)){
+    /**
+     * 统一构造菜品索引检索条件并执行分页查询
+     *
+     * @param keywordField 模糊匹配字段（code / dish_name）
+     * @param keyword      检索关键词，两侧加 * 模拟 like '%kw%'
+     * @param withType    是否追加类型过滤
+     * @param type         1 菜品，2 套餐（withType 为 true 时生效）
+     */
+    private SearchResult<DishEs> queryDish(String keywordField, String keyword, boolean withType,
+                                           int type, int pageNum, int pageSize) {
+        String shopId = TenantContext.getShopId();
+        String storeId = TenantContext.getStoreId();
+        if (!StringUtils.hasText(shopId) || "null".equals(shopId)) {
             throw new BussinessException("商户号不存在");
         }
-        if (StringUtils.isEmpty(storeId)){
+        if (!StringUtils.hasText(storeId) || "null".equals(storeId)) {
             throw new BussinessException("门店号不存在");
         }
 
-        return this.queryIndexContent("dish","dish_name like '%"+name+"%' and type='"+type+"' and is_deleted=0 and shop_id='"+shopId+"' and store_id='"+storeId+"' order by last_update_time desc",pageNum,pageSize);
+        final String wildcardPattern = "*" + keyword + "*";
+        NativeQuery query = NativeQuery.builder()
+                .withQuery(q -> q.bool(b -> {
+                    //租户与逻辑删除条件走 filter，不参与评分
+                    b.filter(f -> f.term(t -> t.field("shop_id").value(FieldValue.of(shopId))));
+                    b.filter(f -> f.term(t -> t.field("store_id").value(FieldValue.of(storeId))));
+                    b.filter(f -> f.term(t -> t.field("is_deleted").value(FieldValue.of(0))));
+                    if (withType) {
+                        b.filter(f -> f.term(t -> t.field("type").value(FieldValue.of(type))));
+                    }
+                    if (StringUtils.hasText(keyword)) {
+                        b.must(m -> m.wildcard(w -> w.field(keywordField)
+                                .wildcard(wildcardPattern).caseInsensitive(true)));
+                    }
+                    return b;
+                }))
+                .withSort(Sort.by(Sort.Direction.DESC, "last_update_time"))
+                .withPageable(PageRequest.of(Math.max(0, pageNum - 1), pageSize))
+                .build();
+
+        try {
+            SearchHits<DishEs> searchHits = elasticsearchOperations.search(query, DishEs.class);
+            List<DishEs> records = new ArrayList<>();
+            searchHits.forEach(hit -> records.add(hit.getContent()));
+
+            SearchResult<DishEs> result = new SearchResult<>();
+            result.setRecords(records);
+            result.setTotal(searchHits.getTotalHits());
+            return result;
+        } catch (RuntimeException e) {
+            log.error("检索菜品索引失败, index={}, field={}, keyword={}", INDEX_DISH, keywordField, keyword, e);
+            throw new BussinessException("菜品检索服务异常");
+        }
     }
 }

@@ -1,22 +1,25 @@
 package com.restkeeper.store.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.store.entity.CreditCompanyUser;
 import com.restkeeper.store.mapper.CreditCompanyUserMapper;
-import org.apache.dubbo.config.annotation.Service;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
-@org.springframework.stereotype.Service("creditCompanyUserService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class CreditCompanyUserServiceImpl extends ServiceImpl<CreditCompanyUserMapper, CreditCompanyUser> implements ICreditCompanyUserService {
+/**
+ * 挂账单位用餐人本地服务
+ */
+@Service("creditCompanyUserService")
+public class CreditCompanyUserServiceImpl extends ServiceImpl<CreditCompanyUserMapper, CreditCompanyUser> {
 
-    @Override
+    /**
+     * 按挂账 id 查询关联用餐人
+     */
     public List<CreditCompanyUser> getInfoList(String creditId) {
-
         QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(CreditCompanyUser::getCreditId,creditId);
+        queryWrapper.lambda().eq(CreditCompanyUser::getCreditId, creditId);
         return this.list(queryWrapper);
     }
 }

@@ -1,7 +1,7 @@
 package com.restkeeper.vo;
 
-import com.restkeeper.response.vo.PageVO;
-import io.swagger.annotations.ApiModelProperty;
+import com.restkeeper.http.PageResult;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -9,16 +9,16 @@ import lombok.Data;
  */
 @Data
 public class TablePanelVO {
-    @ApiModelProperty(value = "空闲桌台")
+    @Schema(description = "空闲桌台")
     private Integer freeNumbers; //table状态0
 
-    @ApiModelProperty(value = "已开台")
+    @Schema(description = "已开台")
     private int openedNumbers; //table状态2
 
-    @ApiModelProperty(value = "锁定")
+    @Schema(description = "锁定")
     private int lockedNumbers; //table状态1
 
-    @ApiModelProperty(value = "桌台分页信息")
-    PageVO<TableVO> tablePage;
+    @Schema(description = "桌台分页信息")
+    PageResult<TableVO> tablePage;
 }
 

@@ -1,6 +1,6 @@
 package com.restkeeper.vo.store;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
@@ -9,9 +9,9 @@ import lombok.Data;
 @Data
 public class CreditCompanyUserVO{
 
-    @ApiModelProperty(value = "用户名")
+    @Schema(description = "用户名")
     private String userName;
 
-    @ApiModelProperty(value = "手机号码")
+    @Schema(description = "手机号码")
     private String phone;
 }

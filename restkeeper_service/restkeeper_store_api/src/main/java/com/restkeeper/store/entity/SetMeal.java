@@ -1,11 +1,11 @@
 package com.restkeeper.store.entity;
 
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import io.swagger.annotations.ApiModel;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -16,7 +16,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@ApiModel(value="Setmeal", description="套餐")
+@Schema(description = "套餐")
 @TableName(value = "t_setmeal",resultMap = "BaseResultMap")
 public class SetMeal extends BaseStoreEntity implements Serializable{
 

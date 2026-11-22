@@ -1,47 +1,39 @@
 package com.restkeeper.store.service;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.store.entity.Credit;
 import com.restkeeper.store.entity.CreditRepayment;
 import com.restkeeper.store.mapper.CreditRepaymentMapper;
-import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-@org.springframework.stereotype.Service("creditRepaymentService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class CreditRepaymentServiceImpl extends ServiceImpl<CreditRepaymentMapper, CreditRepayment> implements ICreditRepaymentService {
+/**
+ * 挂账还款本地服务
+ */
+@Service("creditRepaymentService")
+public class CreditRepaymentServiceImpl extends ServiceImpl<CreditRepaymentMapper, CreditRepayment> {
 
     @Autowired
-    @Qualifier("creditService")
-    private ICreditService creditService;
+    private CreditServiceImpl creditService;
 
-
-    @Override
+    /**
+     * 还款：校验还款额不超额，落还款流水并回写挂账额度
+     */
     @Transactional
     public boolean repayment(CreditRepayment creditRepayment) {
-
-        //获取当前用户的还款金额
         Integer repaymentAmount = creditRepayment.getRepaymentAmount();
-
-        //获取当前的挂账信息
         Credit credit = creditService.getById(creditRepayment.getCreditId());
 
-        if (credit.getCreditAmount() - repaymentAmount < 0){
+        if (credit.getCreditAmount() - repaymentAmount < 0) {
             throw new BussinessException("还款金额超过欠款金额");
         }
 
-        //新增还款记录
         this.save(creditRepayment);
 
-        //修改挂账中的欠款金额
-        credit.setCreditAmount(credit.getCreditAmount()-repaymentAmount);
-
-        //记录总还款金额
-        credit.setTotalRepaymentAmount(credit.getTotalRepaymentAmount()+repaymentAmount);
-
+        credit.setCreditAmount(credit.getCreditAmount() - repaymentAmount);
+        credit.setTotalRepaymentAmount(credit.getTotalRepaymentAmount() + repaymentAmount);
         return creditService.saveOrUpdate(credit);
     }
 }

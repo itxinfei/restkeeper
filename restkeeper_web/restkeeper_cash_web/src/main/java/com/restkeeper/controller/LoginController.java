@@ -3,25 +3,28 @@ package com.restkeeper.controller;
 import com.restkeeper.store.service.IStaffService;
 import com.restkeeper.utils.Result;
 import com.restkeeper.vo.LoginVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Api(tags = {"收银端登录接口"})
+/**
+ * 收银端登录（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ */
+@Tag(name = "收银端登录")
 @RestController
 public class LoginController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IStaffService staffService;
+    private final IStaffService staffService;
 
-    @ApiOperation(value = "登录校验")
-    @ApiImplicitParam(name = "Authorization", value = "jwt token", required = false, dataType = "String",paramType="header")
-    @PostMapping("/login")
-    public Result login(@RequestBody LoginVO loginVO){
-        return staffService.login(loginVO.getShopId(),loginVO.getLoginName(), loginVO.getLoginPass());
+    public LoginController(IStaffService staffService) {
+        this.staffService = staffService;
+    }
+
+    @Operation(summary = "员工登录")
+    @PostMapping("/staff/login")
+    public Result login(@RequestBody LoginVO loginVO) {
+        return staffService.login(loginVO.getShopId(), loginVO.getLoginName(), loginVO.getLoginPass());
     }
 }

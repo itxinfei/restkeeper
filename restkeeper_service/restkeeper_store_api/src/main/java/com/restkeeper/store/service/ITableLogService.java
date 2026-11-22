@@ -1,13 +1,26 @@
 package com.restkeeper.store.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.restkeeper.store.entity.TableLog;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
-public interface ITableLogService extends IService<TableLog> {
+@Tag(name = "桌台开台记录服务")
+@HttpExchange("/table/log")
+public interface ITableLogService {
 
     //开桌
-    boolean openTable(TableLog tableLog);
+    @PostExchange("/open")
+    boolean openTable(@RequestBody TableLog tableLog);
 
-    //根据tableId获取每个桌台的详情信息
-    TableLog getOpenTableLog(String tableId);
+    //按 tableId 查询当前开台记录
+    @GetExchange("/open/{tableId}")
+    TableLog getOpenTableLog(@PathVariable("tableId") String tableId);
+
+    //保存开台记录（订单流程内部调用）
+    @PostExchange
+    boolean save(@RequestBody TableLog tableLog);
 }

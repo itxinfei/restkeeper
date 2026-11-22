@@ -1,69 +1,69 @@
 package com.restkeeper.controller.store;
 
-import com.restkeeper.response.vo.PageVO;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.DishCategory;
 import com.restkeeper.store.service.IDishCategoryService;
 import com.restkeeper.vo.store.AddDishCategoryVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 分类管理。端点路径对齐 provider 契约 {@link IDishCategoryService}。
+ */
 @Slf4j
-@Api(tags = { "分类管理" })
+@Tag(name = "分类管理")
 @RestController
-@RequestMapping("/dishCategory")
+@RequestMapping("/dish/category")
 public class DishCategoryController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IDishCategoryService dishCategoryService;
+    private final IDishCategoryService dishCategoryService;
 
+    public DishCategoryController(IDishCategoryService dishCategoryService) {
+        this.dishCategoryService = dishCategoryService;
+    }
 
-    @ApiOperation(value = "添加分类")
+    @Operation(summary = "添加分类")
     @PostMapping("/add")
-    public boolean add(@RequestBody AddDishCategoryVO addDishCategoryVO){
-        return dishCategoryService.add(addDishCategoryVO.getCategoryName(),addDishCategoryVO.getType());
+    public boolean add(@RequestBody AddDishCategoryVO addDishCategoryVO) {
+        return dishCategoryService.add(addDishCategoryVO.getCategoryName(), addDishCategoryVO.getType());
     }
 
-    /**
-     * 修改分类名称
-     * @return
-     */
-    @ApiOperation(value = "修改分类")
-    @PutMapping("/update/{id}")
-    public boolean update(@PathVariable String id, @RequestParam(name="categoryName") String categoryName){
-        return dishCategoryService.update(id, categoryName);
+    @Operation(summary = "修改分类")
+    @PutMapping("/{id}")
+    public boolean update(@PathVariable("id") String id,
+                          @RequestParam("name") String name) {
+        return dishCategoryService.update(id, name);
     }
 
-    @ApiOperation(value = "分页列表")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path", name = "page", value = "当前页码", required = true, dataType = "Integer"),
-            @ApiImplicitParam(paramType = "path", name = "pageSize", value = "分页大小", required = true, dataType = "Integer")})
-    @GetMapping("/pageList/{page}/{pageSize}")
-    public PageVO<DishCategory> findByPage(@PathVariable Integer page, @PathVariable Integer pageSize){
-        return new PageVO<>(dishCategoryService.queryPage(page,pageSize));
+    @Operation(summary = "分页列表")
+    @GetMapping("/page/{pageNum}/{pageSize}")
+    public PageResult<DishCategory> findByPage(@PathVariable("pageNum") Integer pageNum,
+                                               @PathVariable("pageSize") Integer pageSize) {
+        return dishCategoryService.queryPage(pageNum, pageSize);
     }
 
-    /**
-     * 菜品，套餐分类下拉列表使用
-     * 1 菜品 2 套餐
-     * @return
-     */
-    @ApiOperation(value = "添加分类")
+    @Operation(summary = "按类型查询分类列表（1 菜品 2 套餐）")
     @GetMapping("/type/{type}")
-    public List<Map<String,Object>> getByType(@PathVariable Integer type){
+    public List<Map<String, Object>> getByType(@PathVariable("type") Integer type) {
         return dishCategoryService.findCategoryList(type);
     }
 
-    @ApiOperation(value = "删除分类")
-    @DeleteMapping("/delete/{id}")
-    public boolean delete(@PathVariable String id){
+    @Operation(summary = "删除分类")
+    @DeleteMapping("/{id}")
+    public boolean delete(@PathVariable("id") String id) {
         return dishCategoryService.delete(id);
     }
 }

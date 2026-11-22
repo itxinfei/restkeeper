@@ -4,74 +4,71 @@ import com.restkeeper.store.entity.Remark;
 import com.restkeeper.store.service.IRemarkService;
 import com.restkeeper.vo.store.RemarkVO;
 import com.restkeeper.vo.store.SettingsVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * 门店备注设置。端点路径对齐 provider 契约 {@link IRemarkService}。
+ */
 @Slf4j
-@Api(tags = { "门店备注管理" })
+@Tag(name = "门店备注管理")
 @RestController
-@RequestMapping("/settings")
+@RequestMapping("/remark")
 public class SettingsController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IRemarkService remarkService;
+    private final IRemarkService remarkService;
 
-    @ApiOperation(value = "获取门店设置信息")
-    @GetMapping("/getSysSettings")
-    public SettingsVO getSysSettings(){
+    public SettingsController(IRemarkService remarkService) {
+        this.remarkService = remarkService;
+    }
 
+    @Operation(summary = "获取门店设置信息")
+    @GetMapping("/list")
+    public SettingsVO getSysSettings() {
         List<Remark> remarks = remarkService.getRemarks();
 
         List<RemarkVO> remarkVOS = new ArrayList<>();
-
-        remarks.forEach(d->{
-
+        remarks.forEach(d -> {
             RemarkVO remarkVO = new RemarkVO();
-
             remarkVO.setRemarkName(d.getRemarkName());
 
-            //value
-            //remarkValue : "[店庆，节假日]"
             String remarkValue = d.getRemarkValue();
-            String remarkValue_substring = remarkValue.substring(remarkValue.indexOf("[") + 1, remarkValue.indexOf("]"));
-
-            //remarkValue_substring : 店庆，节假日
-            if (StringUtils.isNotEmpty(remarkValue_substring)){
-                String[] remark_array = remarkValue_substring.split(",");
-                remarkVO.setRemarkValue(Arrays.asList(remark_array));
+            if (remarkValue != null) {
+                String remarkValueSubstring = remarkValue.substring(remarkValue.indexOf("[") + 1, remarkValue.indexOf("]"));
+                if (StringUtils.hasText(remarkValueSubstring)) {
+                    String[] remarkArray = remarkValueSubstring.split(",");
+                    remarkVO.setRemarkValue(Arrays.asList(remarkArray));
+                }
             }
-
             remarkVOS.add(remarkVO);
         });
 
         SettingsVO settingsVO = new SettingsVO();
         settingsVO.setRemarks(remarkVOS);
-
         return settingsVO;
     }
 
-    @ApiOperation("修改门店备注")
+    @Operation(summary = "修改门店备注")
     @PutMapping("/update")
-    public boolean update(@RequestBody SettingsVO settingsVO){
-
+    public boolean update(@RequestBody SettingsVO settingsVO) {
         List<Remark> remarks = new ArrayList<>();
         List<RemarkVO> remarkVOList = settingsVO.getRemarks();
 
         remarkVOList.forEach(remarkVO -> {
-
             Remark remark = new Remark();
-
             remark.setRemarkName(remarkVO.getRemarkName());
             remark.setRemarkValue(remarkVO.getRemarkValue().toString());
-
             remarks.add(remark);
         });
 

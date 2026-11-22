@@ -1,15 +1,15 @@
 package com.restkeeper.vo.store;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
 public class AddDishCategoryVO {
 
-     @ApiModelProperty(value = "分类名称")
+     @Schema(description = "分类名称")
     private String categoryName;
 
-    @ApiModelProperty(value = "分类类型")
+    @Schema(description = "分类类型")
     private int type;
 
 }

@@ -1,104 +1,102 @@
 package com.restkeeper.controller.shop;
 
-import com.restkeeper.constants.SystemCode;
-import com.restkeeper.response.vo.PageVO;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.shop.dto.StoreDTO;
 import com.restkeeper.shop.entity.Store;
 import com.restkeeper.shop.service.IStoreService;
 import com.restkeeper.utils.Result;
 import com.restkeeper.vo.shop.AddStoreVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.BeanUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
 /**
- * <p>
- * 门店信息账号 前端控制器
- * </p>
+ * 门店信息。端点路径对齐 provider 契约 {@link IStoreService}。
  */
 @Slf4j
-@Api(tags = { "门店信息" })
+@Tag(name = "门店信息")
 @RestController
 @RequestMapping("/store")
 public class StoreController {
 
-    @Reference(version = "1.0.0", check=false)
-    private IStoreService storeService;
+    private final IStoreService storeService;
 
-
-    /**
-     * 分页数据
-     */
-    @ApiOperation(value = "分页查询所有门店")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path", name = "page", value = "当前页码", required = true, dataType = "Integer"),
-            @ApiImplicitParam(paramType = "path", name = "pageSize", value = "分大小", required = true, dataType = "Integer"),
-            @ApiImplicitParam(paramType = "query", name = "name", value = "门店名称", required = false, dataType = "String") })
-    @GetMapping(value = "/pageList/{page}/{pageSize}")
-    public PageVO<Store> findListByPage(@PathVariable int page,
-                                        @PathVariable int pageSize,
-                                        @RequestParam(value = "name",required = false) String name) {
-        return new PageVO<Store>(storeService.queryPageByName(page, pageSize,name));
+    public StoreController(IStoreService storeService) {
+        this.storeService = storeService;
     }
 
-    /**
-     * 新增门店
-     */
-    @ApiOperation(value = "新增数据")
-    @PostMapping(value = "/add")
+    @Operation(summary = "分页查询所有门店")
+    @GetMapping("/page/{pageNo}/{pageSize}")
+    public PageResult<Store> findListByPage(@PathVariable("pageNo") int pageNo,
+                                            @PathVariable("pageSize") int pageSize,
+                                            @RequestParam(value = "name", required = false) String name) {
+        return storeService.queryPageByName(pageNo, pageSize, name);
+    }
+
+    @Operation(summary = "新增门店")
+    @PostMapping
     public boolean add(@RequestBody AddStoreVO storeVO) {
         Store store = new Store();
         BeanUtils.copyProperties(storeVO, store);
         return storeService.save(store);
     }
 
-    /**
-     * 门店停用
-     */
-    @ApiOperation(value = "门店停用")
-    @ApiImplicitParam(paramType = "path", name = "id", value = "主键", required = true, dataType = "String")
-    @PutMapping(value = "/disabled/{id}")
-    public boolean disabled(@PathVariable String id) {
+    @Operation(summary = "按主键查询门店")
+    @GetMapping("/{id}")
+    public Store getById(@PathVariable("id") String id) {
+        return storeService.getById(id);
+    }
 
-        Store store = storeService.getById(id);
-        store.setStatus(SystemCode.FORBIDDEN);
-
+    @Operation(summary = "按主键更新门店")
+    @PutMapping
+    public boolean updateById(@RequestBody Store store) {
         return storeService.updateById(store);
     }
 
-    @ApiOperation(value = "获取门店省份信息")
-    @GetMapping("/listProvince")
-    @ResponseBody
+    @Operation(summary = "门店停用")
+    @PutMapping("/disable/{id}")
+    public boolean disable(@PathVariable("id") String id) {
+        return storeService.disable(id);
+    }
+
+    @Operation(summary = "门店启用")
+    @PutMapping("/enable/{id}")
+    public boolean enable(@PathVariable("id") String id) {
+        return storeService.enable(id);
+    }
+
+    @Operation(summary = "获取门店省份信息")
+    @GetMapping("/province/list")
     public List<String> listProvince() {
         return storeService.getAllProvince();
     }
 
-    @ApiOperation(value = "根据省份获取门店列表")
-    @GetMapping("/getStoreByProvince/{province}")
-    @ResponseBody
-    public List<StoreDTO> getStoreByProvince(@PathVariable String province) {
+    @Operation(summary = "根据省份获取门店列表")
+    @GetMapping("/province/{province}")
+    public List<StoreDTO> getStoreByProvince(@PathVariable("province") String province) {
         return storeService.getStoreByProvince(province);
     }
 
-    @ApiOperation(value = "获取当前商户管理的门店信息")
-    @GetMapping(value = "/listManagerStores")
-    public List<StoreDTO> getStoreListByManagerId(){
+    @Operation(summary = "获取当前商户管理的门店信息")
+    @GetMapping("/manager/list")
+    public List<StoreDTO> getStoreListByManagerId() {
         return storeService.getStoreListByManagerId();
     }
 
-    @ApiOperation(value = "门店切换")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path", name = "storeId", value = "门店Id", dataType = "String")})
-    @GetMapping(value = "/switchStore/{storeId}")
-    public Result switchStore(@PathVariable("storeId") String storeId){
+    @Operation(summary = "门店切换")
+    @PutMapping("/switch/{storeId}")
+    public Result switchStore(@PathVariable("storeId") String storeId) {
         return storeService.switchStore(storeId);
     }
-
 }

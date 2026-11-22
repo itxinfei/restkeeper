@@ -1,66 +1,57 @@
 package com.restkeeper.shop.config;
 
-import com.baomidou.mybatisplus.extension.plugins.PaginationInterceptor;
-import com.baomidou.mybatisplus.extension.plugins.tenant.TenantHandler;
-import com.baomidou.mybatisplus.extension.plugins.tenant.TenantSqlParser;
-import com.google.common.collect.Lists;
+import com.baomidou.mybatisplus.annotation.DbType;
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.handler.TenantLineHandler;
+import com.baomidou.mybatisplus.extension.plugins.inner.PaginationInnerInterceptor;
+import com.baomidou.mybatisplus.extension.plugins.inner.TenantLineInnerInterceptor;
+import com.restkeeper.tenant.TenantContext;
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.StringValue;
-import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
-
+/**
+ * 商户（shop）侧多租户配置：所有业务表自动追加 shop_id 条件。
+ * 租户来源从 Dubbo 时代的 RpcContext 附件改为 HTTP 请求头经
+ * {@link com.restkeeper.http.TenantContextHeaderFilter} 还原后的 TenantContext。
+ */
 @Configuration
 public class MybatisPlusTenantConfig {
 
-    //定义当前的多租户标识字段
-    private static final String SYSTEM_TENANT_ID="shop_id";
-
-    //定义当前有哪些表要忽略多租户的操作
-    private static final List<String> IGNORE_TENANT_TABLES= Lists.newArrayList("");
+    /**
+     * 多租户标识字段
+     */
+    private static final String SYSTEM_TENANT_ID = "shop_id";
 
     @Bean
-    public PaginationInterceptor paginationInterceptor(){
+    public MybatisPlusInterceptor mybatisPlusInterceptor() {
+        MybatisPlusInterceptor interceptor = new MybatisPlusInterceptor();
+        //多租户 inner 拦截器必须排在分页之前
+        interceptor.addInnerInterceptor(new TenantLineInnerInterceptor(new TenantLineHandler() {
 
-        System.out.println("-------------paginationInterceptor begin--------------");
-
-        PaginationInterceptor paginationInterceptor = new PaginationInterceptor();
-
-        //多租户sql解析器，sql解析处理拦截，增加租户处理回调
-        TenantSqlParser tenantSqlParser = new TenantSqlParser().setTenantHandler(new TenantHandler() {
-
-            //设置租户id
             @Override
-            public Expression getTenantId(boolean where) {
-
-                //暂时写死，用于测试
-                //String shopId="test";
-                //从RPCContext对象中获取shopid
-                String shopId = RpcContext.getContext().getAttachment("shopId");
-
-                if (shopId == null){
-                    throw new RuntimeException("get tenantId error");
+            public Expression getTenantId() {
+                String shopId = TenantContext.getShopId();
+                //TenantContext 取不到值时返回字符串 "null"
+                if (shopId == null || shopId.isEmpty() || "null".equals(shopId)) {
+                    throw new IllegalStateException("租户上下文缺失：shopId");
                 }
                 return new StringValue(shopId);
             }
 
-            //设置租户id所对应的表字段
             @Override
             public String getTenantIdColumn() {
                 return SYSTEM_TENANT_ID;
             }
 
-            //表级过滤器
             @Override
-            public boolean doTableFilter(String tableName) {
-                return IGNORE_TENANT_TABLES.stream().anyMatch((e)->e.equalsIgnoreCase(tableName));
+            public boolean ignoreTable(String tableName) {
+                //shop 库品牌/门店/门店管理员表全部带 shop_id，无忽略表
+                return false;
             }
-        });
-
-        paginationInterceptor.setSqlParserList(Lists.newArrayList(tenantSqlParser));
-
-        return paginationInterceptor;
+        }));
+        interceptor.addInnerInterceptor(new PaginationInnerInterceptor(DbType.MYSQL));
+        return interceptor;
     }
 }

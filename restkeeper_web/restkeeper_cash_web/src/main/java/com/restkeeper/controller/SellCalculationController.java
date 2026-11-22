@@ -2,38 +2,37 @@ package com.restkeeper.controller;
 
 import com.restkeeper.store.entity.SellCalculation;
 import com.restkeeper.store.service.ISellCalculationService;
-import com.restkeeper.vo.SellCalculationVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+/**
+ * 沽清（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ */
+@Tag(name = "沽清")
 @RestController
-@RequestMapping("/sellCalculation")
-@Api(tags = {"估清接口"})
 public class SellCalculationController {
 
-    @Reference(version = "1.0.0",check = false)
-    private ISellCalculationService sellCalculationService;
+    private final ISellCalculationService sellCalculationService;
 
-    @ApiOperation("添加沽清")
-    @PostMapping("/add")
-    public boolean add(@RequestBody SellCalculationVO sellCalculationVO){
+    public SellCalculationController(ISellCalculationService sellCalculationService) {
+        this.sellCalculationService = sellCalculationService;
+    }
 
-        SellCalculation sellCalculation = new SellCalculation();
-        sellCalculation.setDishId(sellCalculationVO.getDishId());
-        sellCalculation.setDishName(sellCalculationVO.getDishName());
-        sellCalculation.setDishType(sellCalculationVO.getDishType());
-        sellCalculation.setSellLimitTotal(sellCalculationVO.getNumbers());
-        sellCalculation.setRemainder(sellCalculationVO.getNumbers());
+    @Operation(summary = "保存沽清")
+    @PostMapping("/sellCalculation")
+    public boolean save(@RequestBody SellCalculation sellCalculation) {
         return sellCalculationService.save(sellCalculation);
     }
 
-    @ApiOperation(value = "删除沽清")
-    @DeleteMapping("/delete")
-    public boolean delete(@RequestBody List<String> ids){
+    @Operation(summary = "批量删除沽清")
+    @DeleteMapping("/sellCalculation")
+    public boolean removeByIds(@RequestBody List<String> ids) {
         return sellCalculationService.removeByIds(ids);
     }
 }

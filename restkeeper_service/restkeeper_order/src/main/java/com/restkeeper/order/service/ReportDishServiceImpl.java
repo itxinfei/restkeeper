@@ -1,20 +1,21 @@
 package com.restkeeper.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.entity.ReportDishEntity;
 import com.restkeeper.order.mapper.ReportDishMapper;
-import com.restkeeper.service.IReportDishService;
-import org.apache.dubbo.config.annotation.Service;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@Service(version = "1.0.0",protocol = "dubbo")
-@org.springframework.stereotype.Service("reportDishService")
-public class ReportDishServiceImpl extends ServiceImpl<ReportDishMapper, ReportDishEntity> implements IReportDishService {
+/**
+ * 菜品报表本地服务
+ */
+@Service("reportDishService")
+public class ReportDishServiceImpl extends ServiceImpl<ReportDishMapper, ReportDishEntity> {
 
-    @Override
+    //菜品分类销售额汇总（饼图）
     public List<ReportDishEntity> getCategoryAmountCollect(LocalDate start, LocalDate end) {
 
         QueryWrapper<ReportDishEntity> wrapper = new QueryWrapper<>();
@@ -25,7 +26,7 @@ public class ReportDishServiceImpl extends ServiceImpl<ReportDishMapper, ReportD
         return this.list(wrapper);
     }
 
-    @Override
+    //菜品销量排行
     public List<ReportDishEntity> getDishRank(LocalDate start, LocalDate end) {
 
         QueryWrapper<ReportDishEntity> wrapper = new QueryWrapper<>();

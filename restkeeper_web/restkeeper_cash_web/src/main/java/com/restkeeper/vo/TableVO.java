@@ -1,6 +1,6 @@
 package com.restkeeper.vo;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -10,16 +10,16 @@ import java.time.LocalDateTime;
  */
 @Data
 public class TableVO {
-    @ApiModelProperty(value = "桌台id")
+    @Schema(description = "桌台id")
     private String tableId;
 
-    @ApiModelProperty(value = "桌台名称")
+    @Schema(description = "桌台名称")
     private String tableName;
 
-    @ApiModelProperty(value = "开桌时间")
+    @Schema(description = "开桌时间")
     private LocalDateTime createTime;
 
-    @ApiModelProperty(value = "用餐人数")
+    @Schema(description = "用餐人数")
     private Integer userNumbers;
 }
 

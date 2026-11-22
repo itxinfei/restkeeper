@@ -1,13 +1,24 @@
 package com.restkeeper.store.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
 import com.restkeeper.store.entity.Dish;
-import com.restkeeper.store.entity.SetMealDish;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
 
 import java.util.List;
 
-public interface ISetMealDishService extends IService<SetMealDish> {
-    List<Dish> getAllDishBySetMealId(String setMealId);
+@Tag(name = "套餐菜品服务")
+@HttpExchange("/setMeal/dish")
+public interface ISetMealDishService {
 
-    Integer getDishCopiesInSetMeal(String dishId, String setMealId);
+    //按套餐 id 查询其包含的全部菜品
+    @GetExchange("/list/{setMealId}")
+    List<Dish> getAllDishBySetMealId(@PathVariable("setMealId") String setMealId);
+
+    //查询某菜品在套餐中的份数
+    @GetExchange("/copies")
+    Integer getDishCopiesInSetMeal(@RequestParam("dishId") String dishId,
+                                   @RequestParam("setMealId") String setMealId);
 }

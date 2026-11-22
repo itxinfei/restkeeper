@@ -1,144 +1,141 @@
 package com.restkeeper.shop.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.common.collect.Maps;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.shop.dto.StoreDTO;
 import com.restkeeper.shop.entity.Store;
 import com.restkeeper.shop.mapper.StoreMapper;
+import com.restkeeper.tenant.TenantContext;
 import com.restkeeper.utils.BeanListUtils;
 import com.restkeeper.utils.JWTUtil;
 import com.restkeeper.utils.Result;
 import com.restkeeper.utils.ResultCode;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
-import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
-import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@org.springframework.stereotype.Service("storeService")
-@Service(version = "1.0.0",protocol = "dubbo")
+/**
+ * 门店本地服务：不再实现 api 契约接口，HTTP 端点由 StoreController 薄转发。
+ */
+@Service("storeService")
 @Slf4j
-public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> implements IStoreService {
+public class StoreServiceImpl extends ServiceImpl<StoreMapper, Store> {
 
-    @Override
-    public IPage<Store> queryPageByName(int pageNo, int pageSize, String name) {
+    @Value("${gateway.secret:restkeeper}")
+    private String secret;
 
-
-        IPage<Store> page = new Page<>(pageNo,pageSize);
-
+    /**
+     * 分页查询（按门店名称模糊）
+     */
+    public PageResult<Store> queryPageByName(int pageNo, int pageSize, String name) {
+        Page<Store> page = new Page<>(pageNo, pageSize);
         QueryWrapper<Store> queryWrapper = new QueryWrapper<>();
-
-        if (StringUtils.isNotEmpty(name)){
-            queryWrapper.lambda().like(Store::getStoreName,name);
+        if (StringUtils.hasText(name)) {
+            queryWrapper.lambda().like(Store::getStoreName, name);
         }
-        return this.page(page,queryWrapper);
+        return PageResult.of(this.page(page, queryWrapper));
     }
 
-    @Override
+    /**
+     * 查询所有有效省份
+     */
     public List<String> getAllProvince() {
         return getBaseMapper().getAllProvince();
     }
 
-    @Override
+    /**
+     * 按省份查询营业中门店
+     */
     public List<StoreDTO> getStoreByProvince(String province) {
-
         QueryWrapper<Store> queryWrapper = new QueryWrapper<>();
-
-        //正常营业状态
-        queryWrapper.lambda().eq(Store::getStatus,1);
-
-        //省份信息
-        if (StringUtils.isNotEmpty(province) && !"all".equals(province)){
-            queryWrapper.lambda().eq(Store::getProvince,province);
+        queryWrapper.lambda().eq(Store::getStatus, 1);
+        if (StringUtils.hasText(province) && !"all".equals(province)) {
+            queryWrapper.lambda().eq(Store::getProvince, province);
         }
-
         List<Store> list = this.list(queryWrapper);
-
-        //处理结果
-        List<StoreDTO> list_dto;
-        try {
-
-            list_dto = BeanListUtils.copy(list, StoreDTO.class);
-            return list_dto;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error("集合转换失败");
-        }
-
-
-        return new ArrayList<StoreDTO>();
+        return toDtoList(list);
     }
 
-    @Override
+    /**
+     * 查询当前登录店长管理的营业中门店
+     */
     public List<StoreDTO> getStoreListByManagerId() {
-
         QueryWrapper<Store> queryWrapper = new QueryWrapper<>();
-
-        queryWrapper.lambda().eq(Store::getStatus,1)
-                .eq(Store::getStoreManagerId, RpcContext.getContext().getAttachment("loginUserId"));
-
+        queryWrapper.lambda().eq(Store::getStatus, 1)
+                .eq(Store::getStoreManagerId, TenantContext.getLoginUserId());
         List<Store> list = this.list(queryWrapper);
-
-        //处理结果
-        List<StoreDTO> list_dto;
-        try {
-
-            list_dto = BeanListUtils.copy(list, StoreDTO.class);
-            return list_dto;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.error("集合转换失败");
-        }
-
-
-        return new ArrayList<StoreDTO>();
+        return toDtoList(list);
     }
 
-    @Value("${gateway.secret}")
-    private String secret;
+    /**
+     * 停用门店（置为停业 0）
+     */
+    public boolean disable(String id) {
+        return changeStatus(id, SystemCode.FORBIDDEN);
+    }
 
-    @Override
+    /**
+     * 启用门店（恢复营业 1）
+     */
+    public boolean enable(String id) {
+        return changeStatus(id, SystemCode.ENABLED);
+    }
+
+    //变更门店营业状态：查不到门店返回 false
+    private boolean changeStatus(String id, int status) {
+        Store store = this.getById(id);
+        if (store == null) {
+            return false;
+        }
+        store.setStatus(status);
+        return this.updateById(store);
+    }
+
+    /**
+     * 切换当前操作门店，重新签发令牌
+     */
     public Result switchStore(String storeId) {
-
         Result result = new Result();
 
-        Map<String,Object> tokenMap = Maps.newHashMap();
-        tokenMap.put("shopId",RpcContext.getContext().getAttachment("shopId"));
-        tokenMap.put("storeId",storeId);
-        tokenMap.put("loginUserId",RpcContext.getContext().getAttachment("loginUserId"));
-        tokenMap.put("loginUserName",RpcContext.getContext().getAttachment("loginUserName"));
+        Map<String, Object> tokenMap = new HashMap<>();
+        tokenMap.put("shopId", TenantContext.getShopId());
+        tokenMap.put("storeId", storeId);
+        tokenMap.put("loginUserId", TenantContext.getLoginUserId());
+        tokenMap.put("loginUserName", TenantContext.getLoginUserName());
         tokenMap.put("userType", SystemCode.USER_TYPE_STORE_MANAGER);
 
-        String tokenInfo = "";
-
         try {
-            tokenInfo = JWTUtil.createJWTByObj(tokenMap,secret);
-        } catch (IOException e) {
-            e.printStackTrace();
-
+            String tokenInfo = JWTUtil.createJWTByObj(tokenMap, secret);
+            result.setStatus(ResultCode.success);
+            result.setDesc("ok");
+            result.setData(storeId);
+            result.setToken(tokenInfo);
+        } catch (Exception e) {
+            log.error("切换门店生成令牌失败, storeId={}", storeId, e);
             result.setStatus(ResultCode.error);
             result.setDesc("生成令牌失败");
-            return result;
         }
-
-        result.setStatus(ResultCode.success);
-        result.setDesc("ok");
-        result.setData(storeId);
-        result.setToken(tokenInfo);
-
         return result;
     }
 
-
+    /**
+     * 实体集合转 DTO 集合，转换失败返回空集合
+     */
+    private List<StoreDTO> toDtoList(List<Store> list) {
+        try {
+            return BeanListUtils.copy(list, StoreDTO.class);
+        } catch (Exception e) {
+            log.error("门店集合转换失败", e);
+            return new ArrayList<>();
+        }
+    }
 }

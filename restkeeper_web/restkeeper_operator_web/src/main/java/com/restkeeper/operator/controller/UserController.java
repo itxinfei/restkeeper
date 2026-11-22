@@ -1,30 +1,28 @@
 package com.restkeeper.operator.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.operator.entity.OperatorUser;
 import com.restkeeper.operator.service.IOperatorUserService;
-import com.restkeeper.operator.vo.LoginVO;
-import com.restkeeper.response.vo.PageVO;
 import com.restkeeper.utils.Result;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
- * 管理员的登录接口
+ * 运营人员接口（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ * 端点路径对齐 provider 契约 {@link IOperatorUserService}。
  */
+@Tag(name = "运营人员")
 @RestController
-@RefreshScope //配置中心的自动刷新
 @Slf4j
-@Api(tags = {"管理员相关接口"})
-public class UserController{
-
+public class UserController {
 
     @Value("${server.port}")
     private String port;
@@ -38,65 +36,39 @@ public class UserController{
     @Value("${shareInfo:''}")
     private String shareInfo;
 
-    @Reference(version = "1.0.0",check = false)
-    private IOperatorUserService operatorUserService;
+    private final IOperatorUserService operatorUserService;
 
-    @GetMapping(value = "/echo/{message}")
-    public String echo(@PathVariable(value = "message") String message) {
+    public UserController(IOperatorUserService operatorUserService) {
+        this.operatorUserService = operatorUserService;
+    }
+
+    @GetMapping("/echo/{message}")
+    public String echo(@PathVariable("message") String message) {
         return "Hello Nacos Discovery " + message + ", i am from port " + port;
     }
 
-    @GetMapping(value = "/config")
+    @GetMapping("/config")
     public String config() {
-        return "Hello Nacos Config get "+key+"      commonValue:"+commonKey ;
+        return "Hello Nacos Config get " + key + "      commonValue:" + commonKey;
     }
 
     @GetMapping("/demo")
-    public String demo(){
-        return "shareInfo:  "+shareInfo;
+    public String demo() {
+        return "shareInfo:  " + shareInfo;
     }
 
-    @ApiOperation("分页列表查询")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path",name= "page",value = "当前页码",required = true,dataType = "Integer"),
-            @ApiImplicitParam(paramType = "path",name = "pageSize",value = "每页数据大小",required = true,dataType = "Integer"),
-            @ApiImplicitParam(paramType = "query",name = "name",value = "用户名",required = false,dataType = "String"),
-    })
-    @GetMapping("/pageList/{page}/{pageSize}")
-    public IPage<OperatorUser> findListByPage(@PathVariable("page") int pageNum,
-                                              @PathVariable("pageSize") int pageSize,
-                                              @RequestParam(value = "name",required = false) String name){
-
-        /*IPage<OperatorUser> page = new Page<OperatorUser>(pageNum,pageSize);
-        log.info("管理员数据分页查询："+ JSON.toJSONString(page));*/
-        return operatorUserService.queryPageByName(pageNum,pageSize,name);
+    @Operation(summary = "运营人员分页")
+    @GetMapping("/operator/user/page/{pageNum}/{pageSize}")
+    public PageResult<OperatorUser> queryPageByName(@PathVariable("pageNum") int pageNum,
+                                                    @PathVariable("pageSize") int pageSize,
+                                                    @RequestParam(value = "name", required = false) String name) {
+        return operatorUserService.queryPageByName(pageNum, pageSize, name);
     }
 
-    @ApiOperation("分页列表查询(按照前端要求)")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path",name= "page",value = "当前页码",required = true,dataType = "Integer"),
-            @ApiImplicitParam(paramType = "path",name = "pageSize",value = "每页数据大小",required = true,dataType = "Integer"),
-            @ApiImplicitParam(paramType = "query",name = "name",value = "用户名",required = false,dataType = "String"),
-    })
-    @GetMapping("/pagevoList/{page}/{pageSize}")
-    public PageVO<OperatorUser> findPageVO(@PathVariable("page") int pageNum,
-                             @PathVariable("pageSize") int pageSize,
-                             @RequestParam(value = "name",required = false) String name){
-
-        IPage<OperatorUser> page = operatorUserService.queryPageByName(pageNum, pageSize, name);
-
-        //int i =1/0;
-
-        PageVO<OperatorUser> pageVO = new PageVO<>(page);
-        return pageVO;
+    @Operation(summary = "运营人员登录")
+    @PostMapping("/operator/user/login")
+    public Result login(@RequestParam("loginName") String loginName,
+                        @RequestParam("loginPass") String loginPass) {
+        return operatorUserService.login(loginName, loginPass);
     }
-
-    //登录
-    @ApiOperation("登录")
-    @PostMapping("/login")
-    @ApiImplicitParam(name = "Authorization", value = "jwt token", required = false, dataType = "String",paramType="header")
-    public Result login(@RequestBody LoginVO loginVO){
-        return operatorUserService.login(loginVO.getLoginName(),loginVO.getLoginPass());
-    }
-
 }

@@ -33,8 +33,6 @@ public class PinyinUtil {
                 }
             }
         } catch (BadHanyuPinyinOutputFormatCombination e) {
-            e.printStackTrace();
-
             throw e;
         }
         return hanyupinyin;

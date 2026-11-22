@@ -1,18 +1,18 @@
 package com.restkeeper.vo.store;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 @Data
 public class TableVO {
 
-    @ApiModelProperty(value = "区域id")
+    @Schema(description = "区域id")
     private String areaId;
 
-    @ApiModelProperty(value = "桌台名称")
+    @Schema(description = "桌台名称")
     private String tableName;
 
-    @ApiModelProperty(value = "座位数")
+    @Schema(description = "座位数")
     private int tableSeatNumber;
 
 }

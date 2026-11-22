@@ -1,6 +1,6 @@
 package com.restkeeper.vo.store;
 
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
  */
 @Data
 public class SettingsVO {
-    @ApiModelProperty(value = "备注列表")
+    @Schema(description = "备注列表")
     private List<RemarkVO> remarks;
 
 }

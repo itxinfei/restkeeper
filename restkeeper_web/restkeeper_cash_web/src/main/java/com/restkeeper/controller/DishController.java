@@ -1,65 +1,65 @@
 package com.restkeeper.controller;
 
-import com.google.common.collect.Lists;
 import com.restkeeper.entity.DishEs;
 import com.restkeeper.entity.SearchResult;
-import com.restkeeper.response.vo.PageVO;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.service.IDishSearchService;
 import com.restkeeper.store.service.ISellCalculationService;
 import com.restkeeper.vo.DishPanelVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 
-@Api(tags = {"菜品搜索相关接口"})
+/**
+ * 菜品搜索（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ */
+@Tag(name = "菜品搜索")
 @RestController
-@RequestMapping("/dish")
 public class DishController {
 
-    @Reference(version = "1.0.0",check = false)
-    private IDishSearchService dishSearchService;
+    private final IDishSearchService dishSearchService;
+    private final ISellCalculationService sellCalculationService;
 
-    @Reference(version = "1.0.0",check = false)
-    private ISellCalculationService sellCalculationService;
+    public DishController(IDishSearchService dishSearchService,
+                          ISellCalculationService sellCalculationService) {
+        this.dishSearchService = dishSearchService;
+        this.sellCalculationService = sellCalculationService;
+    }
 
-    @ApiOperation("根据商品编码完成商品搜索")
-    @GetMapping("/queryByCode/{code}/{page}/{pageSize}")
-    public PageVO<DishPanelVO> queryByCode(@PathVariable String code, @PathVariable int page, @PathVariable int pageSize){
+    @Operation(summary = "根据商品编码搜索菜品")
+    @GetMapping("/search/dish/code/{code}/page/{pageNum}/{pageSize}")
+    public PageResult<DishPanelVO> queryByCode(@PathVariable("code") String code,
+                                               @PathVariable("pageNum") int pageNum,
+                                               @PathVariable("pageSize") int pageSize) {
+        SearchResult<DishEs> searchResult = dishSearchService.searchDishByCode(code, pageNum, pageSize);
 
-        PageVO<DishPanelVO> pageResult = new PageVO<>();
-
-        SearchResult<DishEs> searchResult = dishSearchService.searchDishByCode(code, page, pageSize);
-
-        pageResult.setCounts(searchResult.getTotal());
-        pageResult.setPage(page);
-        long pageCount = searchResult.getTotal()%pageSize==0?searchResult.getTotal()/pageSize : searchResult.getTotal()/pageSize+1;
-        pageResult.setPages(pageCount);
-
-        List<DishPanelVO> dishVOList = Lists.newArrayList();
-
-        searchResult.getRecords().forEach(es->{
-
-
+        List<DishPanelVO> dishVOList = new ArrayList<>();
+        searchResult.getRecords().forEach(es -> {
             DishPanelVO dishPanelVO = new DishPanelVO();
-
             dishPanelVO.setDishId(es.getId());
             dishPanelVO.setDishName(es.getDishName());
             dishPanelVO.setPrice(es.getPrice());
             dishPanelVO.setImage(es.getImage());
             dishPanelVO.setType(es.getType());
             dishPanelVO.setRemainder(sellCalculationService.getRemainderCount(es.getId()));
-
             dishVOList.add(dishPanelVO);
         });
 
-        pageResult.setItems(dishVOList);
+        long pages = searchResult.getTotal() % pageSize == 0
+                ? searchResult.getTotal() / pageSize
+                : searchResult.getTotal() / pageSize + 1;
 
-        return pageResult;
+        PageResult<DishPanelVO> result = new PageResult<>();
+        result.setRecords(dishVOList);
+        result.setTotal(searchResult.getTotal());
+        result.setPage(pageNum);
+        result.setSize(pageSize);
+        result.setPages(pages);
+        return result;
     }
 }

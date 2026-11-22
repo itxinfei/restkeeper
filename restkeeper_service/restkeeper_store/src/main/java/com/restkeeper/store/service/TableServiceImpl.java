@@ -1,64 +1,62 @@
 package com.restkeeper.store.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.restkeeper.aop.TenantAnnotation;
-import com.restkeeper.constants.SystemCode;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.exception.BussinessException;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.Table;
-import com.restkeeper.store.entity.TableLog;
 import com.restkeeper.store.mapper.TableMapper;
-import org.apache.dubbo.config.annotation.Service;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+/**
+ * 桌台本地服务
+ */
+@Service("tableService")
+public class TableServiceImpl extends ServiceImpl<TableMapper, Table> {
 
-@org.springframework.stereotype.Service("tableService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class TableServiceImpl extends ServiceImpl<TableMapper, Table> implements ITableService {
-
-
+    /**
+     * 新增桌台（名称防重）
+     */
     @Override
     @Transactional
-    public boolean add(Table table) {
-
-        //桌台名称防重
+    public boolean save(Table table) {
         checkNameExist(table.getTableName());
-
-        return this.save(table);
+        return super.save(table);
     }
 
-    @Override
-    public IPage<Table> queryPageByAreaId(String areaId, int pageNum, int pageSize) {
-
-
-        IPage<Table> page = new Page<>(pageNum,pageSize);
-
+    /**
+     * 按区域分页查询桌台
+     */
+    public PageResult<Table> queryPageByAreaId(String areaId, int pageNum, int pageSize) {
+        Page<Table> page = new Page<>(pageNum, pageSize);
         QueryWrapper<Table> queryWrapper = new QueryWrapper<>();
-
-        if (!areaId.equals("all")){
-            queryWrapper.lambda().eq(Table::getAreaId,areaId);
+        if (!"all".equals(areaId)) {
+            queryWrapper.lambda().eq(Table::getAreaId, areaId);
         }
-
         queryWrapper.lambda().orderByDesc(Table::getLastUpdateTime);
-
-        return this.page(page,queryWrapper);
+        return PageResult.of(this.page(page, queryWrapper));
     }
 
-    @Override
+    /**
+     * 按区域与状态统计桌台数量
+     */
     public Integer countTableByStatus(String areaId, Integer status) {
         QueryWrapper<Table> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(Table::getAreaId,areaId).eq(Table::getStatus,status);
-        return this.count(queryWrapper);
+        queryWrapper.lambda().eq(Table::getAreaId, areaId).eq(Table::getStatus, status);
+        return Math.toIntExact(this.count(queryWrapper));
     }
 
+    /**
+     * 桌台名称防重
+     */
     private void checkNameExist(String tableName) {
-
         QueryWrapper<Table> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().select(Table::getTableId).eq(Table::getTableName,tableName);
-        Integer count = this.baseMapper.selectCount(queryWrapper);
-        if (count > 0) throw new BussinessException("该桌台已存在");
+        queryWrapper.lambda().select(Table::getTableId).eq(Table::getTableName, tableName);
+        long count = this.baseMapper.selectCount(queryWrapper);
+        if (count > 0) {
+            throw new BussinessException("该桌台已存在");
+        }
     }
 }

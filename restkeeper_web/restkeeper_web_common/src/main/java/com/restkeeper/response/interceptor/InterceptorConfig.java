@@ -1,35 +1,23 @@
 package com.restkeeper.response.interceptor;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.HandlerInterceptor;
-import org.springframework.web.servlet.config.annotation.*;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * Web MVC 配置。
+ * 鉴权拦截器已由 Sa-Token 接管（网关统一鉴权），此处仅保留跨域配置；
+ * Boot 4 下 allowCredentials(true) 不能再与 allowedOrigins("*") 联用，改用 allowedOriginPatterns。
+ */
 @Configuration
 public class InterceptorConfig implements WebMvcConfigurer {
 
-    @Bean
-    public HandlerInterceptor MyInterceptor() {
-        return new WebHandlerInterceptor();
-    }
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        InterceptorRegistration interceptor = registry.addInterceptor(MyInterceptor());
-        // 拦截所有、排除
-        interceptor.addPathPatterns("/**")
-                .excludePathPatterns("/login","/login");
-    }
-
-    /**
-     * 跨域支持配置
-     * @param registry
-     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**").allowCredentials(true).allowedOrigins("*").allowedMethods("GET", "PUT", "DELETE", "POST", "OPTIONS").maxAge(3600);
+        registry.addMapping("/**")
+                .allowedOriginPatterns("*")
+                .allowedMethods("GET", "PUT", "DELETE", "POST", "OPTIONS")
+                .allowCredentials(true)
+                .maxAge(3600);
     }
-
-
 }
-

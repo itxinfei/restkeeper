@@ -1,29 +1,26 @@
 package com.restkeeper.order.service;
 
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReverseOrder;
 import com.restkeeper.order.mapper.ReverseOrderMapper;
-import com.restkeeper.service.IOrderService;
-import com.restkeeper.service.IReverseOrderService;
-import org.apache.dubbo.config.annotation.Service;
-import org.apache.dubbo.rpc.RpcContext;
+import com.restkeeper.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
-@Service(version = "1.0.0",protocol = "dubbo")
-@org.springframework.stereotype.Service("reverseOrderService")
-public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, ReverseOrder> implements IReverseOrderService {
+/**
+ * 反结账本地服务（操作均在订单库内，本地事务即可）
+ */
+@Service("reverseOrderService")
+public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, ReverseOrder> {
 
     @Autowired
-    @Qualifier("orderService")
-    private IOrderService orderService;
+    private OrderServiceImpl orderService;
 
-    @Override
     @Transactional
     public boolean reverse(ReverseOrder reverseOrder) {
 
@@ -39,8 +36,7 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
         reverseOrder.setOrderNumber(orderEntity.getOrderNumber());
         reverseOrder.setTableId(orderEntity.getTableId());
         reverseOrder.setAmount(orderEntity.getPayAmount());
-        String loginUserName = RpcContext.getContext().getAttachment("loginUserName");
-        reverseOrder.setOperatorName(loginUserName);
+        reverseOrder.setOperatorName(TenantContext.getLoginUserName());
 
 
         return this.save(reverseOrder);

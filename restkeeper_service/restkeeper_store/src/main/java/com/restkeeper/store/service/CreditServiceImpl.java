@@ -1,152 +1,126 @@
 package com.restkeeper.store.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.exception.BussinessException;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.Credit;
 import com.restkeeper.store.entity.CreditCompanyUser;
 import com.restkeeper.store.mapper.CreditMapper;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-@org.springframework.stereotype.Service("creditService")
-@Service(version = "1.0.0",protocol = "dubbo")
-public class CreditServiceImpl extends ServiceImpl<CreditMapper, Credit> implements ICreditService {
+/**
+ * 挂账主体本地服务
+ */
+@Service("creditService")
+public class CreditServiceImpl extends ServiceImpl<CreditMapper, Credit> {
 
     @Autowired
-    @Qualifier("creditCompanyUserService")
-    private ICreditCompanyUserService creditCompanyUserService;
+    private CreditCompanyUserServiceImpl creditCompanyUserService;
 
-    @Override
+    /**
+     * 新增挂账主体（企业挂账同时落关联用餐人）
+     */
     @Transactional
     public boolean add(Credit credit, List<CreditCompanyUser> users) {
-
-        //保存挂账的基础信息
         this.save(credit);
 
-        if (users!=null && !users.isEmpty()){
-
-            //获取用户名列表
-            List<String> userNameList = users.stream().map(d -> d.getUserName()).collect(Collectors.toList());
-
-            //用户名去重
-            long count = userNameList.stream().distinct().count();
-            if (userNameList.size() != count){
-                throw new BussinessException("用户名重复");
-            }
-
-            //设置关联
-            users.forEach(d->{
-                d.setCreditId(credit.getCreditId());
-            });
-
+        if (users != null && !users.isEmpty()) {
+            checkUserNameDuplicate(users);
+            users.forEach(user -> user.setCreditId(credit.getCreditId()));
             return creditCompanyUserService.saveBatch(users);
-
-
         }
-
         return true;
     }
 
-    @Override
-    public IPage<Credit> queryPage(int pageNum, int pageSize, String userName) {
+    /**
+     * 挂账分页：按挂账人名称或企业用餐人名称模糊，企业挂账回填用餐人列表
+     */
+    public PageResult<Credit> queryPage(int pageNum, int pageSize, String userName) {
+        Page<Credit> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<Credit> queryWrapper = new QueryWrapper<>();
 
-        IPage<Credit> page = new Page<>(pageNum,pageSize);
-
-        QueryWrapper<Credit> creditQueryWrapper = new QueryWrapper<>();
-
-        if (StringUtils.isNotEmpty(userName)){
-
-            creditQueryWrapper.lambda().like(Credit::getUserName,userName)
+        if (StringUtils.hasText(userName)) {
+            //apply 使用 {0} 占位参数化，杜绝拼接注入；子查询同样被多租户插件追加 shop_id/store_id 条件
+            queryWrapper.lambda().like(Credit::getUserName, userName)
                     .or()
-                    .inSql(Credit::getCreditId,"select credit_id from t_credit_company_user where user_name like '%"+ StringEscapeUtils.escapeSql(userName) +"%'");
+                    .apply("credit_id in (select credit_id from t_credit_company_user where user_name like {0})",
+                            "%" + userName + "%");
         }
-        page = this.page(page,creditQueryWrapper);
+        Page<Credit> resultPage = this.page(page, queryWrapper);
 
-        List<Credit> creditList = page.getRecords();
-
-        //如果类型是公司，还需要设置相关的挂账人信息
-        creditList.forEach(d->{
-            if (d.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
-
-                QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();
-
-                queryWrapper.lambda().eq(CreditCompanyUser::getCreditId,d.getCreditId());
-
-                d.setUsers(creditCompanyUserService.list(queryWrapper));
+        resultPage.getRecords().forEach(credit -> {
+            if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY) {
+                QueryWrapper<CreditCompanyUser> userWrapper = new QueryWrapper<>();
+                userWrapper.lambda().eq(CreditCompanyUser::getCreditId, credit.getCreditId());
+                credit.setUsers(creditCompanyUserService.list(userWrapper));
             }
         });
-
-        return page;
+        return PageResult.of(resultPage);
     }
 
-    @Override
+    /**
+     * 挂账详情（企业挂账含关联用餐人）
+     */
     public Credit queryById(String id) {
-
         Credit credit = this.getById(id);
-        if (credit == null){
+        if (credit == null) {
             throw new BussinessException("不存在该挂账信息");
         }
-
-        //企业挂账信息
-        if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
-
-            QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();
-
-            queryWrapper.lambda().eq(CreditCompanyUser::getCreditId,credit.getCreditId());
-
-            credit.setUsers(creditCompanyUserService.list(queryWrapper));
-        }
-
+        fillCompanyUsers(credit);
         return credit;
     }
 
-    @Override
+    /**
+     * 修改挂账主体：企业挂账先删旧关联再重建
+     */
     @Transactional
     public boolean updateInfo(Credit credit, List<CreditCompanyUser> users) {
-
-        if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
-            //删除原有关联关系
-            List<CreditCompanyUser> userList = credit.getUsers();
-            if (userList!=null && !userList.isEmpty()){
-
-                List<String> idList = userList.stream().map(d -> d.getId()).collect(Collectors.toList());
-
+        if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY) {
+            List<CreditCompanyUser> oldUsers = credit.getUsers();
+            if (oldUsers != null && !oldUsers.isEmpty()) {
+                List<String> idList = oldUsers.stream().map(CreditCompanyUser::getId).collect(Collectors.toList());
                 creditCompanyUserService.removeByIds(idList);
             }
         }
 
-        //重新建立关联关系
-        if(users != null&&!users.isEmpty()){
-
-            //获取用户名列表
-            List<String> userNameList= users.stream().map(d->d.getUserName()).collect(Collectors.toList());
-
-            //去重判断
-            long count = userNameList.stream().distinct().count();
-            if(userNameList.size()!=count){
-                throw new BussinessException("用户名重复");
-            }
-            //设置关联
-            users.forEach(d->{
-                d.setCreditId(credit.getCreditId());
-            });
+        if (users != null && !users.isEmpty()) {
+            checkUserNameDuplicate(users);
+            users.forEach(user -> user.setCreditId(credit.getCreditId()));
             return creditCompanyUserService.saveBatch(users);
         }
 
-        //credit类型是个人
         return this.saveOrUpdate(credit);
     }
 
+    /**
+     * 企业挂账回填关联用餐人列表
+     */
+    private void fillCompanyUsers(Credit credit) {
+        if (credit.getCreditType() != SystemCode.CREDIT_TYPE_COMPANY) {
+            return;
+        }
+        QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(CreditCompanyUser::getCreditId, credit.getCreditId());
+        credit.setUsers(creditCompanyUserService.list(queryWrapper));
+    }
 
+    /**
+     * 用餐人名称重复校验
+     */
+    private void checkUserNameDuplicate(List<CreditCompanyUser> users) {
+        List<String> userNameList = users.stream().map(CreditCompanyUser::getUserName).collect(Collectors.toList());
+        long distinctCount = userNameList.stream().distinct().count();
+        if (userNameList.size() != distinctCount) {
+            throw new BussinessException("用户名重复");
+        }
+    }
 }

@@ -1,30 +1,59 @@
 package com.restkeeper.store.service;
 
-import com.baomidou.mybatisplus.extension.service.IService;
+import com.restkeeper.http.PageResult;
+import com.restkeeper.store.dto.DishWithFlavors;
 import com.restkeeper.store.entity.Dish;
-import com.restkeeper.store.entity.DishFlavor;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
+import org.springframework.web.service.annotation.GetExchange;
+import org.springframework.web.service.annotation.HttpExchange;
+import org.springframework.web.service.annotation.PutExchange;
+import org.springframework.web.service.annotation.PostExchange;
 
 import java.util.List;
 import java.util.Map;
 
-public interface IDishService extends IService<Dish> {
+@Tag(name = "菜品服务")
+@HttpExchange("/dish")
+public interface IDishService {
 
-    //新增菜品
-    boolean save(Dish dish, List<DishFlavor> dishFlavorList);
+    //新增菜品（含口味）
+    @PostExchange
+    boolean save(@RequestBody DishWithFlavors request);
 
-    //修改菜品
-    boolean update(Dish dish, List<DishFlavor> dishFlavorList);
+    //修改菜品（含口味）
+    @PutExchange
+    boolean update(@RequestBody DishWithFlavors request);
 
-    //根据分类信息与菜品名称查询相关数据列表
-    List<Map<String,Object>> findEnableDishListInfo(String categoryId,String name);
+    //按主键查询菜品
+    @GetExchange("/{id}")
+    Dish getById(@PathVariable("id") String id);
+
+    //根据分类与菜品名称查询可售菜品列表
+    @GetExchange("/enable/list/{categoryId}")
+    List<Map<String, Object>> findEnableDishListInfo(@PathVariable("categoryId") String categoryId,
+                                                     @RequestParam(value = "name", required = false) String name);
+
+    //管理端菜品分页（名称模糊、分类精确、status 可空=含停售全部；经类级 resultMap 带出分类与口味）
+    @GetExchange("/manage/page/{pageNum}/{pageSize}")
+    PageResult<Dish> queryManagePage(@PathVariable("pageNum") int pageNum,
+                                     @PathVariable("pageSize") int pageSize,
+                                     @RequestParam(value = "name", required = false) String name,
+                                     @RequestParam(value = "categoryId", required = false) String categoryId,
+                                     @RequestParam(value = "status", required = false) Integer status);
 
     //停售菜品
-    boolean forbiddenDishes(List<String> ids);
+    @PutExchange("/forbidden")
+    boolean forbiddenDishes(@RequestBody List<String> ids);
 
     //起售菜品
-    boolean enableDishes(List<String> ids);
+    @PutExchange("/enable")
+    boolean enableDishes(@RequestBody List<String> ids);
 
     //删除菜品
-    boolean deleteDishes(List<String> ids);
-
+    @DeleteExchange
+    boolean deleteDishes(@RequestBody List<String> ids);
 }

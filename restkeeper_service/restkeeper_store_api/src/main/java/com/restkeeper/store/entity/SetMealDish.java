@@ -1,8 +1,7 @@
 package com.restkeeper.store.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import com.baomidou.mybatisplus.annotation.*;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.experimental.Accessors;
@@ -13,7 +12,7 @@ import java.time.LocalDateTime;
 @Data
 @EqualsAndHashCode(callSuper = false)
 @Accessors(chain = true)
-@ApiModel(value="DishCategory", description="套餐与口味关联")
+@Schema(description = "套餐与口味关联")
 @TableName(value = "t_setmeal_dish",resultMap = "BaseResultMap")
 public class SetMealDish implements Serializable {
 
@@ -37,15 +36,15 @@ public class SetMealDish implements Serializable {
     @TableField(value = "t_order")
     private Integer index;
 
-    @ApiModelProperty(value = "所属商户id")
+    @Schema(description = "所属商户id")
     @TableField(value = "shop_id")
     protected String shopId;
 
-    @ApiModelProperty(value = "门店id")
+    @Schema(description = "门店id")
     @TableField(value = "store_id")
     protected String storeId;
 	
-	@ApiModelProperty(value = "最后更新时间")
+	@Schema(description = "最后更新时间")
     @TableField(value = "last_update_time",fill = FieldFill.INSERT_UPDATE)
     protected LocalDateTime lastUpdateTime;
 }

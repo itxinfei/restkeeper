@@ -1,9 +1,7 @@
 package com.restkeeper.controller;
 
-import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.google.common.collect.Lists;
 import com.restkeeper.constants.SystemCode;
-import com.restkeeper.response.vo.PageVO;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.Table;
 import com.restkeeper.store.entity.TableLog;
 import com.restkeeper.store.service.ITableAreaService;
@@ -11,91 +9,89 @@ import com.restkeeper.store.service.ITableLogService;
 import com.restkeeper.store.service.ITableService;
 import com.restkeeper.vo.TablePanelVO;
 import com.restkeeper.vo.TableVO;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiImplicitParam;
-import io.swagger.annotations.ApiImplicitParams;
-import io.swagger.annotations.ApiOperation;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 收银端区域桌台（阶段 4：Dubbo @Reference → HTTP Interface 契约代理）。
+ */
+@Tag(name = "收银端区域桌台")
 @RestController
-@RequestMapping("/table")
-@Api(tags = {"收银端区域桌台接口"})
 public class TableController {
 
-    @Reference(version = "1.0.0",check = false)
-    private ITableAreaService tableAreaService;
+    private final ITableAreaService tableAreaService;
+    private final ITableLogService tableLogService;
+    private final ITableService tableService;
 
-    @Reference(version = "1.0.0",check = false)
-    private ITableLogService tableLogService;
+    public TableController(ITableAreaService tableAreaService,
+                           ITableLogService tableLogService,
+                           ITableService tableService) {
+        this.tableAreaService = tableAreaService;
+        this.tableLogService = tableLogService;
+        this.tableService = tableService;
+    }
 
-    @Reference(version = "1.0.0",check = false)
-    private ITableService tableService;
-
-    @ApiOperation(value = "区域列表接口")
-    @GetMapping("/listTableArea")
-    public List<Map<String,Object>> list(){
+    @Operation(summary = "区域列表")
+    @GetMapping("/table/area/list")
+    public List<Map<String, Object>> listTableArea() {
         return tableAreaService.listTableArea();
     }
 
-    @ApiOperation(value = "开桌")
-    @PutMapping("/openTable/{tableId}/{numbers}")
-    public boolean openTable(@PathVariable String tableId, @PathVariable Integer numbers){
-        TableLog tableLog =new TableLog();
-        tableLog.setTableId(tableId);
-        tableLog.setUserNumbers(numbers);
+    @Operation(summary = "开台")
+    @PostMapping("/table/log/open")
+    public boolean openTable(@RequestBody TableLog tableLog) {
         return tableLogService.openTable(tableLog);
     }
 
-    @ApiOperation(value = "桌台面板")
-    @ApiImplicitParams({
-            @ApiImplicitParam(paramType = "path", name = "areaId", value = "区域Id", required = true, dataType = "String"),
-            @ApiImplicitParam(paramType = "path", name = "page", value = "页码", required = true, dataType = "Integer"),
-            @ApiImplicitParam(paramType = "path", name = "pageSize", value = "每页数量", required = true, dataType = "Integer")})
-    @GetMapping("/search/{areaId}/{page}/{pageSize}")
-    public TablePanelVO queryByArea(@PathVariable String areaId, @PathVariable int page, @PathVariable int pageSize){
-
+    @Operation(summary = "桌台面板")
+    @GetMapping("/table/area/{areaId}/page/{pageNum}/{pageSize}")
+    public TablePanelVO queryByArea(@PathVariable("areaId") String areaId,
+                                    @PathVariable("pageNum") int pageNum,
+                                    @PathVariable("pageSize") int pageSize) {
         TablePanelVO tablePanelVO = new TablePanelVO();
 
-        //桌台统计信息
+        // 桌台统计信息
         tablePanelVO.setFreeNumbers(tableService.countTableByStatus(areaId, SystemCode.TABLE_STATUS_FREE));
-        tablePanelVO.setLockedNumbers(tableService.countTableByStatus(areaId,SystemCode.TABLE_STATUS_LOCKED));
-        tablePanelVO.setOpenedNumbers(tableService.countTableByStatus(areaId,SystemCode.TABLE_STATUS_OPENED));
+        tablePanelVO.setLockedNumbers(tableService.countTableByStatus(areaId, SystemCode.TABLE_STATUS_LOCKED));
+        tablePanelVO.setOpenedNumbers(tableService.countTableByStatus(areaId, SystemCode.TABLE_STATUS_OPENED));
 
-        //桌台面板详情，支持分页
-        IPage<Table> pageInfo = tableService.queryPageByAreaId(areaId, page, pageSize);
+        // 桌台面板详情，支持分页
+        PageResult<Table> page = tableService.queryPageByAreaId(areaId, pageNum, pageSize);
 
-        List<TableVO> tableVOList = Lists.newArrayList();
-
-        pageInfo.getRecords().forEach(d->{
-
-
+        List<TableVO> tableVOList = new ArrayList<>();
+        page.getRecords().forEach(table -> {
             TableVO tableVO = new TableVO();
+            tableVO.setTableId(table.getTableId());
+            tableVO.setTableName(table.getTableName());
 
-            tableVO.setTableId(d.getTableId());
-            tableVO.setTableName(d.getTableName());
-
-            //如果是开桌状态
-            if (d.getStatus() == SystemCode.TABLE_STATUS_OPENED){
-
-                //从tableLog中来获取相关数据内容
-                TableLog tableLog = tableLogService.getOpenTableLog(d.getTableId());
-                tableVO.setCreateTime(tableLog.getCreateTime());
-                tableVO.setUserNumbers(tableLog.getUserNumbers());
+            // 开台状态：从 TableLog 取开台时间与人数
+            if (table.getStatus() != null && table.getStatus() == SystemCode.TABLE_STATUS_OPENED) {
+                TableLog tableLog = tableLogService.getOpenTableLog(table.getTableId());
+                if (tableLog != null) {
+                    tableVO.setCreateTime(tableLog.getCreateTime());
+                    tableVO.setUserNumbers(tableLog.getUserNumbers());
+                }
             }
-
             tableVOList.add(tableVO);
         });
 
-        PageVO<TableVO> pageVO = new PageVO<>(pageInfo,tableVOList);
-        tablePanelVO.setTablePage(pageVO);
-
-
+        PageResult<TableVO> tablePage = new PageResult<>();
+        tablePage.setRecords(tableVOList);
+        tablePage.setTotal(page.getTotal());
+        tablePage.setPage(page.getPage());
+        tablePage.setSize(page.getSize());
+        tablePage.setPages(page.getPages());
+        tablePanelVO.setTablePage(tablePage);
 
         return tablePanelVO;
-
     }
 }

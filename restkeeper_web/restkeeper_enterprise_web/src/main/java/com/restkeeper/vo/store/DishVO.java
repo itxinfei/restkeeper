@@ -1,7 +1,7 @@
 package com.restkeeper.vo.store;
 
 import com.restkeeper.constants.SystemCode;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.util.List;
@@ -9,31 +9,31 @@ import java.util.List;
 @Data
 public class DishVO {
 
-    @ApiModelProperty(value = "菜品id")
+    @Schema(description = "菜品id")
     private String id;  //添加时候可以不传
 	
-    @ApiModelProperty(value = "菜品名称")
+    @Schema(description = "菜品名称")
     private String name;
 	
-    @ApiModelProperty(value = "分类id")
+    @Schema(description = "分类id")
     private String categoryId;
 	
-    @ApiModelProperty(value = "价格")
+    @Schema(description = "价格")
     private Integer price;
 	
-    @ApiModelProperty(value = "菜品code")
+    @Schema(description = "菜品code")
     private String code;
 	
-    @ApiModelProperty(value = "图片路径")
+    @Schema(description = "图片路径")
     private String image;
 	
-    @ApiModelProperty(value = "备注")
+    @Schema(description = "备注")
     private String description;
 	
-    @ApiModelProperty(value = "状态 0 停售，1起售")
+    @Schema(description = "状态 0 停售，1起售")
     private Integer status = SystemCode.ENABLED; //默认起售
 	
-    @ApiModelProperty(value = "状态")
+    @Schema(description = "状态")
     private List<DishFlavorVO> dishFlavors;
 
 }
