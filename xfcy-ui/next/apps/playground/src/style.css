@@ -1,0 +1,136 @@
+.playground {
+  min-height: 100vh;
+  color: var(--c-text);
+}
+
+.playground__nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  padding: 0 var(--space-6);
+  height: 56px;
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
+  overflow-x: auto;
+}
+
+.playground__brand {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+  white-space: nowrap;
+}
+
+.playground__nav a {
+  color: var(--c-text-2);
+  font-size: var(--text-caption);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.playground__nav a:hover,
+.playground__nav a:focus-visible {
+  color: var(--c-primary);
+}
+
+.playground__main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+.playground__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.playground__section-title {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-title);
+}
+
+.playground__note {
+  font-size: var(--text-caption);
+  color: var(--c-text-3);
+}
+
+.playground__grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.playground__grid--tokens {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+}
+
+.playground__grid--types {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.playground__grid--kpi {
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.playground__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.swatch {
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--c-surface);
+}
+
+.swatch__color {
+  height: 64px;
+}
+
+.swatch__meta {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-mini);
+}
+
+.swatch__name {
+  color: var(--c-text-2);
+}
+
+.swatch__value {
+  color: var(--c-text-3);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.type-sample {
+  padding: var(--space-3) var(--space-4);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+}
+
+.type-sample__meta {
+  margin-top: var(--space-2);
+  font-size: var(--text-mini);
+  color: var(--c-text-3);
+}
+
+.demo-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--space-4);
+}

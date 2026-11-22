@@ -1,0 +1,83 @@
+/**
+ * 通用基础样式：reset + 字体栈 + 数字等宽。
+ * 组件库默认只注入 tokens.css；需要完整基础时引入 app.css。
+ */
+@import './tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: var(--weight-body);
+  line-height: var(--leading-body);
+  color: var(--c-text);
+  background-color: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--text-h1);
+  font-weight: var(--weight-title);
+  line-height: var(--leading-title);
+}
+
+h2 {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-title);
+  line-height: var(--leading-title);
+}
+
+h3 {
+  font-size: var(--text-h3);
+  font-weight: var(--weight-title);
+  line-height: var(--leading-title);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* 金额 / 数量 / 单号：等宽数字对齐（DESIGN.md §3） */
+.xf-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* 尊重减少动效偏好（DESIGN.md §9） */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
