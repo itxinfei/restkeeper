@@ -1,7 +1,16 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
 import { XfButton, XfKpi, XfPanel, XfTable, XfTag } from '@xfcy/ui'
-import { dashboardKpis, latestOrders, soldoutRows, tableStats } from '../api/mock'
-import type { OrderStatus } from '../api/mock'
+import {
+  demoDashboardKpis,
+  demoLatestOrders,
+  demoSoldoutRows,
+  demoTableStats,
+  formatYuan,
+  isMockMode,
+  order,
+} from '@xfcy/api'
+import type { DemoKpi, DemoOrderRow, DemoOrderStatus } from '@xfcy/api'
 
 type Column = {
   key: string
@@ -21,7 +30,39 @@ const columns: Column[] = [
   { key: 'time', label: '时间' },
 ]
 
-function statusTone(status: OrderStatus) {
+// mock 模式直接使用迁移自 api 的演示数据；real 模式按契约拉取实时统计
+const kpis = ref<DemoKpi[]>(demoDashboardKpis)
+const latestOrders = ref<DemoOrderRow[]>(demoLatestOrders)
+const tableStats = ref(demoTableStats)
+const soldoutRows = ref(demoSoldoutRows)
+
+function isoDate(d: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+onMounted(async () => {
+  if (isMockMode()) return
+  const now = new Date()
+  const start = isoDate(now)
+  const end = isoDate(new Date(now.getTime() + 24 * 60 * 60 * 1000))
+  try {
+    // 契约：GET /order/report/currentAmount?start=&end=（区间 >=start 且 <end）
+    const stat = await order.currentAmount(start, end)
+    const avg =
+      stat.payTotal && stat.payTotalCount ? Math.round(stat.payTotal / stat.payTotalCount) : 0
+    kpis.value = [
+      { key: 'revenue', label: '今日营业额', value: formatYuan(stat.payTotal), trend: 'flat', trendText: '' },
+      { key: 'orders', label: '今日单量', value: String(stat.payTotalCount ?? 0), trend: 'flat', trendText: '' },
+      { key: 'avg', label: '客单价', value: formatYuan(avg), trend: 'flat', trendText: '' },
+      { key: 'turnover', label: '翻台率', value: '—', trend: 'flat', trendText: '' },
+    ]
+  } catch {
+    // 保留演示数据，避免报表接口不可用时页面空白
+  }
+})
+
+function statusTone(status: DemoOrderStatus) {
   if (status === '已结') return 'success' as const
   if (status === '挂账') return 'warning' as const
   if (status === '未结') return 'danger' as const
@@ -30,9 +71,9 @@ function statusTone(status: OrderStatus) {
 </script>
 
 <template>
-  <section class="xfm-kpis" aria-label="今日经营 KPI（示意）">
+  <section class="xfm-kpis" aria-label="今日经营 KPI">
     <XfKpi
-      v-for="kpi in dashboardKpis"
+      v-for="kpi in kpis"
       :key="kpi.key"
       :label="kpi.label"
       :value="kpi.value"
@@ -42,7 +83,7 @@ function statusTone(status: OrderStatus) {
   </section>
 
   <div class="xfm-cols">
-    <XfPanel title="最新订单（示意）">
+    <XfPanel title="最新订单">
       <template #actions>
         <XfButton size="sm" variant="secondary">全部订单</XfButton>
       </template>
@@ -54,7 +95,7 @@ function statusTone(status: OrderStatus) {
           <span class="xfm-num">{{ row.amount }}</span>
         </template>
         <template #status="{ row }">
-          <XfTag :tone="statusTone(row.status as OrderStatus)">{{ row.status }}</XfTag>
+          <XfTag :tone="statusTone(row.status as DemoOrderStatus)">{{ row.status }}</XfTag>
         </template>
         <template #time="{ row }">
           <span class="xfm-num">{{ row.time }}</span>
@@ -63,7 +104,7 @@ function statusTone(status: OrderStatus) {
     </XfPanel>
 
     <div class="xfm-side">
-      <XfPanel title="桌台盘（示意）">
+      <XfPanel title="桌台盘">
         <div class="xfm-tgrid">
           <div
             v-for="stat in tableStats"
@@ -77,7 +118,7 @@ function statusTone(status: OrderStatus) {
         </div>
       </XfPanel>
 
-      <XfPanel title="沽清余量（示意）">
+      <XfPanel title="沽清余量">
         <template #actions>
           <XfButton size="sm" variant="ghost">登记</XfButton>
         </template>
