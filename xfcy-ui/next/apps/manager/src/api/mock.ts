@@ -86,6 +86,8 @@ export type DishRow = {
   status: DishStatus
   /** 缩略图占位（示意）：首版用 emoji + 渐变底代替真实菜品图 */
   thumb: string
+  /** 口味（示意）：点餐规格，可简化为单个口味 */
+  flavor?: string
 }
 
 /** 菜品列表（示意） */
@@ -105,3 +107,94 @@ export const dishSummary = {
 }
 
 export const dishCategories = ['热菜', '凉菜', '主食', '饮品']
+
+/* ---------------- 套餐（示意） ---------------- */
+
+export type ComboStatus = '起售' | '停售'
+
+export type ComboRow = {
+  id: number
+  name: string
+  code: string
+  price: string
+  dishCount: number
+  status: ComboStatus
+  /** 内含菜品（示意） */
+  items: string[]
+}
+
+/** 套餐列表（示意） */
+export const comboList: ComboRow[] = [
+  {
+    id: 1,
+    name: '双人小聚套餐（示意）',
+    code: 'C001',
+    price: '¥128.00',
+    dishCount: 3,
+    status: '起售',
+    items: ['招牌红烧肉', '蒜蓉时蔬', '酸梅汤 ×2'],
+  },
+  {
+    id: 2,
+    name: '家庭四人餐（示意）',
+    code: 'C002',
+    price: '¥268.00',
+    dishCount: 5,
+    status: '起售',
+    items: ['清蒸鲈鱼', '招牌红烧肉', '蒜蓉时蔬', '腊味煲仔饭', '酸梅汤 ×4'],
+  },
+  {
+    id: 3,
+    name: '单人商务餐（示意）',
+    code: 'C003',
+    price: '¥58.00',
+    dishCount: 2,
+    status: '停售',
+    items: ['腊味煲仔饭', '酸梅汤'],
+  },
+]
+
+/* ---------------- 菜品分类（示意） ---------------- */
+
+export type CategoryStatus = '启用' | '停用'
+
+export type CategoryRow = {
+  id: number
+  name: string
+  sort: number
+  dishCount: number
+  status: CategoryStatus
+}
+
+/** 分类列表（示意） */
+export const categoryList: CategoryRow[] = [
+  { id: 1, name: '热菜', sort: 1, dishCount: 3, status: '启用' },
+  { id: 2, name: '凉菜', sort: 2, dishCount: 0, status: '启用' },
+  { id: 3, name: '主食', sort: 3, dishCount: 1, status: '启用' },
+  { id: 4, name: '饮品', sort: 4, dishCount: 1, status: '启用' },
+  { id: 5, name: '甜点', sort: 5, dishCount: 0, status: '停用' },
+]
+
+/* ---------------- 口味库（示意） ---------------- */
+
+export const flavorTypes = ['辣度', '甜度', '温度', '口感']
+
+export type FlavorRow = {
+  id: number
+  name: string
+  type: string
+  dishCount: number
+  status: CategoryStatus
+}
+
+/** 口味列表（示意） */
+export const flavorList: FlavorRow[] = [
+  { id: 1, name: '微辣', type: '辣度', dishCount: 2, status: '启用' },
+  { id: 2, name: '中辣', type: '辣度', dishCount: 1, status: '启用' },
+  { id: 3, name: '特辣', type: '辣度', dishCount: 0, status: '停用' },
+  { id: 4, name: '少糖', type: '甜度', dishCount: 1, status: '启用' },
+  { id: 5, name: '冰镇', type: '温度', dishCount: 2, status: '启用' },
+  { id: 6, name: '去冰', type: '温度', dishCount: 1, status: '启用' },
+  { id: 7, name: '加冰', type: '温度', dishCount: 0, status: '启用' },
+  { id: 8, name: '酥脆', type: '口感', dishCount: 1, status: '启用' },
+]

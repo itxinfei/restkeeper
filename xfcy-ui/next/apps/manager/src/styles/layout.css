@@ -443,6 +443,80 @@
   gap: 14px;
 }
 
+/* 弹窗内两列表单（DESIGN.md §5.1：长表单用两列） */
+.xfm-form--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.xfm-form--grid .xfm-form__full {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 560px) {
+  .xfm-form--grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- 套餐主从布局 ---------- */
+.xfm-combo {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 16px;
+  align-items: start;
+}
+
+.xfm-combo__head {
+  margin-bottom: 12px;
+}
+
+.xfm-combo__name {
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfm-combo__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.xfm-combo__items {
+  display: flex;
+  flex-direction: column;
+}
+
+.xfm-combo__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--c-border);
+  font-size: 13px;
+}
+
+.xfm-combo__item:last-child {
+  border-bottom: none;
+}
+
+.xfm-tag-text {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+@media (max-width: 1180px) {
+  .xfm-combo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ---------- 响应式（DESIGN.md §7：1024–1280 侧栏可收起；<1024 侧栏转顶部） ---------- */
 @media (max-width: 1180px) {
   .xfm-cols {

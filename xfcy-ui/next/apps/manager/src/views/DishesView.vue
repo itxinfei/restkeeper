@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   XfButton,
   XfEmpty,
@@ -13,8 +13,21 @@ import {
   XfTabs,
   XfTag,
 } from '@xfcy/ui'
-import { dishCategories, dishList, dishSummary } from '../api/mock'
-import type { DishStatus } from '../api/mock'
+import {
+  categoryList as mockCategoryList,
+  comboList as mockComboList,
+  dishCategories,
+  dishList,
+  flavorList as mockFlavorList,
+} from '../api/mock'
+import type {
+  CategoryRow,
+  CategoryStatus,
+  ComboRow,
+  DishRow,
+  DishStatus,
+  FlavorRow,
+} from '../api/mock'
 
 type TabKey = 'dish' | 'combo' | 'category' | 'flavor'
 
@@ -33,21 +46,31 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'flavor', label: '口味库' },
 ]
 
-const columns: Column[] = [
-  { key: 'thumb', label: '', width: '56px' },
-  { key: 'name', label: '菜品' },
-  { key: 'category', label: '分类' },
-  { key: 'code', label: '编码', align: 'center' },
-  { key: 'price', label: '价格', align: 'right', sortable: true },
-  { key: 'remain', label: '沽清余量', align: 'right' },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作' },
-]
-
 const activeTab = ref<TabKey>('dish')
+
+/* ---------------- 通用 ---------------- */
+
+const noticeOpen = ref(false)
+const noticeText = ref('')
+
+function openNotice(text: string) {
+  noticeText.value = text
+  noticeOpen.value = true
+}
+
+function enableTone(status: string) {
+  // 语义固定：启用 / 起售 = 成功绿，停用 / 停售 = 危险红（DESIGN.md §2）
+  return status === '启用' || status === '起售' ? ('success' as const) : ('danger' as const)
+}
+
+/* ---------------- 菜品 ---------------- */
+
+const dishes = ref<DishRow[]>(dishList)
 const keyword = ref('')
-const category = ref<string>('all')
-const status = ref<string>('all')
+const categoryFilter = ref('all')
+const statusFilter = ref('all')
+const dishPage = ref(1)
+const dishPageSize = 10
 
 const categoryOptions = [
   { label: '分类：全部', value: 'all' },
@@ -58,44 +81,331 @@ const statusOptions = [
   { label: '起售', value: 'on' },
   { label: '停售', value: 'off' },
 ]
+const dishFormStatusOptions = [
+  { label: '起售', value: '起售' },
+  { label: '停售', value: '停售' },
+]
 
-const page = ref(1)
-const pageSize = 10
+const filteredDishes = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  return dishes.value.filter((row) => {
+    if (categoryFilter.value !== 'all' && row.category !== categoryFilter.value) return false
+    if (statusFilter.value === 'on' && row.status !== '起售') return false
+    if (statusFilter.value === 'off' && row.status !== '停售') return false
+    if (kw && !row.name.toLowerCase().includes(kw) && !row.code.toLowerCase().includes(kw)) {
+      return false
+    }
+    return true
+  })
+})
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const pagedDishes = computed(() => {
+  const start = (dishPage.value - 1) * dishPageSize
+  return filteredDishes.value.slice(start, start + dishPageSize)
+})
 
-const dishModalOpen = ref(false)
-const dishForm = ref({ name: '', category: null as string | null, price: '' })
-const dishFormError = ref('')
+const dishStat = computed(() => ({
+  total: dishes.value.length,
+  onSale: dishes.value.filter((row) => row.status === '起售').length,
+  offSale: dishes.value.filter((row) => row.status === '停售').length,
+}))
+
+const dishColumns: Column[] = [
+  { key: 'thumb', label: '', width: '56px' },
+  { key: 'name', label: '菜品' },
+  { key: 'category', label: '分类' },
+  { key: 'code', label: '编码', align: 'center' },
+  { key: 'price', label: '价格', align: 'right', sortable: true },
+  { key: 'remain', label: '沽清余量', align: 'right' },
+  { key: 'status', label: '状态' },
+  { key: 'action', label: '操作' },
+]
 
 function statusTone(status: DishStatus) {
-  // 语义固定：起售=成功绿，停售=危险红（DESIGN.md §2）
   return status === '起售' ? ('success' as const) : ('danger' as const)
 }
 
-function toggleText(value: DishStatus) {
-  return value === '起售' ? '停售' : '起售'
+function toggleDish(row: DishRow) {
+  const index = dishes.value.findIndex((item) => item.id === row.id)
+  if (index < 0) return
+  const next: DishStatus = row.status === '起售' ? '停售' : '起售'
+  dishes.value[index] = { ...dishes.value[index], status: next }
 }
 
-function openNotice(text: string) {
-  noticeText.value = text
-  noticeOpen.value = true
+/* -------- 菜品新增 / 编辑弹窗 -------- */
+
+type DishForm = {
+  id: number | null
+  name: string
+  category: string | null
+  code: string
+  price: string
+  flavor: string | null
+  status: DishStatus
 }
+
+function emptyDishForm(): DishForm {
+  return { id: null, name: '', category: null, code: '', price: '', flavor: null, status: '起售' }
+}
+
+const dishModalOpen = ref(false)
+const dishForm = ref<DishForm>(emptyDishForm())
+const dishNameError = ref('')
+const dishPriceError = ref('')
+
+const dishCategoryOptions = computed(() =>
+  categories.value.map((item) => ({ label: item.name, value: item.name })),
+)
+const flavorOptions = computed(() =>
+  flavors.value
+    .filter((item) => item.status === '启用')
+    .map((item) => ({ label: item.name, value: item.name })),
+)
 
 function openDishModal() {
-  dishForm.value = { name: '', category: null, price: '' }
-  dishFormError.value = ''
+  dishForm.value = emptyDishForm()
+  dishNameError.value = ''
+  dishPriceError.value = ''
+  dishModalOpen.value = true
+}
+
+function editDish(row: DishRow) {
+  dishForm.value = {
+    id: row.id,
+    name: row.name,
+    category: row.category,
+    code: row.code,
+    price: row.price.replace('¥', ''),
+    flavor: row.flavor ?? null,
+    status: row.status,
+  }
+  dishNameError.value = ''
+  dishPriceError.value = ''
   dishModalOpen.value = true
 }
 
 function saveDish() {
-  if (!dishForm.value.name.trim()) {
-    dishFormError.value = '请填写菜品名称'
+  const name = dishForm.value.name.trim()
+  const price = Number.parseFloat(dishForm.value.price)
+  dishNameError.value = ''
+  dishPriceError.value = ''
+
+  if (!name) {
+    dishNameError.value = '请填写菜品名称'
     return
   }
-  // 示意：首版不落库，仅关闭弹窗
+  if (!Number.isFinite(price) || price < 0) {
+    dishPriceError.value = '请填写有效的价格'
+    return
+  }
+
+  const priceText = `¥${price.toFixed(2)}`
+  const code = dishForm.value.code.trim()
+
+  if (dishForm.value.id != null) {
+    const index = dishes.value.findIndex((item) => item.id === dishForm.value.id)
+    if (index >= 0) {
+      const prev = dishes.value[index]
+      dishes.value[index] = {
+        ...prev,
+        name,
+        category: dishForm.value.category ?? prev.category,
+        code: code || prev.code,
+        price: priceText,
+        flavor: dishForm.value.flavor ?? undefined,
+        status: dishForm.value.status,
+      }
+    }
+  } else {
+    const id = dishes.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
+    dishes.value.unshift({
+      id,
+      name,
+      desc: '示意菜品',
+      category: dishForm.value.category ?? '热菜',
+      code: code || `D${String(id).padStart(3, '0')}`,
+      price: priceText,
+      remain: '不限',
+      remainDanger: false,
+      status: dishForm.value.status,
+      thumb: '🍽️',
+      flavor: dishForm.value.flavor ?? undefined,
+    })
+  }
+
   dishModalOpen.value = false
+  dishPage.value = 1
+}
+
+/* ---------------- 套餐 ---------------- */
+
+const combos = ref<ComboRow[]>(mockComboList)
+const comboKeyword = ref('')
+const comboStatus = ref('all')
+const comboPage = ref(1)
+const comboPageSize = 10
+const selectedComboId = ref<number | null>(combos.value[0]?.id ?? null)
+
+const comboStatusOptions = [
+  { label: '状态：全部', value: 'all' },
+  { label: '起售', value: 'on' },
+  { label: '停售', value: 'off' },
+]
+
+const filteredCombos = computed(() => {
+  const kw = comboKeyword.value.trim().toLowerCase()
+  return combos.value.filter((row) => {
+    if (comboStatus.value === 'on' && row.status !== '起售') return false
+    if (comboStatus.value === 'off' && row.status !== '停售') return false
+    if (kw && !row.name.toLowerCase().includes(kw) && !row.code.toLowerCase().includes(kw)) {
+      return false
+    }
+    return true
+  })
+})
+
+const pagedCombos = computed(() => {
+  const start = (comboPage.value - 1) * comboPageSize
+  return filteredCombos.value.slice(start, start + comboPageSize)
+})
+
+const selectedCombo = computed(
+  () => combos.value.find((row) => row.id === selectedComboId.value) ?? combos.value[0] ?? null,
+)
+
+const comboColumns: Column[] = [
+  { key: 'name', label: '套餐' },
+  { key: 'code', label: '编码', align: 'center' },
+  { key: 'price', label: '售价', align: 'right', sortable: true },
+  { key: 'dishCount', label: '内含菜品数', align: 'center' },
+  { key: 'status', label: '状态' },
+  { key: 'action', label: '操作' },
+]
+
+/* ---------------- 菜品分类 ---------------- */
+
+const categories = ref<CategoryRow[]>(mockCategoryList)
+const categoryPage = ref(1)
+const categoryPageSize = 10
+
+const categoryStatusOptions = [
+  { label: '启用', value: '启用' },
+  { label: '停用', value: '停用' },
+]
+
+const pagedCategories = computed(() => {
+  const start = (categoryPage.value - 1) * categoryPageSize
+  return categories.value.slice(start, start + categoryPageSize)
+})
+
+const categoryColumns: Column[] = [
+  { key: 'name', label: '分类名称' },
+  { key: 'sort', label: '排序', align: 'center', sortable: true },
+  { key: 'dishCount', label: '菜品数', align: 'center' },
+  { key: 'status', label: '状态' },
+  { key: 'action', label: '操作' },
+]
+
+function toggleCategory(row: CategoryRow) {
+  const index = categories.value.findIndex((item) => item.id === row.id)
+  if (index < 0) return
+  const next: CategoryStatus = row.status === '启用' ? '停用' : '启用'
+  categories.value[index] = { ...categories.value[index], status: next }
+}
+
+/* -------- 分类新增 / 编辑弹窗 -------- */
+
+type CategoryForm = {
+  id: number | null
+  name: string
+  sort: string
+  status: CategoryStatus
+}
+
+const categoryModalOpen = ref(false)
+const categoryForm = ref<CategoryForm>({ id: null, name: '', sort: '', status: '启用' })
+const categoryNameError = ref('')
+
+function openCategoryModal() {
+  categoryForm.value = { id: null, name: '', sort: '', status: '启用' }
+  categoryNameError.value = ''
+  categoryModalOpen.value = true
+}
+
+function editCategory(row: CategoryRow) {
+  categoryForm.value = { id: row.id, name: row.name, sort: String(row.sort), status: row.status }
+  categoryNameError.value = ''
+  categoryModalOpen.value = true
+}
+
+function saveCategory() {
+  const name = categoryForm.value.name.trim()
+  categoryNameError.value = ''
+  if (!name) {
+    categoryNameError.value = '请填写分类名称'
+    return
+  }
+  const sort = Number.parseInt(categoryForm.value.sort, 10)
+  const sortValue = Number.isFinite(sort) ? sort : categories.value.length + 1
+
+  if (categoryForm.value.id != null) {
+    const index = categories.value.findIndex((item) => item.id === categoryForm.value.id)
+    if (index >= 0) {
+      categories.value[index] = {
+        ...categories.value[index],
+        name,
+        sort: sortValue,
+        status: categoryForm.value.status,
+      }
+    }
+  } else {
+    const id = categories.value.reduce((max, item) => Math.max(max, item.id), 0) + 1
+    categories.value.push({
+      id,
+      name,
+      sort: sortValue,
+      dishCount: 0,
+      status: categoryForm.value.status,
+    })
+  }
+
+  categoryModalOpen.value = false
+  categoryPage.value = 1
+}
+
+/* ---------------- 口味库 ---------------- */
+
+const flavors = ref<FlavorRow[]>(mockFlavorList)
+const flavorKeyword = ref('')
+const flavorPage = ref(1)
+const flavorPageSize = 10
+
+const filteredFlavors = computed(() => {
+  const kw = flavorKeyword.value.trim().toLowerCase()
+  if (!kw) return flavors.value
+  return flavors.value.filter(
+    (row) => row.name.toLowerCase().includes(kw) || row.type.toLowerCase().includes(kw),
+  )
+})
+
+const pagedFlavors = computed(() => {
+  const start = (flavorPage.value - 1) * flavorPageSize
+  return filteredFlavors.value.slice(start, start + flavorPageSize)
+})
+
+const flavorColumns: Column[] = [
+  { key: 'name', label: '口味名称' },
+  { key: 'type', label: '类型' },
+  { key: 'dishCount', label: '关联菜品数', align: 'center' },
+  { key: 'status', label: '状态' },
+  { key: 'action', label: '操作' },
+]
+
+function toggleFlavor(row: FlavorRow) {
+  const index = flavors.value.findIndex((item) => item.id === row.id)
+  if (index < 0) return
+  const next: CategoryStatus = row.status === '启用' ? '停用' : '启用'
+  flavors.value[index] = { ...flavors.value[index], status: next }
 }
 </script>
 
@@ -104,73 +414,263 @@ function saveDish() {
     <XfTabs v-model="activeTab" :tabs="tabs" />
   </div>
 
-  <div class="xfm-toolbar">
-    <div class="xfm-toolbar__search">
-      <XfInput v-model="keyword" placeholder="搜索菜名 / 编码" />
+  <!-- ============ 菜品 ============ -->
+  <template v-if="activeTab === 'dish'">
+    <div class="xfm-toolbar">
+      <div class="xfm-toolbar__search">
+        <XfInput v-model="keyword" placeholder="搜索菜名 / 编码" />
+      </div>
+      <div class="xfm-toolbar__select">
+        <XfSelect v-model="categoryFilter" :options="categoryOptions" />
+      </div>
+      <div class="xfm-toolbar__select">
+        <XfSelect v-model="statusFilter" :options="statusOptions" />
+      </div>
+      <div class="xfm-toolbar__grow"></div>
+      <XfButton variant="secondary" @click="openNotice('示意：请先勾选菜品，再执行批量停售。')">
+        批量停售
+      </XfButton>
+      <XfButton @click="openDishModal">＋ 新增菜品</XfButton>
     </div>
-    <div class="xfm-toolbar__select">
-      <XfSelect v-model="category" :options="categoryOptions" />
-    </div>
-    <div class="xfm-toolbar__select">
-      <XfSelect v-model="status" :options="statusOptions" />
-    </div>
-    <div class="xfm-toolbar__grow"></div>
-    <XfButton variant="secondary" @click="openNotice('示意：请先勾选菜品，再执行批量停售。')">
-      批量停售
-    </XfButton>
-    <XfButton @click="openDishModal">＋ 新增菜品</XfButton>
-  </div>
 
-  <XfPanel>
-    <XfTable v-if="activeTab === 'dish'" :columns="columns" :data="dishList" row-key="id">
-      <template #thumb="{ row }">
-        <span class="xfm-thumb" aria-hidden="true">{{ row.thumb }}</span>
-      </template>
-      <template #name="{ row }">
-        <div class="xfm-dish-name">{{ row.name }}</div>
-        <div class="xfm-dish-desc">{{ row.desc }}</div>
-      </template>
-      <template #code="{ row }">
-        <span class="xfm-num">{{ row.code }}</span>
-      </template>
-      <template #price="{ row }">
-        <span class="xfm-num">{{ row.price }}</span>
-      </template>
-      <template #remain="{ row }">
-        <span class="xfm-num" :style="row.remainDanger ? { color: 'var(--c-danger)' } : undefined">
-          {{ row.remain }}
+    <XfPanel>
+      <XfTable
+        :columns="dishColumns"
+        :data="pagedDishes"
+        row-key="id"
+        empty-text="暂无菜品（示意）"
+        empty-description="点击右上角「新增菜品」创建"
+      >
+        <template #thumb="{ row }">
+          <span class="xfm-thumb" aria-hidden="true">{{ row.thumb }}</span>
+        </template>
+        <template #name="{ row }">
+          <div class="xfm-dish-name">{{ row.name }}</div>
+          <div class="xfm-dish-desc">{{ row.desc }}</div>
+          <div v-if="row.flavor" class="xfm-dish-desc">口味：{{ row.flavor }}</div>
+        </template>
+        <template #code="{ row }">
+          <span class="xfm-num">{{ row.code }}</span>
+        </template>
+        <template #price="{ row }">
+          <span class="xfm-num">{{ row.price }}</span>
+        </template>
+        <template #remain="{ row }">
+          <span class="xfm-num" :style="row.remainDanger ? { color: 'var(--c-danger)' } : undefined">
+            {{ row.remain }}
+          </span>
+        </template>
+        <template #status="{ row }">
+          <XfTag :tone="statusTone(row.status as DishStatus)">{{ row.status }}</XfTag>
+        </template>
+        <template #action="{ row }">
+          <div class="xfm-actions">
+            <XfButton size="sm" variant="ghost" @click="editDish(row as DishRow)">编辑</XfButton>
+            <XfButton
+              size="sm"
+              :variant="row.status === '起售' ? 'danger' : 'secondary'"
+              @click="toggleDish(row as DishRow)"
+            >
+              {{ row.status === '起售' ? '停售' : '起售' }}
+            </XfButton>
+          </div>
+        </template>
+      </XfTable>
+
+      <div class="xfm-pager">
+        <span class="xfm-pager__summary">
+          共 {{ dishStat.total }} 道 · 起售 {{ dishStat.onSale }} · 停售 {{ dishStat.offSale }}（示意）
         </span>
-      </template>
-      <template #status="{ row }">
-        <XfTag :tone="statusTone(row.status as DishStatus)">{{ row.status }}</XfTag>
-      </template>
-      <template #action="{ row }">
-        <div class="xfm-actions">
-          <XfButton size="sm" variant="ghost">编辑</XfButton>
-          <XfButton
-            size="sm"
-            :variant="row.status === '起售' ? 'danger' : 'secondary'"
-          >
-            {{ toggleText(row.status as DishStatus) }}
-          </XfButton>
-        </div>
-      </template>
-    </XfTable>
+        <XfPagination v-model:page="dishPage" :total="filteredDishes.length" :page-size="dishPageSize" />
+      </div>
+    </XfPanel>
+  </template>
 
-    <XfEmpty
-      v-else
-      title="该模块为占位"
-      description="管家端首版仅落地菜品列表，套餐 / 分类 / 口味库后续按原型补齐。"
-    />
-
-    <div v-if="activeTab === 'dish'" class="xfm-pager">
-      <span class="xfm-pager__summary">
-        共 {{ dishSummary.total }} 道 · 起售 {{ dishSummary.onSale }} · 停售 {{ dishSummary.offSale }}
-      </span>
-      <XfPagination v-model:page="page" :total="dishSummary.total" :page-size="pageSize" />
+  <!-- ============ 套餐 ============ -->
+  <template v-else-if="activeTab === 'combo'">
+    <div class="xfm-toolbar">
+      <div class="xfm-toolbar__search">
+        <XfInput v-model="comboKeyword" placeholder="搜索套餐名 / 编码" />
+      </div>
+      <div class="xfm-toolbar__select">
+        <XfSelect v-model="comboStatus" :options="comboStatusOptions" />
+      </div>
+      <div class="xfm-toolbar__grow"></div>
+      <span class="xfm-muted">点击「明细」查看内含菜品（示意）</span>
     </div>
-  </XfPanel>
 
+    <div class="xfm-combo">
+      <XfPanel>
+        <XfTable
+          :columns="comboColumns"
+          :data="pagedCombos"
+          row-key="id"
+          empty-text="暂无套餐（示意）"
+          empty-description="后续版本支持新增套餐"
+        >
+          <template #name="{ row }">
+            <div class="xfm-dish-name">{{ row.name }}</div>
+          </template>
+          <template #code="{ row }">
+            <span class="xfm-num">{{ row.code }}</span>
+          </template>
+          <template #price="{ row }">
+            <span class="xfm-num">{{ row.price }}</span>
+          </template>
+          <template #dishCount="{ row }">
+            <span class="xfm-num">{{ row.dishCount }}</span>
+          </template>
+          <template #status="{ row }">
+            <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+          </template>
+          <template #action="{ row }">
+            <div class="xfm-actions">
+              <XfButton size="sm" variant="ghost" @click="selectedComboId = row.id as number">
+                明细
+              </XfButton>
+            </div>
+          </template>
+        </XfTable>
+
+        <div class="xfm-pager">
+          <span class="xfm-pager__summary">共 {{ filteredCombos.length }} 个套餐（示意）</span>
+          <XfPagination
+            v-model:page="comboPage"
+            :total="filteredCombos.length"
+            :page-size="comboPageSize"
+          />
+        </div>
+      </XfPanel>
+
+      <XfPanel title="套餐明细（示意）">
+        <template v-if="selectedCombo">
+          <div class="xfm-combo__head">
+            <div class="xfm-combo__name">{{ selectedCombo.name }}</div>
+            <div class="xfm-combo__meta">
+              <span class="xfm-num">{{ selectedCombo.code }}</span>
+              <span class="xfm-num">{{ selectedCombo.price }}</span>
+              <XfTag :tone="enableTone(selectedCombo.status)">{{ selectedCombo.status }}</XfTag>
+            </div>
+          </div>
+          <div class="xfm-combo__items">
+            <div v-for="(item, index) in selectedCombo.items" :key="index" class="xfm-combo__item">
+              <span>{{ item }}</span>
+            </div>
+          </div>
+        </template>
+        <XfEmpty v-else title="未选择套餐" description="点击左侧「明细」查看内含菜品" />
+      </XfPanel>
+    </div>
+  </template>
+
+  <!-- ============ 菜品分类 ============ -->
+  <template v-else-if="activeTab === 'category'">
+    <div class="xfm-toolbar">
+      <span class="xfm-muted">共 {{ categories.length }} 个分类（示意）</span>
+      <div class="xfm-toolbar__grow"></div>
+      <XfButton @click="openCategoryModal">＋ 新增分类</XfButton>
+    </div>
+
+    <XfPanel>
+      <XfTable
+        :columns="categoryColumns"
+        :data="pagedCategories"
+        row-key="id"
+        empty-text="暂无分类（示意）"
+        empty-description="点击右上角「新增分类」创建"
+      >
+        <template #name="{ row }">
+          <div class="xfm-dish-name">{{ row.name }}</div>
+        </template>
+        <template #sort="{ row }">
+          <span class="xfm-num">{{ row.sort }}</span>
+        </template>
+        <template #dishCount="{ row }">
+          <span class="xfm-num">{{ row.dishCount }}</span>
+        </template>
+        <template #status="{ row }">
+          <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+        </template>
+        <template #action="{ row }">
+          <div class="xfm-actions">
+            <XfButton size="sm" variant="ghost" @click="editCategory(row as CategoryRow)">编辑</XfButton>
+            <XfButton
+              size="sm"
+              :variant="row.status === '启用' ? 'danger' : 'secondary'"
+              @click="toggleCategory(row as CategoryRow)"
+            >
+              {{ row.status === '启用' ? '停用' : '启用' }}
+            </XfButton>
+          </div>
+        </template>
+      </XfTable>
+
+      <div class="xfm-pager">
+        <span class="xfm-pager__summary">共 {{ categories.length }} 个分类（示意）</span>
+        <XfPagination
+          v-model:page="categoryPage"
+          :total="categories.length"
+          :page-size="categoryPageSize"
+        />
+      </div>
+    </XfPanel>
+  </template>
+
+  <!-- ============ 口味库 ============ -->
+  <template v-else-if="activeTab === 'flavor'">
+    <div class="xfm-toolbar">
+      <div class="xfm-toolbar__search">
+        <XfInput v-model="flavorKeyword" placeholder="搜索口味名称 / 类型" />
+      </div>
+      <div class="xfm-toolbar__grow"></div>
+      <span class="xfm-muted">共 {{ flavors.length }} 个口味（示意）</span>
+    </div>
+
+    <XfPanel>
+      <XfTable
+        :columns="flavorColumns"
+        :data="pagedFlavors"
+        row-key="id"
+        empty-text="暂无口味（示意）"
+        empty-description="口味库用于点餐规格，后续版本支持维护"
+      >
+        <template #name="{ row }">
+          <div class="xfm-dish-name">{{ row.name }}</div>
+        </template>
+        <template #type="{ row }">
+          <span class="xfm-tag-text">{{ row.type }}</span>
+        </template>
+        <template #dishCount="{ row }">
+          <span class="xfm-num">{{ row.dishCount }}</span>
+        </template>
+        <template #status="{ row }">
+          <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+        </template>
+        <template #action="{ row }">
+          <div class="xfm-actions">
+            <XfButton
+              size="sm"
+              :variant="row.status === '启用' ? 'danger' : 'secondary'"
+              @click="toggleFlavor(row as FlavorRow)"
+            >
+              {{ row.status === '启用' ? '停用' : '启用' }}
+            </XfButton>
+          </div>
+        </template>
+      </XfTable>
+
+      <div class="xfm-pager">
+        <span class="xfm-pager__summary">共 {{ flavors.length }} 个口味（示意）</span>
+        <XfPagination
+          v-model:page="flavorPage"
+          :total="filteredFlavors.length"
+          :page-size="flavorPageSize"
+        />
+      </div>
+    </XfPanel>
+  </template>
+
+  <!-- ============ 提示弹窗 ============ -->
   <XfModal v-model:open="noticeOpen" title="提示">
     <p class="xfm-muted">{{ noticeText }}</p>
     <template #footer>
@@ -178,9 +678,13 @@ function saveDish() {
     </template>
   </XfModal>
 
-  <XfModal v-model:open="dishModalOpen" title="新增菜品（示意）">
-    <div class="xfm-form">
-      <XfField label="菜品名称" required>
+  <!-- ============ 菜品新增 / 编辑弹窗 ============ -->
+  <XfModal
+    v-model:open="dishModalOpen"
+    :title="dishForm.id ? '编辑菜品（示意）' : '新增菜品（示意）'"
+  >
+    <div class="xfm-form xfm-form--grid">
+      <XfField class="xfm-form__full" label="菜品名称" required :error="dishNameError || ''">
         <template #default="{ id }">
           <XfInput :id="id" v-model="dishForm.name" placeholder="如 招牌红烧肉" />
         </template>
@@ -190,19 +694,68 @@ function saveDish() {
           <XfSelect
             :id="id"
             v-model="dishForm.category"
-            :options="dishCategories.map((item) => ({ label: item, value: item }))"
+            :options="dishCategoryOptions"
+            placeholder="请选择分类"
           />
         </template>
       </XfField>
-      <XfField label="价格" required :error="dishFormError || ''">
+      <XfField label="编码">
+        <template #default="{ id }">
+          <XfInput :id="id" v-model="dishForm.code" placeholder="如 D006" />
+        </template>
+      </XfField>
+      <XfField label="价格" required :error="dishPriceError || ''">
         <template #default="{ id }">
           <XfInput :id="id" v-model="dishForm.price" prefix="¥" placeholder="0.00" />
+        </template>
+      </XfField>
+      <XfField label="口味">
+        <template #default="{ id }">
+          <XfSelect
+            :id="id"
+            v-model="dishForm.flavor"
+            :options="flavorOptions"
+            placeholder="请选择口味（可简化）"
+          />
+        </template>
+      </XfField>
+      <XfField label="状态">
+        <template #default="{ id }">
+          <XfSelect :id="id" v-model="dishForm.status" :options="dishFormStatusOptions" />
         </template>
       </XfField>
     </div>
     <template #footer>
       <XfButton variant="secondary" @click="dishModalOpen = false">取消</XfButton>
       <XfButton @click="saveDish">保存</XfButton>
+    </template>
+  </XfModal>
+
+  <!-- ============ 分类新增 / 编辑弹窗 ============ -->
+  <XfModal
+    v-model:open="categoryModalOpen"
+    :title="categoryForm.id ? '编辑分类（示意）' : '新增分类（示意）'"
+  >
+    <div class="xfm-form">
+      <XfField label="分类名称" required :error="categoryNameError || ''">
+        <template #default="{ id }">
+          <XfInput :id="id" v-model="categoryForm.name" placeholder="如 热菜" />
+        </template>
+      </XfField>
+      <XfField label="排序" hint="数字越小越靠前">
+        <template #default="{ id }">
+          <XfInput :id="id" v-model="categoryForm.sort" placeholder="如 1" />
+        </template>
+      </XfField>
+      <XfField label="状态">
+        <template #default="{ id }">
+          <XfSelect :id="id" v-model="categoryForm.status" :options="categoryStatusOptions" />
+        </template>
+      </XfField>
+    </div>
+    <template #footer>
+      <XfButton variant="secondary" @click="categoryModalOpen = false">取消</XfButton>
+      <XfButton @click="saveCategory">保存</XfButton>
     </template>
   </XfModal>
 </template>
