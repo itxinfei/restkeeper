@@ -157,7 +157,7 @@
 | 套餐 | `GET /setMeal/page/{pageNum}/{pageSize}?name=`、`POST /setMeal`（SetMealWithDishes）、`PUT /setMeal`、`GET /setMeal/{id}`、`PUT /setMeal/forbidden`、`PUT /setMeal/enable`、`DELETE /setMeal`（ids 数组）；套餐菜品 `GET /setMeal/dish/list/{setMealId}`、`GET /setMeal/dish/copies?dishId=&setMealId=` |
 | 桌台与区域 | 区域 `POST /table/area/add`（接口共 2 个方法）、区域列表 `listTableArea()` ✅ 阶段 4 已补 `@GetExchange("/list")`；桌台 `POST /table/add`、`GET /table/area/{areaId}/page/{pageNum}/{pageSize}`、`GET /table/count/{areaId}/{status}`、`GET /table/{id}`、`PUT /table`；开台见 4.3（在 ITableLogService）；桌台删除等增强 ⏸️ P2 |
 | 员工 | `GET /staff/page/{pageNum}/{pageSize}?staffName=&phone=` 🆕、`POST /staff/add`（addStaff：生成 8 位密码 BCrypt，**不发短信**）、`POST /staff`（裸 save，直通 MP，不生成密码不加密，仅收银端快速入口使用）、🆕 `PUT /staff`（编辑/启用）、🆕 `PUT /staff/pause/{id}`（停用）、`POST /staff/login`（loginName=员工姓名） |
-| 沽清 | 🆕 `GET /sellCalculation/page/{pageNum}/{pageSize}?dishName=&dishType=`（dishType 为 Integer）、`GET /sellCalculation/remainder/{dishId}`（无记录返回 -1）、`PUT /sellCalculation/decrease?dishId=&dishNumber=`（**dishNumber:Integer**，封底 0，仅记录存在时扣）、`POST /sellCalculation/add?dishId=&dishNum=`（**dishNum:int**，只回加已存在记录，⚠️ K6 命名不一致 + NPE）、`POST /sellCalculation`（@RequestBody SellCalculation 裸保存）、`DELETE /sellCalculation`（ids 数组，物理删除） |
+| 沽清 | 🆕 `GET /sellCalculation/page/{pageNum}/{pageSize}?dishName=&dishType=`（dishType 为 Integer）、`GET /sellCalculation/remainder/{dishId}`（无记录返回 -1）、`PUT /sellCalculation/decrease?dishId=&dishNumber=`（**dishNumber:Integer**，封底 0，仅记录存在时扣）、`POST /sellCalculation/add?dishId=&dishNumber=`（**dishNumber:int**，无记录则新建，✅ K6 已修）、`POST /sellCalculation`（@RequestBody SellCalculation 裸保存）、`DELETE /sellCalculation`（ids 数组，物理删除） |
 | 挂账单位 | `POST /credit/add`（CreditWithCompanyUsers，含关联用餐人）、`GET /credit/page/{pageNum}/{pageSize}?userName=`、`GET /credit/{id}`（queryById 回显，带关联用餐人）、`GET /credit/get/{id}`（getById 单表）、`PUT /credit`（updateInfo 修改，CreditWithCompanyUsers）、`POST /credit/saveOrUpdate`（裸 Credit）；用餐人 `GET /credit/companyUser/list/{creditId}` |
 | 挂账流水 | `GET /credit/log/page/{pageNum}/{pageSize}/{creditId}`（creditId 为 path，无 query）、`GET /credit/log/list?creditId=&start=&end=`（**start/end 为 LocalDateTime、`yyyy-MM-dd HH:mm:ss`、均可选**，勿与报表的 LocalDate 混用）、`POST /credit/log`；EasyExcel 导出在 BFF 层 🔜（仅 enterprise_web 有，CreditController#export） |
 | 挂账还款 | `POST /credit/repayment`（CreditRepayment；超额拒绝；creditAmount 扣减、totalRepaymentAmount 累加；不写 CreditLogs） |
@@ -358,7 +358,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 1. 三个 web 的 19 个 `@Reference` 文件（operator 2 / enterprise 12 / cash 5）全部换 HttpServiceProxyFactory 客户端 Bean（租户拦截器已接入；**Resilience4j 未接入，遗留**）；
 2. 按 10.2 对照表逐端点改写 Controller；挂账结账编排拆为 pay/payByCredit 两个调用；
-3. 登录参数映射统一（K13：password/loginPass + 旧 VO 交叉错位）；沽清散参命名统一（dishNum/dishNumber）；
+3. 登录参数映射统一（K13：password/loginPass + 旧 VO 交叉错位）；沽清散参命名统一（dishNum/dishNumber）✅ 阶段 5 已统一；
 4. PageVO → PageResult；javax → jakarta（EasyExcel 导出保留在 enterprise CreditController#export）；Guava/commons-lang 旧调用改 JDK；
 5. 修复 K1 两处契约缺注解（`GET /brand/list`、`GET /table/area/list`）并回归编译；
 6. operator_web **新增** sysDict 转发（旧模块没有）；删 3 份 springfox SwaggerConfiguration 与 swagger2 @Api 注解（web_common 已换 springdoc）；
@@ -375,9 +375,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 | 项 | 现状 | 处置 |
 |---|---|---|
-| K6 沽清回加 | `SellCalculationServiceImpl#add` 仍 `dishNum` 命名、`getByDishId` 为 null 时 NPE、只 update 不 insert | 补 upsert（无记录则 insert）+ 统一参数名 dishNumber；阶段 4 未执行，重新排期 |
-| K14 挂账流水 | `OrderServiceImpl:240-243` creditAmount 重复赋值；orderAmount/receivedAmount 取订单总额 | 与业务核对字段语义后修正 |
-| K15 常量注释 | `SystemCode:32-33` TABLE_STATUS 注释与值错位 | 顺手修注释 |
+| K14 挂账流水 | `OrderServiceImpl` creditAmount 重复赋值已删；orderAmount/receivedAmount 仍取订单总额 | 字段语义待与业务确认后修正 |
 | K17 provider 异常 | 五 provider + mq + job 无 @ControllerAdvice，异常走 Spring 默认错误体 | 引入公共异常 advice（复用 BussinessException、对齐错误码）或 BFF 统一转换 |
 | Resilience4j | 全仓无依赖与配置（10.4-1 原计划阶段 4） | 在 web_common HTTP 客户端接入超时/重试/熔断 |
 | 员工 `POST /staff` 裸 save | 直通 MP 不生成密码不加密（StaffController#save） | 风险项：建议停用或改为走 addStaff 加密 |
@@ -394,7 +392,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 | K3 | 三个 web 共 19 个文件仍 import Dubbo @Reference、3 份 @EnableSwagger2 配置、swagger2 注解遍布，而 pom 已无 dubbo 依赖 | 三 web 模块当前编译不过，前端无 BFF 可调 | 阶段 4 整体重写（10.4） |
 | K4 | 企业账号「启用」无独立端点 | 启用须选试用/正式并重算到期 | 产品决策：走编辑接口，非缺陷 |
 | K5 | 菜品管理端分页经类级 resultMap 嵌套 select 装配分类/口味，存在 N+1（每页约 20 次子查询） | 教学规模可接受 | 后续优化改分步查询或 XML join |
-| K6 | `SellCalculationServiceImpl.add` 按 dishId 查不到记录时直接 NPE，只 update 不 insert/upsert；且 add 散参 dishNum 与 decrease 的 dishNumber 命名不一致 | 对未建沽清记录的菜品退菜回加会 500 | ⚠️ **未修**（阶段 4 未执行）：补 upsert + 统一参数名 dishNumber，见 10.5 |
+| K6 | `SellCalculationServiceImpl.add` 按 dishId 查不到记录时直接 NPE，只 update 不 insert/upsert；且 add 散参 dishNum 与 decrease 的 dishNumber 命名不一致 | 对未建沽清记录的菜品退菜回加会 500 | ✅ 阶段 5 已修：add 改 upsert（无记录则 insert）+ 参数名统一 dishNumber |
 | K7 | `ReverseOrderServiceImpl.reverse` 不校验原单 payStatus 是否已付 | 裸调端点可反结未付订单 | 前端入口已由 `GET /order/number/{orderNumber}` 限已付；建议 provider 补已付前置校验 |
 | K8 | 门店经理登录不排除 status=0/-1（停用者仍可登录）；且「至少绑定一家门店」校验先于密码校验 | 停用店长可登录；无门店时密码错误也提示门店问题 | ✅ 阶段 5 已修：StoreManagerServiceImpl 登录查询加 status≠0 条件、校验顺序调整、新增经理补 status=ENABLED |
 | K9 | provider 的企业 add 不写 status/expireTime/applicationTime、update 不重算到期；7 天试用、续费基准 now、正式禁改试用只存在于旧 Dubbo BFF | 直连新端点开通的账号 status=null 无法登录；BFF 不重写则业务规则丢失 | ✅ 阶段 4 已下沉 provider：EnterpriseAccountServiceImpl#add/updateById 单点计算与校验（7 天试用 / 基准 now / 正式禁改试用） |
@@ -402,8 +400,7 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 | K11 | 全工程无 @Version，开台/换台/清台仅按 status 现值判断 | 并发操作存在竞态覆盖 | 教学项目可接受；前端勿缓存桌台状态，必要时加乐观锁 |
 | K12 | gateway 与 cash_web 同占 8085；网关仓库内无 routes、无 CORS、仍用自研 JWT AuthFilter、pom 残留 openfeign | 同机启动端口冲突；鉴权/CORS 与目标态不符 | ✅ 阶段 4 改端口 8080、补路由、CORS 收口、删 openfeign；阶段 5 已换 reactor Sa-Token AuthFilter |
 | K13 | 登录参数命名不统一（员工 password / 其余 loginPass），旧 BFF VO 字段交叉错位；分页路径变量 pageNo/pageNum 并存 | BFF 迁移时极易 400 | ✅ 阶段 4 已映射（enterprise/operator，代码实证）；cash 待联调逐口验证 |
-| K14 | 挂账结账写 CreditLogs 时 creditAmount 重复赋值、orderAmount/receivedAmount 取订单总额而非本次实收；还款不写 CreditLogs | 挂账流水金额字段语义可疑；流水页统计不到还款 | ⚠️ **未修**（代码实证 OrderServiceImpl:240-243）：待与业务核对字段语义后修正 |
-| K15 | `SystemCode` 桌台常量注释与值错位（TABLE_STATUS_LOCKED=2 注释写「1 锁定」、OPENED=1 注释写「2 已开桌」）；shopId 仅递归查重无 DB 唯一约束 | 不影响按常量名使用；shopId 极小概率重复 | ⚠️ **未修**（SystemCode:32-33 注释仍错位）：顺手修注释；shopId 唯一约束随 Flyway V1 评估 |
+| K14 | 挂账结账写 CreditLogs 时 creditAmount 重复赋值、orderAmount/receivedAmount 取订单总额而非本次实收；还款不写 CreditLogs | 挂账流水金额字段语义可疑；流水页统计不到还款 | 🟡 部分修复：creditAmount 重复赋值已删；orderAmount/receivedAmount 取订单总额的语义待与业务确认 |
 | K16 | ES `dish` 索引无任何写入/同步代码：es provider 只用 ElasticsearchOperations 只读查询，全仓无 save/index/Repository、无变更监听、无全量重建入口 | 索引没有数据来源，中间件环境搭好后收银端检索依然查不到菜品 | 中间件阶段定同步方案（推荐：菜品写后 MQ 异步双写 + 提供全量重建接口），并补索引 mapping 与 IK 词典初始化 |
 | K17 | 五个 provider + mq + job 全仓无 @ControllerAdvice/@ExceptionHandler，pom 不依赖 web_common；BussinessException 抛出后走 Spring 默认错误体（无统一 code/信封） | HTTP Interface 客户端难以按结构解析业务错误；BFF 直连 provider 后两层错误格式不一致 | 阶段 4/5 决策：provider 引入公共异常 advice（复用 common 的 BussinessException、对齐错误码），或在 BFF 层统一转换；第七章第 2 条已记录两层现状 |
 | K18 | MQ 三个发送方全部直投默认交换机的 account_queue；RabbitMQConfig 声明的 `sms_exchange`/`account_queue_key` 绑定从未被使用；SmsMessageListener catch 后 `e.printStackTrace()` 吞异常 | 交换机/绑定是死配置；短信发送失败只留标准错误流、无重试无告警 | 后置：统一改走命名交换机或删除死配置；catch 改 slf4j 占位符日志并按需配置死信队列 |

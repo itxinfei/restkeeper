@@ -29,8 +29,8 @@ public class SystemCode {
     public final static int CREDIT_TYPE_COMPANY = 1;
 
     public  final  static int  TABLE_STATUS_FREE=0; // 0空闲
-    public  final  static int  TABLE_STATUS_LOCKED=2; // 1 锁定
-    public  final  static int  TABLE_STATUS_OPENED=1; // 2 已开桌
+    public  final  static int  TABLE_STATUS_LOCKED=2; // 2锁定
+    public  final  static int  TABLE_STATUS_OPENED=1; // 1已开桌
 
 
     public  final  static  String DICTIONARY_REMARK="remark"; //字典表备注类型

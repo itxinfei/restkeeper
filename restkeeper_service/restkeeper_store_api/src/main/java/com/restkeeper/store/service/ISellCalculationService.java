@@ -34,10 +34,10 @@ public interface ISellCalculationService {
     void decrease(@RequestParam("dishId") String dishId,
                   @RequestParam("dishNumber") Integer dishNumber);
 
-    //增加沽清数量（退菜流程内部调用）
+    //增加沽清数量（退菜流程内部调用；无记录则新建）
     @PostExchange("/add")
     void add(@RequestParam("dishId") String dishId,
-             @RequestParam("dishNum") int dishNum);
+             @RequestParam("dishNumber") int dishNumber);
 
     //保存沽清记录
     @PostExchange

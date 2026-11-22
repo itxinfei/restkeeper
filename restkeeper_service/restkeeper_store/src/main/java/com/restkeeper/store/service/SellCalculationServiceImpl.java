@@ -58,12 +58,19 @@ public class SellCalculationServiceImpl extends ServiceImpl<SellCalculationMappe
     }
 
     /**
-     * 回加沽清数量（退菜）
+     * 回加沽清数量（退菜）：无记录则新建，避免 NPE（K6）
      */
     @Transactional
-    public void add(String dishId, int dishNum) {
+    public void add(String dishId, int dishNumber) {
         SellCalculation sellCalculation = getByDishId(dishId);
-        sellCalculation.setRemainder(sellCalculation.getRemainder() + dishNum);
+        if (sellCalculation == null) {
+            sellCalculation = new SellCalculation();
+            sellCalculation.setDishId(dishId);
+            sellCalculation.setRemainder(dishNumber);
+            this.save(sellCalculation);
+            return;
+        }
+        sellCalculation.setRemainder(sellCalculation.getRemainder() + dishNumber);
         this.updateById(sellCalculation);
     }
 

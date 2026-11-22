@@ -34,8 +34,8 @@ public class SellCalculationController implements ISellCalculationService {
     }
 
     @Override
-    public void add(String dishId, int dishNum) {
-        sellCalculationService.add(dishId, dishNum);
+    public void add(String dishId, int dishNumber) {
+        sellCalculationService.add(dishId, dishNumber);
     }
 
     @Override
