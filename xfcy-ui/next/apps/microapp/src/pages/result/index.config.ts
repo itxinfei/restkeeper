@@ -1,0 +1,4 @@
+export default {
+  navigationBarTitleText: '支付结果',
+  navigationStyle: 'custom',
+}

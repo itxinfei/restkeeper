@@ -1,0 +1,120 @@
+/* 门店菜单 · DESIGN.md §5.3 C 端布局 */
+.menu {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--c-bg);
+}
+
+/* 门店头 */
+.menu__head {
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 18px 18px 12px;
+  background: var(--c-surface);
+}
+
+.menu__name {
+  display: block;
+  font-size: 19px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.menu__sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.menu__mode {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.menu__mode-item {
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--c-neutral-soft);
+}
+
+.menu__mode-item.is-on {
+  background: var(--c-brand-soft);
+  color: var(--c-brand);
+  font-weight: var(--weight-emphasis);
+}
+
+/* 搜索 */
+.menu__searchwrap {
+  flex: none;
+  padding: 0 18px 4px;
+  background: var(--c-surface);
+}
+
+.menu__search {
+  height: 38px;
+  border-radius: var(--radius-pill);
+  background: var(--c-neutral-soft);
+  padding: 0 14px;
+  font-size: 13px;
+  color: var(--c-text);
+}
+
+/* 分类锚点 */
+.menu__cats {
+  flex: none;
+  background: var(--c-surface);
+  white-space: nowrap;
+}
+
+.menu__cats-inner {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px 10px;
+}
+
+.menu__cat {
+  flex: none;
+  padding: 7px 14px;
+  border-radius: var(--radius-pill);
+  background: var(--c-neutral-soft);
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.menu__cat.is-on {
+  background: var(--c-brand);
+  color: #fff;
+  font-weight: var(--weight-emphasis);
+}
+
+/* 菜品区 */
+.menu__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 16px;
+}
+
+.menu__section {
+  margin-bottom: 4px;
+}
+
+.menu__sec {
+  display: block;
+  margin: 14px 2px 8px;
+  font-size: 12px;
+  color: var(--c-text-3);
+  letter-spacing: 1px;
+}
+
+.menu__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}

@@ -1,0 +1,63 @@
+/* 下单确认 · DESIGN.md §5.3 / §6 */
+.confirm {
+  padding-bottom: 120px;
+}
+
+.confirm__body {
+  padding: 14px 16px 0;
+}
+
+.confirm__pay {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 10px 12px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  margin-bottom: 10px;
+}
+
+.confirm__pay.is-on {
+  border-color: var(--c-brand);
+  background: var(--c-brand-soft);
+}
+
+.confirm__pay-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm__pay-name {
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.confirm__pay-desc {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.confirm__radio {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--c-border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.confirm__pay.is-on .confirm__radio {
+  border-color: var(--c-brand);
+}
+
+.confirm__radio-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--c-brand);
+}

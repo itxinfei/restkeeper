@@ -1,0 +1,142 @@
+/* 菜品大图卡 · 依据 DESIGN.md §5.3 / §6 卡片规范 */
+.dish-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.dish-card.is-soldout {
+  opacity: 0.6;
+}
+
+.dish-card__pic {
+  position: relative;
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 占位渐变（示意，非 UI token） */
+.dish-card__pic--g1 {
+  background: linear-gradient(135deg, #fde9d7, #f6c89f);
+}
+.dish-card__pic--g2 {
+  background: linear-gradient(135deg, #e6ecda, #bccfa4);
+}
+.dish-card__pic--g3 {
+  background: linear-gradient(135deg, #f6dfd2, #e6a685);
+}
+.dish-card__pic--g4 {
+  background: linear-gradient(135deg, #efe6d8, #d3b48c);
+}
+
+.dish-card__emoji {
+  font-size: 36px;
+}
+
+.dish-card__tag {
+  position: absolute;
+  right: 6px;
+  bottom: 5px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: rgba(17, 24, 39, 0.65);
+  color: #fff;
+  font-size: 11px;
+}
+
+.dish-card__sig {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  background: var(--c-brand);
+  color: #fff;
+  font-size: 11px;
+}
+
+.dish-card__info {
+  padding: 10px 12px 12px;
+}
+
+.dish-card__name {
+  display: block;
+  font-size: 14px;
+  font-weight: var(--weight-emphasis);
+  color: var(--c-text);
+}
+
+.dish-card__desc {
+  display: block;
+  margin-top: 2px;
+  min-height: 15px;
+  font-size: 11px;
+  color: var(--c-text-2);
+}
+
+.dish-card__buy {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dish-card__price {
+  font-size: 16px;
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+  font-variant-numeric: tabular-nums;
+}
+
+.dish-card__unit {
+  font-size: 11px;
+  font-weight: var(--weight-body);
+  color: var(--c-text-3);
+}
+
+.dish-card__add {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--c-brand);
+  color: #fff;
+  font-size: 18px;
+  line-height: 32px;
+  text-align: center;
+}
+
+.dish-card__add.is-disabled {
+  background: var(--c-bg);
+  color: var(--c-text-3);
+}
+
+.dish-card__step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dish-card__stepbtn {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--c-border-strong);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: 16px;
+  line-height: 30px;
+  text-align: center;
+}
+
+.dish-card__num {
+  min-width: 20px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+  font-variant-numeric: tabular-nums;
+}

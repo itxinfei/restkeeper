@@ -1,0 +1,143 @@
+/* 支付结果 · 原型 microapp-result.html */
+.result {
+  padding-bottom: 120px;
+}
+
+.result__hero {
+  text-align: center;
+  padding: 48px 20px 8px;
+}
+
+.result__ok {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: var(--c-success-soft);
+  color: var(--c-success);
+  font-size: 36px;
+  line-height: 72px;
+  text-align: center;
+}
+
+.result__title {
+  display: block;
+  font-size: 20px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.result__sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.result__card {
+  background: var(--c-surface);
+  border-radius: var(--radius-lg);
+  margin: 16px;
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.result__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  font-size: 13.5px;
+  color: var(--c-text-2);
+}
+
+.result__row--amount {
+  border-top: 1px dashed var(--c-border);
+  margin-top: 6px;
+  padding-top: 12px;
+}
+
+.result__amount {
+  font-size: 18px;
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+}
+
+/* 进度步骤 */
+.result__steps {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  font-size: 12px;
+  color: var(--c-text-2);
+  margin-top: 18px;
+  padding: 0 12px;
+}
+
+.result__step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.result__dot {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--c-neutral-soft);
+  color: var(--c-text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+
+.result__step.is-done .result__dot {
+  background: var(--c-success-soft);
+  color: var(--c-success);
+}
+
+/* 底部按钮 */
+.result__bar {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+}
+
+.result__btn {
+  flex: 1;
+  text-align: center;
+  padding: 11px 0;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.result__btn--ghost {
+  background: var(--c-neutral-soft);
+  color: var(--c-text);
+}
+
+.result__btn--primary {
+  background: var(--c-brand);
+  color: #fff;
+  font-weight: var(--weight-emphasis);
+}
+
+.result__back {
+  margin: 16px auto 0;
+  width: 160px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--c-brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: var(--weight-emphasis);
+  line-height: 44px;
+  text-align: center;
+}

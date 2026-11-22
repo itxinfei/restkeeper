@@ -1,0 +1,31 @@
+/* 购物车 · DESIGN.md §5.3 / §6 */
+.cart {
+  padding-bottom: 120px;
+}
+
+.cart__body {
+  padding: 14px 16px 0;
+}
+
+.cart__remark {
+  height: 38px;
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--c-text);
+  background: var(--c-surface);
+}
+
+.cart__back {
+  margin: 16px auto 0;
+  width: 160px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: var(--c-brand);
+  color: #fff;
+  font-size: 14px;
+  font-weight: var(--weight-emphasis);
+  line-height: 44px;
+  text-align: center;
+}
