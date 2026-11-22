@@ -4,6 +4,8 @@ node_modules/
 dist/
 unpackage/
 build/
+# 测试覆盖率报告
+coverage/
 # 打包文件
 *.zip
 *.apk
