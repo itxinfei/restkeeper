@@ -1,0 +1,16 @@
+# dataId: order-dubbo-provider.yml（order provider）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/restkeeper_order?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: root
+    password: root
+seata:
+  enabled: true
+  application-id: order-dubbo-provider
+  tx-service-group: order-dubbo-provider-seata-tx-service-group
+  service:
+    vgroup-mapping:
+      order-dubbo-provider-seata-tx-service-group: default
+    grouplist:
+      default: 127.0.0.1:8091

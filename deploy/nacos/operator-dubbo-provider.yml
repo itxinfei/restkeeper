@@ -1,0 +1,7 @@
+# dataId: operator-dubbo-provider.yml（operator provider，prefix 同名）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/restkeeper_operator?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: root
+    password: root

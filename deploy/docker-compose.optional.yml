@@ -1,0 +1,31 @@
+# 可选中间件：XXL-Job Admin、Seata Server（按需启用）
+# 用法：docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.optional.yml up -d
+# 注意：这两个服务较重，且需要额外建表/注册配置，非阶段 5 冒烟必需。
+name: xfcy
+
+services:
+  xxl-job-admin:
+    image: xuxueli/xxl-job-admin:2.4.0
+    container_name: xfcy-xxl-job-admin
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
+      TZ: Asia/Shanghai
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+    profiles: ["xxljob"]
+
+  seata-server:
+    image: seataio/seata-server:2.5.0
+    container_name: xfcy-seata
+    environment:
+      SEATA_PORT: 8091
+      STORE_MODE: db
+      TZ: Asia/Shanghai
+    ports:
+      - "8091:8091"
+      - "7091:7091"
+    profiles: ["seata"]

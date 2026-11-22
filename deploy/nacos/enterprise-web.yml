@@ -1,0 +1,8 @@
+# dataId: enterprise-web.yml（enterprise-web BFF，OSS/文件上传）
+oss:
+  endpoint: oss-cn-hangzhou.aliyuncs.com
+  accessKeyId: your-access-key-id
+  accessKeySecret: your-access-key-secret
+  bucketName: your-bucket
+  local:
+    dir: ./upload

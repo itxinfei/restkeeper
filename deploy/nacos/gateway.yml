@@ -1,0 +1,29 @@
+# dataId: gateway.yml（gateway，prefix=gateway）
+# 生产路由以 Nacos 为准；本地可用 discovery.locator 兜底。
+spring:
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: operator-web
+          uri: lb://operator-web
+          predicates:
+            - Path=/operator/**,/enterprise/account/**,/sysDict/**
+        - id: enterprise-web
+          uri: lb://enterprise-web
+          predicates:
+            - Path=/brand/**,/store/**,/store/manager/**,/dish/**,/setMeal/**,/credit/**,/report/**,/table/**,/staff/**,/remark/**,/login
+        - id: cash-web
+          uri: lb://cash-web
+          predicates:
+            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation,/search/**
+        - id: microapp-web
+          uri: lb://microapp-web
+          predicates:
+            - Path=/microApp/**
+gateway:
+  # C 端 BFF 自身用独立 StpLogic 鉴权，网关对 /microApp/** 放行（见 MicroappStpLogicConfig）
+  excludedUrls: /login,/staff/login,/operator/user/login,/enterprise/account/login,/store/manager/login,/microApp/**
