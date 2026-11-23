@@ -154,6 +154,7 @@
 | **B4（复用重构）** ✅ | G5 AppShell 抽公共 + 断点统一 + 清理重复 CSS | 三端 |
 | **B5（页面精修）** ✅ | 逐页按 §4 精修（报表图表/导出、挂账流水、收银入口补全） | 逐页 |
 | **B6（运营/口径收口）** ✅ | 企业账号服务端分页 + 开通密码提示、员工停用确认、菜品余量接沽清、C 端支付打桩标注 | operator/manager/microapp |
+| **B7（登录复用）** ✅ | 登录页/用户 store/路由守卫抽公共（`@xfcy/auth` + `XfLoginPage`） | 三端 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -172,3 +173,7 @@
 > - **企业账号**：关键词改为服务端分页（`enterpriseName` 模糊，页大小 10）；状态/套餐为演示字段，开启时退化为本地过滤（取前 500 条）；开通成功后提示「初始密码已通过短信下发至联系人手机号」（后端生成 6 位随机密码，接口不返回明文）。
 > - **员工**：停用/启用改为二次确认；**菜品**：余量列接入沽清真实余量（`-1` / 未设置 → 「不限」，剩余 ≤ 2 标红），与「沽清管理」同口径。
 > - **C 端**：下单确认页与支付结果页均标注「开发演示环境 · 支付为模拟打桩，不会真实扣款」；购物车/确认页行内金额与底部合计统一等宽数字。
+>
+> B7 已落地：
+> - 新增 `packages/auth`（`@xfcy/auth`）：`createUserStore(kind, defaults)` 统一三端会话（按身份调用门店经理/运营人员/门店员工登录契约）与 `createAuthGuard({ loginName, homeName, isLoggedIn })` 统一路由守卫；三端 `stores/user.ts` 降为 4 行薄封装，`router.ts` 不再各写一份守卫。
+> - `@xfcy/ui` 新增 `XfLoginPage`：品牌/副标题/商户号/触屏尺寸由 props 注入，登录动作由调用方传入；三端 `LoginView.vue` 改为薄封装（仅管 redirect），三端重复的登录样式（约 -190 行）删除并由 ui 全局样式接管；新增 8 个组件测试。

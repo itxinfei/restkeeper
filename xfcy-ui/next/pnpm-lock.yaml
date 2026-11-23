@@ -13,6 +13,9 @@ importers:
       '@xfcy/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@xfcy/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@xfcy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -44,6 +47,9 @@ importers:
       '@xfcy/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@xfcy/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@xfcy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -136,6 +142,9 @@ importers:
       '@xfcy/api':
         specifier: workspace:*
         version: link:../../packages/api
+      '@xfcy/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@xfcy/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -199,6 +208,34 @@ importers:
       vite-plugin-dts:
         specifier: ^4.5.3
         version: 4.5.4(@types/node@26.6.6)(rollup@4.68.8)(typescript@5.8.3)(vite@6.4.6(@types/node@26.6.6)(jiti@2.7.0)(less@3.13.1)(lightningcss@1.33.0)(sass@1.108.2)(stylus@0.64.0)(terser@5.51.4))
+
+  packages/auth:
+    dependencies:
+      '@xfcy/api':
+        specifier: workspace:*
+        version: link:../api
+      pinia:
+        specifier: ^2.3.1
+        version: 2.3.1(typescript@5.8.3)(vue@3.5.46(typescript@5.8.3))
+      vue:
+        specifier: ^3.5.0
+        version: 3.5.46(typescript@5.8.3)
+      vue-router:
+        specifier: ^4.5.0
+        version: 4.6.5(vue@3.5.46(typescript@5.8.3))
+    devDependencies:
+      typescript:
+        specifier: ~5.8.3
+        version: 5.8.3
+      vite:
+        specifier: ^6.3.5
+        version: 6.4.6(@types/node@26.6.6)(jiti@2.7.0)(less@3.13.1)(lightningcss@1.33.0)(sass@1.108.2)(stylus@0.64.0)(terser@5.51.4)
+      vite-plugin-dts:
+        specifier: ^4.5.3
+        version: 4.5.4(@types/node@26.6.6)(rollup@4.68.8)(typescript@5.8.3)(vite@6.4.6(@types/node@26.6.6)(jiti@2.7.0)(less@3.13.1)(lightningcss@1.33.0)(sass@1.108.2)(stylus@0.64.0)(terser@5.51.4))
+      vue-tsc:
+        specifier: ^2.2.10
+        version: 2.2.12(typescript@5.8.3)
 
   packages/ui:
     devDependencies:
@@ -8455,7 +8492,7 @@ snapshots:
 
   '@types/minimatch@6.0.0':
     dependencies:
-      minimatch: 10.2.3
+      minimatch: 10.2.6
 
   '@types/ms@2.1.0': {}
 

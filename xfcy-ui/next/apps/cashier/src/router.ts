@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { createAuthGuard } from '@xfcy/auth'
 import PosLayout from './layouts/PosLayout.vue'
 import { useUserStore } from './stores/user'
 
@@ -34,13 +35,10 @@ export const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
-  const user = useUserStore()
-  if (!to.meta.public && !user.isLoggedIn) {
-    return { name: 'login', query: { redirect: to.fullPath } }
-  }
-  if (to.name === 'login' && user.isLoggedIn) {
-    return { name: 'tables' }
-  }
-  return true
-})
+router.beforeEach(
+  createAuthGuard({
+    loginName: 'login',
+    homeName: 'tables',
+    isLoggedIn: () => useUserStore().isLoggedIn,
+  }),
+)

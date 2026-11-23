@@ -113,3 +113,96 @@
   font-size: var(--text-caption);
   color: var(--c-text-2);
 }
+
+/* ---------- 登录页（三端统一 XfLoginPage） ---------- */
+
+.xf-login {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--c-bg);
+}
+
+.xf-login__card {
+  width: 100%;
+  max-width: 380px;
+  padding: var(--space-8);
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.xf-login__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.xf-login__logo {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--c-primary);
+  color: var(--c-surface);
+  display: grid;
+  place-items: center;
+  font-size: 18px;
+  font-weight: var(--weight-strong);
+}
+
+.xf-login__heading {
+  min-width: 0;
+}
+
+.xf-login__title {
+  font-size: 20px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xf-login__sub {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--c-text-3);
+}
+
+.xf-login__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.xf-login__error {
+  font-size: 13px;
+  color: var(--c-danger);
+}
+
+.xf-login__extra {
+  margin-top: var(--space-4);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--c-text-3);
+}
+
+/* 触屏端（收银）：卡片与字号放大 */
+.xf-login.is-touch .xf-login__card {
+  max-width: 400px;
+}
+
+.xf-login.is-touch .xf-login__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+}
+
+.xf-login.is-touch .xf-login__title {
+  font-size: 22px;
+}
+
+.xf-login.is-touch .xf-login__sub {
+  font-size: 13px;
+}
