@@ -368,6 +368,10 @@
   color: var(--c-text-2);
 }
 
+.xfc-search__meta.is-error {
+  color: var(--c-danger);
+}
+
 .xfc-cats {
   flex: none;
   display: flex;

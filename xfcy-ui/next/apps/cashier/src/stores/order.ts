@@ -42,6 +42,7 @@ export const useOrderStore = defineStore('order', () => {
   const tables = ref<PosTable[]>([])
   const loading = ref(false)
   const loaded = ref(false)
+  const error = ref('')
 
   const currentTableId = ref('')
   const guests = ref(0)
@@ -61,6 +62,7 @@ export const useOrderStore = defineStore('order', () => {
   const searchResults = ref<PosDish[]>([])
   const searchLoading = ref(false)
   const searched = ref(false)
+  const searchError = ref('')
 
   const currentTable = computed(
     () => tables.value.find((t) => t.id === currentTableId.value) ?? null,
@@ -80,6 +82,7 @@ export const useOrderStore = defineStore('order', () => {
   async function load() {
     if (loading.value) return
     loading.value = true
+    error.value = ''
     try {
       const [areaRows, categoryPage, dishPage] = await Promise.all([
         table.areaList(),
@@ -125,6 +128,8 @@ export const useOrderStore = defineStore('order', () => {
       dishes.value = dishPage.records.map(toPosDish).filter((item) => item.id)
 
       loaded.value = true
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '桌台与菜品加载失败'
     } finally {
       loading.value = false
     }
@@ -156,6 +161,7 @@ export const useOrderStore = defineStore('order', () => {
     }
     searchLoading.value = true
     searched.value = true
+    searchError.value = ''
     try {
       if (isMockMode()) {
         const lower = kw.toLowerCase()
@@ -168,6 +174,8 @@ export const useOrderStore = defineStore('order', () => {
         const page = await dish.searchByCode(kw, 1, 20)
         searchResults.value = (page.records ?? []).map(toPosDish).filter((item) => item.id)
       }
+    } catch (err) {
+      searchError.value = err instanceof Error ? err.message : '检索失败，请重试'
     } finally {
       searchLoading.value = false
     }
@@ -376,10 +384,12 @@ export const useOrderStore = defineStore('order', () => {
     tables,
     loading,
     loaded,
+    error,
     searchKeyword,
     searchResults,
     searchLoading,
     searched,
+    searchError,
     searchDishes,
     currentTableId,
     guests,

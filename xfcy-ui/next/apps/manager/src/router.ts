@@ -30,10 +30,9 @@ export const router = createRouter({
           meta: { title: '菜品管理', group: '经营' },
         },
         {
+          // 套餐已在「菜品管理」内以 Tab 承载，旧入口重定向并激活对应 Tab
           path: 'combos',
-          name: 'combos',
-          component: () => import('./views/PlaceholderView.vue'),
-          meta: { title: '套餐管理', group: '经营' },
+          redirect: '/dishes?tab=combo',
         },
         {
           path: 'tables',

@@ -35,9 +35,9 @@
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 工作台 Dashboard | mock 演示数据 + real 仅拉 `currentAmount` | ❌ **数据可信度**：翻台率恒「—」；最新订单/桌台盘/沽清余量在 real 模式仍是演示数据，会误导店长 | **P0** |
+| 工作台 Dashboard | mock 演示数据 + real 仅拉 `currentAmount` | ⚠️ real 模式已接 `currentAmount` + 桌台盘 + 沽清余量 + 最新订单；死按钮已治理（B10） | P1 |
 | 菜品管理 Dishes | 4 Tab（菜品/套餐/分类/口味），功能完整 | ⚠️ 提示用模态；口味库为占位；批量操作缺反馈（B8 已补勾选批量 + Toast 反馈） | P1 |
-| 套餐管理 combos | `PlaceholderView` 占位 | ❌ 无独立页（套餐已在 Dishes 的「套餐」Tab 覆盖）→ 应**移除该导航项**或改为锚点跳转 | P1 |
+| 套餐管理 combos | 旧入口已改为重定向 `/dishes?tab=combo`，导航项已移除（B10） | ✅ 已收口 | — |
 | 桌台管理 Tables | 区域 + 桌台网格 | ⚠️ 无空状态统一；状态色语义需复核 | P1 |
 | 员工管理 Staff | 列表/新增/编辑/停用 | ⚠️ 新增后**初始密码无展示/重置入口**（后端不发短信，见 BUSINESS §9）→ 员工无法登录 | **P0** |
 | 挂账管理 Credit | 列表/新增/编辑/还款/停用 | ⚠️ 无「挂账流水」入口（`/credit/log/*` 未接入）；还款超额无前置校验提示 | P1 |
@@ -58,7 +58,7 @@
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 桌台总览 | 区域 + 桌台卡 | ⚠️ 状态色/计数口径需与 `table/count` 对齐 | P1 |
+| 桌台总览 | 区域 + 桌台卡 | ✅ 空态已统一；⚠️ 状态色/计数口径需与 `table/count` 对齐 | P1 |
 | 点餐页 | 分类锚点 + 菜品网格 + 订单面板 + 结账弹窗 | ✅ 结构符合 DESIGN §5.2；⚠️ 换台/退菜/反结账入口未确认完整 | P1 |
 | 登录 | 员工登录 | ✅ | — |
 
@@ -157,6 +157,7 @@
 | **B7（登录复用）** ✅ | 登录页/用户 store/路由守卫抽公共（`@xfcy/auth` + `XfLoginPage`） | 三端 |
 | **B8（清零收口）** ✅ | G6 真正落地（页面统一 toneOf/labelOf）、K16 检索空态、K19 报表口径、安全区与批量反馈收口 | 全部页面 |
 | **B9（页面头落地）** ✅ | G1 真正落地（`XfPageHead` 全端接入）、`XfEmpty` 空态操作（`actionText`/`@action`） | manager/operator |
+| **B10（死入口/静默失败清零）** ✅ | Dashboard 死按钮治理、combos 占位路由重定向、cashier 加载/检索失败显式报错 | manager/cashier |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -190,3 +191,7 @@
 > B9 已落地：
 > - **G1 页面骨架真正落地**：新增 `XfPageHead` 组件（标题 + 说明 + 主操作插槽），`layout.css` 补 `.xf-page__text` / `.xf-page__actions` 规则；manager 7 页（Dashboard/Dishes/Tables/Staff/Credit/Soldout/Reports）与 operator 5 页（企业管理/回收站/字典管理/运营人员/服务监控）全部接入，主操作按钮统一迁入页面头 actions（如 Dishes 的批量停售/新增、Credit 的新增挂账/导出流水）。
 > - **空态操作**：`XfEmpty` 新增 `actionText` prop 与 `action` emit（也支持 `#action` 插槽），修复 Dashboard 重试按钮因无效 prop 不渲染的问题（G3「加载失败 + 重试」闭环）。
+>
+> B10 已落地：
+> - **死入口清零**：Dashboard「登记」改为跳转 `/soldout`；移除无订单页可去的「全部订单」死按钮；`combos` 占位路由改为重定向 `/dishes?tab=combo`（Dishes 支持 `?tab=` 激活对应 Tab），删除 `PlaceholderView.vue`。
+> - **静默失败清零**：cashier `order.load()` 增加 `error` 状态与 catch，`TablesView` 加载失败时显示 `XfErrorState` + 重试；检索接口失败时显示内联错误（不再误报「未找到菜品」）。

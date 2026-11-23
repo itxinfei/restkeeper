@@ -129,12 +129,15 @@ async function onCheckout(method: PayMethod, credit?: CreditSelection) {
       </div>
 
       <div v-if="order.searched" class="xfc-dishes">
-        <p class="xfc-search__meta">
+        <p class="xfc-search__meta" :class="{ 'is-error': order.searchError }">
           检索「{{ order.searchKeyword }}」 ·
-          {{ order.searchLoading ? '检索中…' : `${order.searchResults.length} 条结果` }}
+          {{ order.searchLoading ? '检索中…' : order.searchError ? '检索失败' : `${order.searchResults.length} 条结果` }}
+        </p>
+        <p v-if="order.searchError" class="xfc-search__meta is-error" role="alert">
+          检索失败：{{ order.searchError }}
         </p>
         <XfEmpty
-          v-if="!order.searchLoading && order.searchResults.length === 0"
+          v-if="!order.searchLoading && !order.searchError && order.searchResults.length === 0"
           title="未找到菜品"
           :description="searchHint"
         />

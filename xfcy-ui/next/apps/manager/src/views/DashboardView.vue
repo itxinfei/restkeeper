@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { XfButton, XfEmpty, XfKpi, XfPageHead, XfPanel, XfTable, XfTag, labelOf, payTypeLabel, toneOf } from '@xfcy/ui'
+import { useRouter } from 'vue-router'
+import { XfEmpty, XfKpi, XfPageHead, XfPanel, XfTable, XfTag, labelOf, payTypeLabel, toneOf } from '@xfcy/ui'
 import {
   demoDashboardKpis,
   demoLatestOrders,
@@ -45,6 +46,7 @@ const tableStats = ref<DemoTableStat[]>(demoTableStats)
 const soldoutRows = ref<DemoSoldoutRow[]>(demoSoldoutRows)
 
 const error = ref('')
+const router = useRouter()
 
 function isoDate(d: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0')
@@ -137,6 +139,10 @@ async function load() {
 }
 
 onMounted(load)
+
+function goSoldout() {
+  router.push('/soldout')
+}
 </script>
 
 <template>
@@ -164,9 +170,6 @@ onMounted(load)
 
     <div class="xfm-cols">
       <XfPanel title="最新订单">
-        <template #actions>
-          <XfButton size="sm" variant="secondary">全部订单</XfButton>
-        </template>
         <XfTable
           v-if="latestOrders.length"
           :columns="columns"
@@ -210,7 +213,7 @@ onMounted(load)
 
         <XfPanel title="沽清余量">
           <template #actions>
-            <XfButton size="sm" variant="ghost">登记</XfButton>
+            <XfButton size="sm" variant="ghost" @click="goSoldout">登记</XfButton>
           </template>
           <div v-for="row in soldoutRows" :key="row.id" class="xfm-rowline">
             <span>{{ row.name }}</span>

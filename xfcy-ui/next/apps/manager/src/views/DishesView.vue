@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import {
   XfButton,
   XfEmpty,
@@ -89,7 +90,11 @@ const tabs: Array<{ key: TabKey; label: string }> = [
   { key: 'flavor', label: '口味库' },
 ]
 
-const activeTab = ref<TabKey>('dish')
+const route = useRoute()
+const queryTab = route.query.tab
+const activeTab = ref<TabKey>(
+  queryTab === 'combo' || queryTab === 'category' || queryTab === 'flavor' ? queryTab : 'dish',
+)
 
 /* ---------------- 通用 ---------------- */
 
