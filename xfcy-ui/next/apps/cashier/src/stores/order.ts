@@ -8,6 +8,13 @@ import { payTypeFromMethod, tableStatusText } from '../api/pos'
 export type OrderStatus = '未结' | '挂账' | '已结'
 export type { PayMethod }
 
+/** 挂账结账选择的主体信息（与后端 CreditPayRequest.credit 对齐） */
+export type CreditSelection = {
+  creditId: string
+  creditUserName: string
+  creditAmount: number
+}
+
 export type OrderItem = {
   dishId: string
   name: string
@@ -296,7 +303,7 @@ export const useOrderStore = defineStore('order', () => {
   }
 
   /** 结账：真实模式调用 order.pay / order.payByCredit */
-  async function checkout(method: PayMethod) {
+  async function checkout(method: PayMethod, credit?: CreditSelection) {
     lastPayMethod.value = method
     status.value = '已结'
 
@@ -307,10 +314,11 @@ export const useOrderStore = defineStore('order', () => {
       payload.payAmount = total.value
       payload.totalAmount = total.value
       if (method === '挂账') {
+        if (!credit) throw new Error('挂账结账缺少挂账主体')
         await order.payByCredit(payload, {
-          creditId: 'credit-demo',
-          creditAmount: total.value,
-          creditUserName: '挂账客户（示意）',
+          creditId: credit.creditId,
+          creditAmount: credit.creditAmount,
+          creditUserName: credit.creditUserName,
         })
       } else {
         await order.pay(payload)

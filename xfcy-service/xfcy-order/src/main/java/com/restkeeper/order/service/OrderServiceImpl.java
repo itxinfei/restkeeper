@@ -1,5 +1,6 @@
 package com.restkeeper.order.service;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
@@ -203,6 +204,22 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             String creditId = creditDTO.getCreditId();
             Credit credit = creditService.getById(creditId);
 
+            // K11：挂账主体必须存在且启用，本次挂账金额不得超过剩余欠款额度
+            if (credit == null) {
+                throw new BussinessException("挂账主体不存在，请先在管家端维护");
+            }
+            // Credit.status：1 开启 / 0 停用
+            if (credit.getStatus() == null || credit.getStatus() != 1) {
+                throw new BussinessException("挂账主体已停用，不允许挂账");
+            }
+            Integer creditAmount = creditDTO.getCreditAmount() == null ? 0 : creditDTO.getCreditAmount();
+            if (creditAmount <= 0) {
+                throw new BussinessException("挂账金额必须大于 0");
+            }
+            if (credit.getCreditAmount() == null || credit.getCreditAmount() < creditAmount) {
+                throw new BussinessException("挂账金额超过剩余欠款额度");
+            }
+
             //个人用户
             if (credit.getCreditType() == SystemCode.CREDIT_TYPE_USER){
 
@@ -341,11 +358,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
      * 订单分页（只读）。
      * <p>与报表口径一致：时间过滤用 lastUpdateTime（自动填充，createTime 未填充）；区间左闭右开。
      */
-    @Override
     public PageResult<OrderEntity> queryPage(int pageNum, int pageSize, LocalDate start, LocalDate end,
                                              Integer payStatus, Integer payType, String orderNumber) {
         Page<OrderEntity> page = new Page<>(pageNum, pageSize);
-        QueryWrapper<OrderEntity> wrapper = new QueryWrapper<OrderEntity>().lambda()
+        LambdaQueryWrapper<OrderEntity> wrapper = new QueryWrapper<OrderEntity>().lambda()
                 .ge(start != null, OrderEntity::getLastUpdateTime, start.atStartOfDay())
                 .lt(end != null, OrderEntity::getLastUpdateTime, end.plusDays(1).atStartOfDay())
                 .eq(payStatus != null, OrderEntity::getPayStatus, payStatus)

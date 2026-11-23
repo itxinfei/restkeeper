@@ -153,6 +153,8 @@
 > **已补齐的契约**（前端可依赖）：
 > - `GET /order/page/{pageNum}/{pageSize}`（provider `IOrderService#queryPage` + cash-web 暴露）：订单只读分页，支持 start/end/payStatus/payType/orderNumber，区间左闭右开、按 lastUpdateTime 倒序。
 > - `POST /staff/add` 返回**明文初始密码**（未传密码时后端生成 8 位数字），前端须展示。
+> - `OrderServiceImpl.payByCredit` 已校验挂账主体：不存在 / 已停用（`status != 1`）/ 金额 ≤ 0 / 超过剩余欠款额度（`credit.creditAmount`）均抛 `BussinessException`；前端挂账结账需先选主体并填挂账人姓名，与后端同口径前置拦截。
+> - 收银端读取挂账主体列表**复用 enterprise-web 的 `GET /credit/page/{n}/{s}?userName=`**：网关 `/credit/**` 优先匹配 enterprise-web，cash-web 再加同路径谓词会互相覆盖（`/table/**`、`/dish/**` 两端已重复），故不再新增 cash-web 挂账端点。
 
 ## 10. 术语表
 

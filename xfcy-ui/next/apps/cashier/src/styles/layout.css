@@ -861,6 +861,24 @@
   font-variant-numeric: tabular-nums;
 }
 
+.xfc-checkout__quota {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  background: var(--c-neutral-soft);
+  color: var(--c-text-2);
+  font-size: 14px;
+}
+
+.xfc-checkout__quota b {
+  font-size: 20px;
+  font-weight: var(--weight-strong);
+  font-variant-numeric: tabular-nums;
+  color: var(--c-text);
+}
+
 .xfc-checkout__error {
   font-size: 13px;
   color: var(--c-danger);

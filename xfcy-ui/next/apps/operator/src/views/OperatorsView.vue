@@ -9,6 +9,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  XfErrorState,
 } from '@xfcy/ui'
 import { isMockMode, system } from '@xfcy/api'
 import type { OperatorUser } from '@xfcy/api'
@@ -44,6 +45,8 @@ const columns: Column[] = [
 const rows = ref<OperatorRow[]>([])
 const users = ref<OperatorUser[]>([])
 const loading = ref(false)
+const loaded = ref(false)
+const error = ref('')
 /** 后端暂无运营人员写接口，写操作仅 mock 模式可用 */
 const writable = isMockMode()
 
@@ -72,11 +75,16 @@ function toRow(user: OperatorUser): OperatorRow {
 }
 
 async function load() {
+  if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     const result = await system.operatorPage(1, 1000)
     users.value = result.records
     rows.value = users.value.map(toRow)
+    loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '运营人员加载失败'
   } finally {
     loading.value = false
   }
@@ -87,14 +95,19 @@ async function toggle(row: OperatorRow) {
   const user = users.value.find((item) => item.uid === row.id)
   if (!user) return
   const draft = user as Draft
-  await system.operatorUpdate({
-    ...user,
-    status: row.status === '启用' ? '停用' : '启用',
-    name: draft.name,
-    role: draft.role,
-    lastLogin: draft.lastLogin,
-  })
-  await load()
+  const prev = draft.status
+  try {
+    await system.operatorUpdate({
+      ...user,
+      status: row.status === '启用' ? '停用' : '启用',
+      name: draft.name,
+      role: draft.role,
+      lastLogin: draft.lastLogin,
+    })
+    await load()
+  } catch {
+    draft.status = prev
+  }
 }
 
 /* -------- 新增 / 编辑弹窗 -------- */
@@ -220,9 +233,12 @@ onMounted(load)
 
   <XfPanel>
     <p v-if="!writable" class="xfo-note">后端未提供运营人员写接口，新增/编辑/停用仅在 mock 模式可用。</p>
+    <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
     <XfTable
+      v-else
       :columns="columns"
       :data="rows"
+      :loading="loading && !loaded"
       row-key="id"
       empty-text="暂无运营人员"
       empty-description="点击右上角「新增运营人员」创建"

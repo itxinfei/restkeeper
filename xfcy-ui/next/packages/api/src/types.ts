@@ -366,6 +366,25 @@ export interface CreditRepaymentPayload {
   repaymentAmount: number
 }
 
+/** 挂账流水（t_credit_logs）。金额单位「分」 */
+export interface CreditLog {
+  logId?: string
+  orderId?: string
+  creditId?: string
+  /** 1 公司 / 2 个人 */
+  type?: number
+  companyName?: string
+  userName?: string
+  phone?: string
+  /** 订单金额 */
+  orderAmount?: number
+  /** 应收金额（实收，空则回退订单总额） */
+  receivedAmount?: number
+  /** 本次挂账金额 */
+  creditAmount?: number
+  lastUpdateTime?: string
+}
+
 /** 挂账新增 / 修改请求体，对应 provider CreditWithCompanyUsers */
 export interface CreditWithCompanyUsers {
   credit: Credit

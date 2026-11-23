@@ -9,6 +9,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  XfErrorState,
 } from '@xfcy/ui'
 import { isMockMode, system } from '@xfcy/api'
 import type { SysDictionary } from '@xfcy/api'
@@ -46,6 +47,8 @@ const rows = ref<DictRow[]>([])
 const items = ref<SysDictionary[]>([])
 const keyword = ref('')
 const loading = ref(false)
+const loaded = ref(false)
+const error = ref('')
 /** 后端暂无字典写接口，写操作仅 mock 模式可用 */
 const writable = isMockMode()
 
@@ -84,7 +87,9 @@ function categoryOf(label: string): string {
 }
 
 async function load() {
+  if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     items.value = await store.dictListAll()
     const counters: Record<string, number> = {}
@@ -100,6 +105,9 @@ async function load() {
         status: item.info === '停用' ? '停用' : '启用',
       }
     })
+    loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '字典加载失败'
   } finally {
     loading.value = false
   }
@@ -110,8 +118,12 @@ async function toggle(row: DictRow) {
   const item = items.value.find((entry) => entry.dictId === row.id)
   if (!item) return
   item.info = row.status === '启用' ? '停用' : '启用'
-  await store.dictUpdate(item)
-  await load()
+  try {
+    await store.dictUpdate(item)
+    await load()
+  } catch {
+    item.info = row.status
+  }
 }
 
 /* -------- 新增 / 编辑弹窗 -------- */
@@ -216,9 +228,12 @@ onMounted(load)
 
   <XfPanel>
     <p v-if="!writable" class="xfo-note">后端未提供字典写接口，新增/编辑/停用仅在 mock 模式可用。</p>
+    <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
     <XfTable
+      v-else
       :columns="columns"
       :data="filtered"
+      :loading="loading && !loaded"
       row-key="id"
       empty-text="暂无字典"
       empty-description="点击右上角「新增字典」创建"

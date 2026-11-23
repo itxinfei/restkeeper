@@ -25,7 +25,6 @@ const navGroups: NavGroup[] = [
     items: [
       { key: 'dashboard', label: '工作台', path: '/dashboard', icon: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z' },
       { key: 'dishes', label: '菜品管理', path: '/dishes', icon: 'M4 6h16M4 10h10M4 14h10M4 18h6' },
-      { key: 'combos', label: '套餐管理', path: '/combos', icon: 'M12 3 3 8l9 5 9-5-9-5zM3 13l9 5 9-5' },
       { key: 'tables', label: '桌台管理', path: '/tables', icon: 'M4 8h16M6 8v10M18 8v10M4 18h16' },
       { key: 'staff', label: '员工管理', path: '/staff', icon: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM21 19v-1a4 4 0 0 0-3-3.87M15 3.13a4 4 0 0 1 0 7.75' },
     ],

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import type { PosDish } from '../api/pos'
 import { useOrderStore } from '../stores/order'
-import type { PayMethod } from '../stores/order'
+import type { CreditSelection, PayMethod } from '../stores/order'
 import DishGrid from '../components/DishGrid.vue'
 import OrderPanel from '../components/OrderPanel.vue'
 import CheckoutModal from '../components/CheckoutModal.vue'
@@ -84,8 +84,8 @@ async function onAddDish(dish: PosDish) {
 
 const checkoutOpen = ref(false)
 
-async function onCheckout(method: PayMethod) {
-  await order.checkout(method)
+async function onCheckout(method: PayMethod, credit?: CreditSelection) {
+  await order.checkout(method, credit)
   checkoutOpen.value = false
   router.replace({ name: 'tables' })
 }

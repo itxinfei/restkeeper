@@ -156,7 +156,7 @@ const toast = useToast()
 
 function notify(text: string, tone: 'info' | 'success' | 'warning' = 'info') {
   if (tone === 'success') toast.success(text)
-  else if (tone === 'warning') toast.info(text)
+  else if (tone === 'warning') toast.warning(text)
   else toast.info(text)
 }
 

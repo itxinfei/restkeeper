@@ -28,6 +28,7 @@ import type { HttpTransport } from '../transport'
 import {
   mockCategories,
   mockCredits,
+  mockCreditLogs,
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,
@@ -681,8 +682,27 @@ const bEndRoutes: MockRoute[] = [
       const payload = (body ?? {}) as CreditRepaymentPayload
       const credit = mockCredits.find((item) => item.creditId === payload.creditId)
       if (!credit) return false
-      credit.totalRepaymentAmount = (credit.totalRepaymentAmount ?? 0) + (payload.repaymentAmount ?? 0)
+      const amount = payload.repaymentAmount ?? 0
+      // 与后端一致：超额拒绝；creditAmount 为剩余欠款，还款时扣减
+      if (amount <= 0 || (credit.creditAmount ?? 0) < amount) return false
+      credit.creditAmount = (credit.creditAmount ?? 0) - amount
+      credit.totalRepaymentAmount = (credit.totalRepaymentAmount ?? 0) + amount
       return true
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/credit\/log\/page\/\d+\/\d+\/[^/]+$/,
+    handler: ({ url }) => {
+      const segments = url.split('/')
+      const pageNum = Number(segments[4])
+      const pageSize = Number(segments[5])
+      const creditId = decodeURIComponent(segments[6])
+      return paginate(
+        mockCreditLogs.filter((row) => row.creditId === creditId),
+        pageNum,
+        pageSize,
+      )
     },
   },
 
@@ -1043,6 +1063,7 @@ export function createMockTransport(): HttpTransport {
 export {
   mockCategories,
   mockCredits,
+  mockCreditLogs,
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { XfButton, XfModal } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfModal } from '@xfcy/ui'
 import type { PosTable } from '../api/pos'
 import { useOrderStore } from '../stores/order'
 import TableCard from '../components/TableCard.vue'
@@ -83,7 +83,7 @@ function closeGuestModal() {
       </div>
     </div>
 
-    <div class="xfc-tgrid">
+    <div v-if="filteredTables.length" class="xfc-tgrid">
       <TableCard
         v-for="table in filteredTables"
         :key="table.id"
@@ -91,6 +91,11 @@ function closeGuestModal() {
         @select="onSelect"
       />
     </div>
+    <XfEmpty
+      v-else
+      title="该区域暂无桌台"
+      description="请先在管家端「桌台管理」中创建区域与桌台，或切换其他区域查看。"
+    />
 
     <XfModal
       :open="guestTable !== null"

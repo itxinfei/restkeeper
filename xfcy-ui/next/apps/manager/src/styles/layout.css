@@ -105,6 +105,26 @@
   width: 140px;
 }
 
+.xfm-toolbar__select--wide {
+  width: 240px;
+}
+
+.xfm-date {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-size: var(--text-body);
+}
+
+.xfm-confirm {
+  margin: 0;
+  line-height: 1.7;
+  color: var(--c-text-2);
+}
+
 .xfm-toolbar__grow {
   margin-left: auto;
 }
@@ -386,6 +406,7 @@
 }
 
 .xfm-chart {
+  position: relative;
   display: flex;
   align-items: flex-end;
   gap: 6px;
@@ -404,8 +425,35 @@
 
 .xfm-chart__value {
   font-size: 10px;
-  color: var(--c-text-3);
+  color: var(--c-text-2);
   white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.xfm-chart__col {
+  cursor: default;
+}
+
+.xfm-chart__col:hover .xfm-chart__value,
+.xfm-chart__col:focus-visible .xfm-chart__value {
+  opacity: 1;
+}
+
+.xfm-chart__col:focus-visible {
+  outline: none;
+  border-radius: var(--radius-xs);
+  box-shadow: var(--focus-ring);
+}
+
+.xfm-chart__empty {
+  position: absolute;
+  inset: 12px 0 0;
+  display: grid;
+  place-items: center;
+  color: var(--c-text-3);
+  font-size: 13px;
+  pointer-events: none;
 }
 
 .xfm-chart__bar {

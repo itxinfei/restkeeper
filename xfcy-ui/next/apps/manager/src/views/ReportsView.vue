@@ -38,6 +38,7 @@ const error = ref('')
 
 const maxHour = computed(() => Math.max(1, ...hourRows.value.map((row) => row.value)))
 const totalCount = computed(() => payRows.value.reduce((sum, row) => sum + row.count, 0))
+const hourHasData = computed(() => hourRows.value.some((row) => row.value > 0))
 
 function buildKpis(amount: CurrentAmountCollectDTO): Kpi[] {
   const total = amount.payTotal ?? 0
@@ -104,6 +105,38 @@ const toast = useToast()
 watch(metric, () => {
   void load()
 })
+
+/* ---------------- 导出 CSV ---------------- */
+
+function csvCell(value: string | number): string {
+  const text = String(value)
+  return /[",\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text
+}
+
+function exportCsv() {
+  if (!kpis.value.length) {
+    toast.warning('暂无可导出的报表数据')
+    return
+  }
+  const lines: string[] = [`报表区间,${start.value} ~ ${end.value}`, '', 'KPI']
+  kpis.value.forEach((kpi) => lines.push([kpi.label, kpi.value].map(csvCell).join(',')))
+  lines.push('', `分时（${metric.value === 1 ? '金额' : '单数'}）`)
+  hourRows.value.forEach((row) => lines.push([`${row.hour}时`, row.value].map(csvCell).join(',')))
+  lines.push('', '收款方式')
+  payRows.value.forEach((row) =>
+    lines.push([row.payName, row.count, row.ratio].map(csvCell).join(',')),
+  )
+  const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `经营报表_${start.value}_${end.value}.csv`
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  URL.revokeObjectURL(url)
+  toast.success('报表已导出 CSV')
+}
 </script>
 
 <template>
@@ -123,6 +156,7 @@ watch(metric, () => {
     <XfButton variant="secondary" @click="toast.info('报表区间为左闭右开，传「今天/明天」即当日。')">
       口径说明
     </XfButton>
+    <XfButton @click="exportCsv">导出 CSV</XfButton>
     <XfButton @click="load">查询</XfButton>
   </div>
 
@@ -138,7 +172,7 @@ watch(metric, () => {
         <XfTabs v-model="metric" :tabs="metricTabs" />
       </template>
       <div class="xfm-chart" role="img" aria-label="分时销售柱状图">
-        <div v-for="row in hourRows" :key="row.hour" class="xfm-chart__col">
+        <div v-for="row in hourRows" :key="row.hour" class="xfm-chart__col" tabindex="0" :aria-label="`${row.hour}时 ${row.value}`">
           <span class="xfm-chart__value xf-num">{{ row.value }}</span>
           <div
             class="xfm-chart__bar"
@@ -146,7 +180,7 @@ watch(metric, () => {
           ></div>
           <span class="xfm-chart__hour xf-num">{{ row.hour }}时</span>
         </div>
-        <div v-if="hourRows.length === 0" class="xfm-muted">该区间暂无分时数据</div>
+        <div v-if="!hourHasData" class="xfm-chart__empty">该区间暂无分时数据</div>
       </div>
     </XfPanel>
 
