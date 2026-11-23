@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import { dish, isMockMode, order, table } from '@xfcy/api'
-import type { OrderEntity } from '@xfcy/api'
+import type { Dish, OrderEntity } from '@xfcy/api'
 import type { Area, Category, PayMethod, PosDish, PosTable } from '../api/pos'
 import { payTypeFromMethod, tableStatusText } from '../api/pos'
 
@@ -55,6 +55,12 @@ export const useOrderStore = defineStore('order', () => {
   const currentOrderNumber = ref('')
 
   const dishMap = computed(() => new Map(dishes.value.map((item) => [item.id, item])))
+
+  /* 编码/名称检索（真实走 /search/dish/code，mock 本地过滤） */
+  const searchKeyword = ref('')
+  const searchResults = ref<PosDish[]>([])
+  const searchLoading = ref(false)
+  const searched = ref(false)
 
   const currentTable = computed(
     () => tables.value.find((t) => t.id === currentTableId.value) ?? null,
@@ -116,25 +122,54 @@ export const useOrderStore = defineStore('order', () => {
         .map((item) => ({ id: item.categoryId ?? '', name: item.name }))
         .filter((item) => item.id)
 
-      dishes.value = dishPage.records
-        .map((item) => {
-          const mock = item as typeof item & { remain?: number | null }
-          return {
-            id: item.id ?? '',
-            categoryId: item.categoryId ?? '',
-            name: item.name,
-            desc: item.description ?? '',
-            price: item.price ?? 0,
-            remain: mock.remain ?? null,
-            status: item.status === 0 ? ('停售' as const) : ('起售' as const),
-            thumb: item.image ?? '🍽️',
-          }
-        })
-        .filter((item) => item.id)
+      dishes.value = dishPage.records.map(toPosDish).filter((item) => item.id)
 
       loaded.value = true
     } finally {
       loading.value = false
+    }
+  }
+
+  function toPosDish(item: Dish): PosDish {
+    const row = item as Dish & { remain?: number | null }
+    return {
+      id: item.id ?? '',
+      categoryId: item.categoryId ?? '',
+      code: item.code ?? '',
+      name: item.name,
+      desc: item.description ?? '',
+      price: item.price ?? 0,
+      remain: row.remain ?? null,
+      status: item.status === 0 ? ('停售' as const) : ('起售' as const),
+      thumb: item.image ?? '🍽️',
+    }
+  }
+
+  /** 按编码/名称检索可点菜品；真实模式走 ES 检索契约，mock 本地过滤 */
+  async function searchDishes(keyword: string) {
+    searchKeyword.value = keyword
+    const kw = keyword.trim()
+    if (!kw) {
+      searchResults.value = []
+      searched.value = false
+      return
+    }
+    searchLoading.value = true
+    searched.value = true
+    try {
+      if (isMockMode()) {
+        const lower = kw.toLowerCase()
+        searchResults.value = dishes.value.filter(
+          (item) =>
+            (item.code || '').toLowerCase().includes(lower) ||
+            item.name.toLowerCase().includes(lower),
+        )
+      } else {
+        const page = await dish.searchByCode(kw, 1, 20)
+        searchResults.value = (page.records ?? []).map(toPosDish).filter((item) => item.id)
+      }
+    } finally {
+      searchLoading.value = false
     }
   }
 
@@ -341,6 +376,11 @@ export const useOrderStore = defineStore('order', () => {
     tables,
     loading,
     loaded,
+    searchKeyword,
+    searchResults,
+    searchLoading,
+    searched,
+    searchDishes,
     currentTableId,
     guests,
     items,

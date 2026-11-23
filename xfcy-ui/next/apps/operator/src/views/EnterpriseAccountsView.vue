@@ -11,6 +11,8 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  labelOf,
+  toneOf,
   useToast,
 } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
@@ -18,7 +20,7 @@ import {
   planOptions,
   useEnterpriseStore,
 } from '../stores/enterprise'
-import type { EnterpriseDraft, EnterpriseRow, EnterpriseStatus, Plan } from '../stores/enterprise'
+import type { EnterpriseDraft, EnterpriseRow, Plan } from '../stores/enterprise'
 
 type Column = {
   key: string
@@ -61,12 +63,6 @@ const stat = computed(() => ({
   official: enterprises.value.filter((row) => row.status === '正式').length,
   disabled: enterprises.value.filter((row) => row.status === '禁用').length,
 }))
-
-function statusTone(status: EnterpriseStatus) {
-  if (status === '正式') return 'success' as const
-  if (status === '试用') return 'warning' as const
-  return 'neutral' as const
-}
 
 const toast = useToast()
 
@@ -260,8 +256,8 @@ onMounted(() => {
         <span class="xfo-num">{{ (row as EnterpriseRow).shopCount }}</span>
       </template>
       <template #status="{ row }">
-        <XfTag :tone="statusTone((row as EnterpriseRow).status)">
-          {{ (row as EnterpriseRow).status }}
+        <XfTag :tone="toneOf('account', (row as EnterpriseRow).status)">
+          {{ labelOf('account', (row as EnterpriseRow).status) }}
         </XfTag>
       </template>
       <template #expireDate="{ row }">

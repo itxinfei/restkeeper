@@ -13,6 +13,7 @@ import {
   XfTable,
   XfTabs,
   XfTag,
+  toneOf,
 } from '@xfcy/ui'
 
 const navItems = [
@@ -96,13 +97,6 @@ const tableData = [
   { id: 3, orderNo: 'FK20261122-020', amount: '¥152.00', status: '未结', time: '2026-11-22 13:05' },
   { id: 4, orderNo: 'FK20261122-021', amount: '¥46.00', status: '已结账', time: '2026-11-22 13:20' },
 ]
-
-function statusTone(status: string): 'success' | 'warning' | 'danger' | 'neutral' {
-  if (status === '已结账') return 'success'
-  if (status === '挂账') return 'warning'
-  if (status === '未结') return 'danger'
-  return 'neutral'
-}
 
 const activeTab = ref<string>('order')
 const tabs = [
@@ -242,7 +236,9 @@ function submitForm() {
               <span class="xf-num">{{ row.amount }}</span>
             </template>
             <template #status="{ row }">
-              <XfTag :tone="statusTone(String(row.status))">{{ row.status }}</XfTag>
+              <XfTag :tone="toneOf('pay', String(row.status === '已结账' ? '已结' : row.status))">
+                {{ row.status }}
+              </XfTag>
             </template>
           </XfTable>
         </XfPanel>

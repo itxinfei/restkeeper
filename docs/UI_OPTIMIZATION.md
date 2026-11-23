@@ -36,7 +36,7 @@
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
 | 工作台 Dashboard | mock 演示数据 + real 仅拉 `currentAmount` | ❌ **数据可信度**：翻台率恒「—」；最新订单/桌台盘/沽清余量在 real 模式仍是演示数据，会误导店长 | **P0** |
-| 菜品管理 Dishes | 4 Tab（菜品/套餐/分类/口味），功能完整 | ⚠️ 提示用模态；口味库为占位；批量操作缺反馈 | P1 |
+| 菜品管理 Dishes | 4 Tab（菜品/套餐/分类/口味），功能完整 | ⚠️ 提示用模态；口味库为占位；批量操作缺反馈（B8 已补勾选批量 + Toast 反馈） | P1 |
 | 套餐管理 combos | `PlaceholderView` 占位 | ❌ 无独立页（套餐已在 Dishes 的「套餐」Tab 覆盖）→ 应**移除该导航项**或改为锚点跳转 | P1 |
 | 桌台管理 Tables | 区域 + 桌台网格 | ⚠️ 无空状态统一；状态色语义需复核 | P1 |
 | 员工管理 Staff | 列表/新增/编辑/停用 | ⚠️ 新增后**初始密码无展示/重置入口**（后端不发短信，见 BUSINESS §9）→ 员工无法登录 | **P0** |
@@ -142,7 +142,7 @@
 
 ### C 端
 - **Menu**：搜索无结果空态；支付打桩标注。
-- **Cart/Confirm/Result**：金额等宽数字；安全区避让复核。
+- **Cart/Confirm/Result**：金额等宽数字；安全区避让复核（B8 已补 `viewport-fit=cover` + 底部安全区留白）。
 
 ## 5. 落地批次
 
@@ -155,6 +155,7 @@
 | **B5（页面精修）** ✅ | 逐页按 §4 精修（报表图表/导出、挂账流水、收银入口补全） | 逐页 |
 | **B6（运营/口径收口）** ✅ | 企业账号服务端分页 + 开通密码提示、员工停用确认、菜品余量接沽清、C 端支付打桩标注 | operator/manager/microapp |
 | **B7（登录复用）** ✅ | 登录页/用户 store/路由守卫抽公共（`@xfcy/auth` + `XfLoginPage`） | 三端 |
+| **B8（清零收口）** ✅ | G6 真正落地（页面统一 toneOf/labelOf）、K16 检索空态、K19 报表口径、安全区与批量反馈收口 | 全部页面 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -177,3 +178,10 @@
 > B7 已落地：
 > - 新增 `packages/auth`（`@xfcy/auth`）：`createUserStore(kind, defaults)` 统一三端会话（按身份调用门店经理/运营人员/门店员工登录契约）与 `createAuthGuard({ loginName, homeName, isLoggedIn })` 统一路由守卫；三端 `stores/user.ts` 降为 4 行薄封装，`router.ts` 不再各写一份守卫。
 > - `@xfcy/ui` 新增 `XfLoginPage`：品牌/副标题/商户号/触屏尺寸由 props 注入，登录动作由调用方传入；三端 `LoginView.vue` 改为薄封装（仅管 redirect），三端重复的登录样式（约 -190 行）删除并由 ui 全局样式接管；新增 8 个组件测试。
+>
+> B8 已落地：
+> - **G6 真正落地**：`tone.ts` 补齐 `enable / service / creditType / itemType` 与 `remainTone / remainLabel`；manager / operator / cashier / playground 页面删除本地 `statusTone / toneMap`，统一改走 `toneOf / labelOf`，并修复历史遗留的 `enableTone` 未定义与一批 `unknown` 类型报错。
+> - **K16**：`@xfcy/api` 新增 `dish.searchByCode`（`GET /search/dish/code/{code}/page/{n}/{s}`），mock 补同路径路由；收银端点餐页新增编码/名称检索（mock 本地过滤），无结果时显示空态，真实模式提示「可能是 ES 索引未同步（当前无写入代码）」。
+> - **K19**：报表页固定展示口径提示——历史订单仅归档在 `t_his_order` / `t_his_order_detail`，区间跨归档日期时历史段可能不连续。
+> - **C 端安全区**：`index.html` viewport 补 `viewport-fit=cover`；购物车 / 下单确认 / 支付结果页底部留白改为 `calc(120px + env(safe-area-inset-bottom))`。
+> - **批量反馈**：菜品列表新增勾选列，批量停售按已选数量执行并 Toast 反馈结果，未勾选时按钮禁用。

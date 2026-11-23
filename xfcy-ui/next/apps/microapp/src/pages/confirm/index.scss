@@ -1,6 +1,6 @@
 /* 下单确认 · DESIGN.md §5.3 / §6 */
 .confirm {
-  padding-bottom: 120px;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
 .confirm__body {

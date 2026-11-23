@@ -10,6 +10,8 @@ import {
   XfTable,
   XfTag,
   XfErrorState,
+  labelOf,
+  toneOf,
 } from '@xfcy/ui'
 import { isMockMode, system } from '@xfcy/api'
 import type { SysDictionary } from '@xfcy/api'
@@ -71,11 +73,6 @@ const filtered = computed(() => {
       row.value.toLowerCase().includes(kw),
   )
 })
-
-function enableTone(status: string) {
-  // 语义固定：启用 = 成功绿，停用 = 危险红（DESIGN.md §2）
-  return status === '启用' ? ('success' as const) : ('danger' as const)
-}
 
 function categoryLabel(category: string): string {
   return system.DICT_CATEGORY_LABELS[category] ?? category
@@ -248,7 +245,7 @@ onMounted(load)
         <span class="xfo-num">{{ (row as DictRow).sort }}</span>
       </template>
       <template #status="{ row }">
-        <XfTag :tone="enableTone((row as DictRow).status)">{{ (row as DictRow).status }}</XfTag>
+        <XfTag :tone="toneOf('enable', (row as DictRow).status)">{{ labelOf('enable', (row as DictRow).status) }}</XfTag>
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">

@@ -389,6 +389,25 @@ const bEndRoutes: MockRoute[] = [
   /* ---------------- dish ---------------- */
   {
     method: 'GET',
+    pattern: /^\/search\/dish\/code\/[^/]+\/page\/\d+\/\d+$/,
+    handler: ({ url }) => {
+      const parts = url.split('/')
+      const code = decodeURIComponent(parts[parts.length - 4] ?? '')
+      const page = Number(parts[parts.length - 2])
+      const size = Number(parts[parts.length - 1])
+      const keyword = code.trim().toLowerCase()
+      const filtered = keyword
+        ? mockDishes.filter(
+            (dish) =>
+              (dish.code ?? '').toLowerCase().includes(keyword) ||
+              dish.name.toLowerCase().includes(keyword),
+          )
+        : mockDishes
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'GET',
     pattern: /^\/dish\/manage\/page\/\d+\/\d+$/,
     handler: ({ url, params }) => {
       const [, , , , pageStr, sizeStr] = url.split('/')

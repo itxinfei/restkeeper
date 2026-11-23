@@ -10,6 +10,8 @@ import {
   XfTable,
   XfTag,
   XfErrorState,
+  labelOf,
+  toneOf,
 } from '@xfcy/ui'
 import { isMockMode, system } from '@xfcy/api'
 import type { OperatorUser } from '@xfcy/api'
@@ -55,10 +57,6 @@ const statusOptions = [
   { label: '启用', value: '启用' },
   { label: '停用', value: '停用' },
 ]
-
-function enableTone(status: string) {
-  return status === '启用' ? ('success' as const) : ('danger' as const)
-}
 
 type Draft = OperatorUser & { name?: string; role?: string; status?: string; lastLogin?: string }
 
@@ -253,7 +251,7 @@ onMounted(load)
         <span class="xfo-muted">{{ (row as OperatorRow).role }}</span>
       </template>
       <template #status="{ row }">
-        <XfTag :tone="enableTone((row as OperatorRow).status)">{{ (row as OperatorRow).status }}</XfTag>
+        <XfTag :tone="toneOf('enable', (row as OperatorRow).status)">{{ labelOf('enable', (row as OperatorRow).status) }}</XfTag>
       </template>
       <template #lastLogin="{ row }">
         <span class="xfo-num">{{ (row as OperatorRow).lastLogin }}</span>

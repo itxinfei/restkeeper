@@ -6,6 +6,8 @@ import {
   TABLE_LABELS,
   labelOf,
   payTypeLabel,
+  remainLabel,
+  remainTone,
   toneOf,
 } from '../../tone'
 
@@ -52,5 +54,43 @@ describe('tone 状态语义映射', () => {
     expect(payTypeLabel(4)).toBe('银行卡')
     expect(payTypeLabel(5)).toBe('挂账')
     expect(payTypeLabel(0)).toBe('免单')
+  })
+
+  it('通用启停：启用成功 / 停用中性', () => {
+    expect(toneOf('enable', 1)).toBe('success')
+    expect(toneOf('enable', '启用')).toBe('success')
+    expect(toneOf('enable', 0)).toBe('neutral')
+    expect(toneOf('enable', '停用')).toBe('neutral')
+  })
+
+  it('服务监控：在线成功 / 告警危险 / 维护警告', () => {
+    expect(toneOf('service', '在线')).toBe('success')
+    expect(toneOf('service', '告警')).toBe('danger')
+    expect(toneOf('service', '维护')).toBe('warning')
+    expect(labelOf('service', '告警')).toBe('告警')
+  })
+
+  it('挂账类型：公司主色 / 个人信息', () => {
+    expect(toneOf('creditType', 1)).toBe('primary')
+    expect(toneOf('creditType', '公司')).toBe('primary')
+    expect(toneOf('creditType', 2)).toBe('info')
+    expect(labelOf('creditType', 2)).toBe('个人')
+  })
+
+  it('沽清余量：停售/沽清危险、低余量警告、不限中性', () => {
+    expect(remainTone(null)).toBe('neutral')
+    expect(remainTone(-1)).toBe('neutral')
+    expect(remainTone(0)).toBe('danger')
+    expect(remainTone(2)).toBe('warning')
+    expect(remainTone(5)).toBe('neutral')
+    expect(remainTone(5, true)).toBe('danger')
+  })
+
+  it('沽清文案与「沽清管理」同口径', () => {
+    expect(remainLabel(null)).toBe('不限')
+    expect(remainLabel(-1)).toBe('不限')
+    expect(remainLabel(0)).toBe('沽清')
+    expect(remainLabel(3)).toBe('余 3')
+    expect(remainLabel(3, true)).toBe('停售')
   })
 })

@@ -11,6 +11,8 @@ import {
   XfSelect,
   XfTabs,
   XfTag,
+  labelOf,
+  toneOf,
 } from '@xfcy/ui'
 import { table } from '@xfcy/api'
 import type { TableArea } from '@xfcy/api'
@@ -241,12 +243,6 @@ async function saveArea() {
   await load()
 }
 
-function statusTone(status: TableStatus) {
-  if (status === '开台') return 'success' as const
-  if (status === '锁定') return 'danger' as const
-  return 'neutral' as const
-}
-
 </script>
 
 <template>
@@ -281,7 +277,7 @@ function statusTone(status: TableStatus) {
       >
         <div class="xfm-tablecard__name">{{ row.name }}</div>
         <div class="xfm-tablecard__meta">{{ row.areaName }} · {{ row.seats }} 座</div>
-        <XfTag :tone="statusTone(row.status)">{{ row.status }}</XfTag>
+        <XfTag :tone="toneOf('table', row.status)">{{ labelOf('table', row.status) }}</XfTag>
       </button>
     </div>
   </XfPanel>
@@ -294,7 +290,7 @@ function statusTone(status: TableStatus) {
       <div class="xfm-detail__line"><span>座位数</span><b class="xfm-num">{{ detailRow.seats }}</b></div>
       <div class="xfm-detail__line">
         <span>状态</span>
-        <XfTag :tone="statusTone(detailRow.status)">{{ detailRow.status }}</XfTag>
+        <XfTag :tone="toneOf('table', detailRow.status)">{{ labelOf('table', detailRow.status) }}</XfTag>
       </div>
     </div>
 

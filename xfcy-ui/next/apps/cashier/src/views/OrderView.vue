@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { XfButton, XfEmpty, XfInput } from '@xfcy/ui'
+import { isMockMode } from '@xfcy/api'
 import type { PosDish } from '../api/pos'
 import { useOrderStore } from '../stores/order'
 import type { CreditSelection, PayMethod } from '../stores/order'
@@ -82,6 +84,25 @@ async function onAddDish(dish: PosDish) {
   await order.addDish(dish.id)
 }
 
+/* 编码/名称检索：真实模式走 /search/dish/code（ES），mock 本地过滤 */
+const keyword = ref('')
+
+const searchHint = computed(() => {
+  if (!order.searched || order.searchLoading || order.searchResults.length > 0) return ''
+  return isMockMode()
+    ? '换个编码或名称试试。'
+    : '真实模式未检索到菜品：可能是 ES 索引未同步（当前无写入代码），可切换 mock 演示或稍后再试。'
+})
+
+async function runSearch() {
+  await order.searchDishes(keyword.value)
+}
+
+function clearSearch() {
+  keyword.value = ''
+  void order.searchDishes('')
+}
+
 const checkoutOpen = ref(false)
 
 async function onCheckout(method: PayMethod, credit?: CreditSelection) {
@@ -94,6 +115,37 @@ async function onCheckout(method: PayMethod, credit?: CreditSelection) {
 <template>
   <div class="xfc-pos">
     <div class="xfc-pos__left">
+      <div class="xfc-search">
+        <XfInput
+          v-model="keyword"
+          class="xfc-search__input"
+          placeholder="输入菜品编码 / 名称检索"
+          @keyup.enter="runSearch"
+        />
+        <XfButton :loading="order.searchLoading" @click="runSearch">检索</XfButton>
+        <XfButton v-if="order.searched" variant="ghost" size="sm" @click="clearSearch">
+          清除
+        </XfButton>
+      </div>
+
+      <div v-if="order.searched" class="xfc-dishes">
+        <p class="xfc-search__meta">
+          检索「{{ order.searchKeyword }}」 ·
+          {{ order.searchLoading ? '检索中…' : `${order.searchResults.length} 条结果` }}
+        </p>
+        <XfEmpty
+          v-if="!order.searchLoading && order.searchResults.length === 0"
+          title="未找到菜品"
+          :description="searchHint"
+        />
+        <DishGrid
+          v-else-if="!order.searchLoading"
+          :dishes="order.searchResults"
+          @add="onAddDish"
+        />
+      </div>
+
+      <template v-else>
       <nav class="xfc-cats" aria-label="菜品分类">
         <button
           v-for="group in groups"
@@ -113,6 +165,7 @@ async function onCheckout(method: PayMethod, credit?: CreditSelection) {
           <DishGrid :dishes="group.dishes" @add="onAddDish" />
         </section>
       </div>
+      </template>
     </div>
 
     <OrderPanel @checkout="checkoutOpen = true" />

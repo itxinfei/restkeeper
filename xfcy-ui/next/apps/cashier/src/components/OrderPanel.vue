@@ -1,23 +1,13 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { XfButton, XfEmpty, XfField, XfInput, XfModal, XfTag, useToast } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfField, XfInput, XfModal, XfTag, labelOf, toneOf, useToast } from '@xfcy/ui'
 import { formatYuan } from '@xfcy/api'
 import type { OrderEntity } from '@xfcy/api'
 import { useOrderStore } from '../stores/order'
-import type { OrderStatus } from '../stores/order'
 
 const order = useOrderStore()
 const { success, warning, error, info } = useToast()
 const emit = defineEmits<{ (e: 'checkout'): void }>()
-
-const statusTone = computed<'danger' | 'warning' | 'success'>(() => {
-  const map: Record<OrderStatus, 'danger' | 'warning' | 'success'> = {
-    未结: 'danger',
-    挂账: 'warning',
-    已结: 'success',
-  }
-  return map[order.status]
-})
 
 function errText(e: unknown) {
   return e instanceof Error && e.message ? e.message : '服务异常，请稍后重试'
@@ -139,7 +129,7 @@ async function onConfirmReverse() {
           {{ order.currentTable.name }} · {{ order.currentTable.area }} · {{ order.guests }} 人
         </span>
       </div>
-      <XfTag :tone="statusTone">{{ order.status }}</XfTag>
+      <XfTag :tone="toneOf('pay', order.status)">{{ labelOf('pay', order.status) }}</XfTag>
     </header>
 
     <div class="xfc-order__lines">

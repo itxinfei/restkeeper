@@ -11,6 +11,9 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  labelOf,
+  remainLabel,
+  toneOf,
   useToast,
 } from '@xfcy/ui'
 import { dish, soldout } from '@xfcy/api'
@@ -53,10 +56,6 @@ const columns = [
   { key: 'remainder', label: '剩余', align: 'right' as const },
   { key: 'actions', label: '操作', align: 'right' as const },
 ]
-
-const remainText = computed(() => (row: SoldoutRow) =>
-  row.remainder === null || row.remainder < 0 ? '不限' : String(row.remainder),
-)
 
 function toRow(item: SellCalculation): SoldoutRow {
   const remainder = item.remainder
@@ -194,8 +193,8 @@ async function remove(row: SoldoutRow) {
     <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
     <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #type="{ row }">
-        <XfTag :tone="row.type === 2 ? 'primary' : 'neutral'">
-          {{ row.type === 2 ? '套餐' : '菜品' }}
+        <XfTag :tone="toneOf('itemType', row.type as string | number | undefined)">
+          {{ labelOf('itemType', row.type as string | number | undefined) }}
         </XfTag>
       </template>
       <template #limit="{ row }">
@@ -203,7 +202,7 @@ async function remove(row: SoldoutRow) {
       </template>
       <template #remainder="{ row }">
         <span class="xfm-num" :class="{ 'xfm-tag-text': row.remainder === null }">
-          {{ remainText(row as SoldoutRow) }}
+          {{ remainLabel(row.remainder as number | null | undefined) }}
         </span>
       </template>
       <template #actions="{ row }">
@@ -211,7 +210,8 @@ async function remove(row: SoldoutRow) {
           <XfButton
             size="sm"
             variant="secondary"
-            :disabled="row.remainder === null"
+            :disabled="row.remainder === null || row.remainder === 0"
+            :title="row.remainder === null ? '未设置沽清数量' : '余量已封底为 0'"
             @click="change(row as SoldoutRow, -1)"
           >
             −1
@@ -220,6 +220,7 @@ async function remove(row: SoldoutRow) {
             size="sm"
             variant="secondary"
             :disabled="row.remainder === null"
+            :title="row.remainder === null ? '未设置沽清数量' : undefined"
             @click="change(row as SoldoutRow, 1)"
           >
             ＋1

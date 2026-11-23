@@ -12,6 +12,8 @@ import {
   XfTable,
   XfTabs,
   XfTag,
+  labelOf,
+  toneOf,
   useToast,
 } from '@xfcy/ui'
 import { credit, formatYuan } from '@xfcy/api'
@@ -422,7 +424,9 @@ async function confirmToggleStatus() {
     <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
     <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #type="{ row }">
-        <XfTag :tone="row.type === 1 ? 'primary' : 'info'">{{ row.type === 1 ? '公司' : '个人' }}</XfTag>
+        <XfTag :tone="toneOf('creditType', row.type as string | number | undefined)">
+          {{ labelOf('creditType', row.type as string | number | undefined) }}
+        </XfTag>
       </template>
       <template #contact="{ row }">
         <span class="xfm-muted">{{ row.contact }}</span>
@@ -434,8 +438,8 @@ async function confirmToggleStatus() {
         <span class="xfm-num">{{ formatYuan(Number(row.totalRepayment)) }}</span>
       </template>
       <template #status="{ row }">
-        <XfTag :tone="row.status === 1 ? 'success' : 'neutral'">
-          {{ row.status === 1 ? '启用' : '停用' }}
+        <XfTag :tone="toneOf('credit', row.status as string | number | undefined)">
+          {{ labelOf('credit', row.status as string | number | undefined) }}
         </XfTag>
       </template>
       <template #actions="{ row }">
@@ -489,7 +493,9 @@ async function confirmToggleStatus() {
         row-key="logId"
       >
         <template #type="{ row }">
-          <XfTag :tone="row.type === 1 ? 'primary' : 'info'">{{ row.type === 1 ? '公司' : '个人' }}</XfTag>
+          <XfTag :tone="toneOf('creditType', row.type as string | number | undefined)">
+            {{ labelOf('creditType', row.type as string | number | undefined) }}
+          </XfTag>
         </template>
         <template #orderAmount="{ row }">
           <span class="xfm-num">{{ formatYuan(Number(row.orderAmount)) }}</span>

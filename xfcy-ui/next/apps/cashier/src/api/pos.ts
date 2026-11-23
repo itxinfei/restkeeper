@@ -31,6 +31,8 @@ export type DishStatus = '起售' | '停售'
 export type PosDish = {
   id: string
   categoryId: string
+  /** 菜品编码，用于收银端按编码/名称检索（真实契约 t_dish.code） */
+  code: string
   name: string
   desc: string
   /** 单价，单位「分」 */

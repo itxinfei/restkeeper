@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag, payTypeLabel } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag, labelOf, payTypeLabel, toneOf } from '@xfcy/ui'
 import {
   demoDashboardKpis,
   demoLatestOrders,
@@ -136,13 +136,6 @@ async function load() {
   }
 }
 
-function statusTone(status: DemoOrderStatus) {
-  if (status === '已结') return 'success' as const
-  if (status === '挂账') return 'warning' as const
-  if (status === '未结') return 'danger' as const
-  return 'neutral' as const
-}
-
 onMounted(load)
 </script>
 
@@ -185,7 +178,7 @@ onMounted(load)
             <span class="xfm-num">{{ row.amount }}</span>
           </template>
           <template #status="{ row }">
-            <XfTag :tone="statusTone(row.status as DemoOrderStatus)">{{ row.status }}</XfTag>
+            <XfTag :tone="toneOf('pay', row.status as DemoOrderStatus)">{{ labelOf('pay', row.status as DemoOrderStatus) }}</XfTag>
           </template>
           <template #time="{ row }">
             <span class="xfm-num">{{ row.time }}</span>

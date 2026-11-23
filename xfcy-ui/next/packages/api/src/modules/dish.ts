@@ -46,6 +46,21 @@ export async function enableList(categoryId: string, name?: string): Promise<Dis
   return unwrap<Dish[]>(data)
 }
 
+/**
+ * 点餐端按编码检索（ES）：GET /search/dish/code/{code}/page/{n}/{s}
+ * 注意：ES 索引当前无写入代码（K16），检索可能恒空——调用方需空态提示。
+ */
+export async function searchByCode(
+  code: string,
+  pageNum = 1,
+  pageSize = 20,
+): Promise<PageResult<Dish>> {
+  const { data } = await http.get(
+    `/search/dish/code/${encodeURIComponent(code)}/page/${pageNum}/${pageSize}`,
+  )
+  return unwrap<PageResult<Dish>>(data)
+}
+
 /** 新增菜品（含口味）：POST /dish */
 export async function save(payload: DishWithFlavors): Promise<boolean> {
   const { data } = await http.post('/dish', payload)

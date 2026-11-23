@@ -1,6 +1,6 @@
 /* 支付结果 · 原型 microapp-result.html */
 .result {
-  padding-bottom: 120px;
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
 }
 
 .result__hero {

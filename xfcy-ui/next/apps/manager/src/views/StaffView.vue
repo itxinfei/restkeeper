@@ -11,6 +11,8 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  labelOf,
+  toneOf,
   useToast,
 } from '@xfcy/ui'
 import { staff } from '@xfcy/api'
@@ -212,8 +214,8 @@ async function confirmToggleStatus() {
     <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
     <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #status="{ row }">
-        <XfTag :tone="row.status === 1 ? 'success' : 'neutral'">
-          {{ row.status === 1 ? '在职' : '停用' }}
+        <XfTag :tone="toneOf('staff', row.status as string | number | undefined)">
+          {{ labelOf('staff', row.status as string | number | undefined) }}
         </XfTag>
       </template>
       <template #actions="{ row }">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { XfTag } from '@xfcy/ui'
+import { XfTag, remainLabel, remainTone } from '@xfcy/ui'
 import { formatYuan } from '@xfcy/api'
 import type { PosDish } from '../api/pos'
 
@@ -11,15 +11,11 @@ function soldOut(dish: PosDish): boolean {
 }
 
 function remainText(dish: PosDish): string {
-  if (dish.status === '停售') return '停售'
-  if (dish.remain === 0) return '沽清'
-  if (dish.remain === null) return '不限'
-  return `余 ${dish.remain}`
+  return remainLabel(dish.remain, dish.status === '停售')
 }
 
-function remainTone(dish: PosDish): 'danger' | 'neutral' {
-  if (dish.status === '停售') return 'danger'
-  return 'neutral'
+function remainTagTone(dish: PosDish) {
+  return remainTone(dish.remain, dish.status === '停售')
 }
 
 function onAdd(dish: PosDish) {
@@ -45,7 +41,7 @@ function onAdd(dish: PosDish) {
       <span class="xfc-dish__desc">{{ dish.desc }}</span>
       <span class="xfc-dish__row">
         <span class="xfc-dish__price">{{ formatYuan(dish.price) }}</span>
-        <XfTag :tone="remainTone(dish)">{{ remainText(dish) }}</XfTag>
+        <XfTag :tone="remainTagTone(dish)">{{ remainText(dish) }}</XfTag>
       </span>
     </button>
   </div>

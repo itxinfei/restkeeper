@@ -162,6 +162,11 @@ function exportCsv() {
 
   <p v-if="error" class="xfm-report__error" role="alert">{{ error }}</p>
 
+  <p class="xfm-report__note">
+    口径提示：历史订单仅归档在 <code>t_his_order</code> / <code>t_his_order_detail</code>；
+    报表区间跨归档日期时，历史段数据可能不连续。
+  </p>
+
   <section class="xfm-kpis" aria-label="经营 KPI">
     <XfKpi v-for="kpi in kpis" :key="kpi.key" :label="kpi.label" :value="kpi.value" />
   </section>

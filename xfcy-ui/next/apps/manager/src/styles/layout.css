@@ -129,6 +129,13 @@
   margin-left: auto;
 }
 
+.xfm-check {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--c-primary);
+  cursor: pointer;
+}
+
 .xfm-thumb {
   width: 40px;
   height: 40px;
@@ -343,6 +350,23 @@
   margin-bottom: 12px;
   color: var(--c-danger);
   font-size: 13px;
+}
+
+.xfm-report__note {
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--c-warning-soft);
+  color: var(--c-warning);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.xfm-report__note code {
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(180, 83, 9, 0.12);
+  font-family: var(--font-mono);
 }
 
 .xfm-chart {

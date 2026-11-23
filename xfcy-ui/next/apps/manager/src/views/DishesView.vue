@@ -13,6 +13,10 @@ import {
   XfTable,
   XfTabs,
   XfTag,
+  labelOf,
+  remainLabel,
+  remainTone,
+  toneOf,
   useToast,
 } from '@xfcy/ui'
 import { dish as dishApi, formatYuan, soldout as soldoutApi } from '@xfcy/api'
@@ -94,20 +98,13 @@ function openNotice(text: string) {
   toast.info(text)
 }
 
-function enableTone(status: string) {
-  // 语义固定：启用 / 起售 = 成功绿，停用 / 停售 = 危险红（DESIGN.md §2）
-  return status === '启用' || status === '起售' ? ('success' as const) : ('danger' as const)
-}
-
-/* ---------------- 数据加载（mock 经 api mockAdapter，real 走 HTTP） ---------------- */
-
-/** 沽清余量口径与「沽清管理」一致：-1 / 未设置 → 不限；剩余 ≤ 2 标红 */
+/** 沽清余量口径与「沽清管理」一致：-1 / 未设置 → 不限；剩余 ≤ 2 标红（公共 remainTone/remainLabel） */
 function toRemainText(item: SellCalculation | undefined): { text: string; danger: boolean } {
   const remainder = item?.remainder
-  if (remainder === undefined || remainder === null || remainder < 0) {
-    return { text: '不限', danger: false }
+  return {
+    text: remainLabel(remainder),
+    danger: remainTone(remainder) !== 'neutral',
   }
-  return { text: String(remainder), danger: remainder <= 2 }
 }
 
 function toDishRow(
@@ -173,6 +170,8 @@ async function load() {
       soldoutResult.records.map((item) => [item.dishId ?? '', item]),
     )
     dishes.value = dishResult.records.map((item) => toDishRow(item, soldoutMap))
+    const dishIds = new Set(dishResult.records.map((item) => item.id ?? ''))
+    dishSelected.value = new Set([...dishSelected.value].filter((id) => dishIds.has(id)))
     categories.value = categoryResult.records.map(toCategoryRow)
     combos.value = comboResult.records.map(toComboRow)
     selectedComboId.value = comboResult.records[0]?.id ?? null
@@ -230,6 +229,7 @@ const dishStat = computed(() => ({
 }))
 
 const dishColumns: Column[] = [
+  { key: 'select', label: '', width: '44px' },
   { key: 'thumb', label: '', width: '56px' },
   { key: 'name', label: '菜品' },
   { key: 'category', label: '分类' },
@@ -240,14 +240,36 @@ const dishColumns: Column[] = [
   { key: 'action', label: '操作' },
 ]
 
-function statusTone(status: DishStatus) {
-  return status === '起售' ? ('success' as const) : ('danger' as const)
-}
-
 async function toggleDish(row: DishRow) {
   if (row.status === '起售') await dishApi.forbidden([row.id])
   else await dishApi.enable([row.id])
   await load()
+}
+
+/* 批量停售：勾选 + 结果反馈 */
+const dishSelected = ref<Set<string>>(new Set())
+
+function toggleDishSelect(id: string) {
+  const next = new Set(dishSelected.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  dishSelected.value = next
+}
+
+async function batchForbid() {
+  const ids = [...dishSelected.value]
+  if (!ids.length) {
+    openNotice('请先勾选菜品，再执行批量停售。')
+    return
+  }
+  try {
+    await dishApi.forbidden(ids)
+    toast.success(`已停售 ${ids.length} 道菜品`)
+    dishSelected.value = new Set()
+    await load()
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : '批量停售失败')
+  }
 }
 
 /* -------- 菜品新增 / 编辑弹窗 -------- */
@@ -522,8 +544,8 @@ function toggleFlavor(row: FlavorRow) {
         <XfSelect v-model="statusFilter" :options="statusOptions" />
       </div>
       <div class="xfm-toolbar__grow"></div>
-      <XfButton variant="secondary" @click="openNotice('示意：请先勾选菜品，再执行批量停售。')">
-        批量停售
+      <XfButton variant="secondary" :disabled="dishSelected.size === 0" @click="batchForbid">
+        批量停售{{ dishSelected.size ? `（${dishSelected.size}）` : '' }}
       </XfButton>
       <XfButton @click="openDishModal">＋ 新增菜品</XfButton>
     </div>
@@ -536,6 +558,15 @@ function toggleFlavor(row: FlavorRow) {
         empty-text="暂无菜品"
         empty-description="点击右上角「新增菜品」创建"
       >
+        <template #select="{ row }">
+          <input
+            type="checkbox"
+            class="xfm-check"
+            :checked="dishSelected.has((row as DishRow).id)"
+            :aria-label="`选择 ${row.name}`"
+            @change="toggleDishSelect((row as DishRow).id)"
+          />
+        </template>
         <template #thumb="{ row }">
           <span class="xfm-thumb" aria-hidden="true">{{ row.thumb }}</span>
         </template>
@@ -556,7 +587,7 @@ function toggleFlavor(row: FlavorRow) {
           </span>
         </template>
         <template #status="{ row }">
-          <XfTag :tone="statusTone(row.status as DishStatus)">{{ row.status }}</XfTag>
+          <XfTag :tone="toneOf('sale', row.status as DishStatus)">{{ labelOf('sale', row.status as DishStatus) }}</XfTag>
         </template>
         <template #action="{ row }">
           <div class="xfm-actions">
@@ -616,7 +647,7 @@ function toggleFlavor(row: FlavorRow) {
             <span class="xfm-num">{{ row.dishCount }}</span>
           </template>
           <template #status="{ row }">
-            <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+            <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>
           </template>
           <template #action="{ row }">
             <div class="xfm-actions">
@@ -644,7 +675,7 @@ function toggleFlavor(row: FlavorRow) {
             <div class="xfm-combo__meta">
               <span class="xfm-num">{{ selectedCombo.code }}</span>
               <span class="xfm-num">{{ selectedCombo.price }}</span>
-              <XfTag :tone="enableTone(selectedCombo.status)">{{ selectedCombo.status }}</XfTag>
+              <XfTag :tone="toneOf('enable', selectedCombo.status)">{{ selectedCombo.status }}</XfTag>
             </div>
           </div>
           <div class="xfm-combo__items">
@@ -684,7 +715,7 @@ function toggleFlavor(row: FlavorRow) {
           <span class="xfm-num">{{ row.dishCount }}</span>
         </template>
         <template #status="{ row }">
-          <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+          <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>
         </template>
         <template #action="{ row }">
           <div class="xfm-actions">
@@ -739,7 +770,7 @@ function toggleFlavor(row: FlavorRow) {
           <span class="xfm-num">{{ row.dishCount }}</span>
         </template>
         <template #status="{ row }">
-          <XfTag :tone="enableTone(row.status as string)">{{ row.status }}</XfTag>
+          <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>
         </template>
         <template #action="{ row }">
           <div class="xfm-actions">

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { monitorKpis, serviceList } from '../api/mock'
-import type { ServiceRow, ServiceStatus } from '../api/mock'
-import { XfKpi, XfPanel, XfTable, XfTag } from '@xfcy/ui'
+import type { ServiceRow } from '../api/mock'
+import { XfKpi, XfPanel, XfTable, XfTag, labelOf, toneOf } from '@xfcy/ui'
 
 type Column = {
   key: string
@@ -27,11 +27,6 @@ const kpiTrend: Record<string, 'up' | 'down' | 'flat'> = {
   alert: 'down',
 }
 
-function statusTone(status: ServiceStatus) {
-  if (status === '在线') return 'success' as const
-  if (status === '告警') return 'danger' as const
-  return 'neutral' as const
-}
 </script>
 
 <template>
@@ -61,7 +56,7 @@ function statusTone(status: ServiceStatus) {
         <span class="xfo-muted">{{ (row as ServiceRow).group }}</span>
       </template>
       <template #status="{ row }">
-        <XfTag :tone="statusTone((row as ServiceRow).status)">{{ (row as ServiceRow).status }}</XfTag>
+        <XfTag :tone="toneOf('service', (row as ServiceRow).status)">{{ labelOf('service', (row as ServiceRow).status) }}</XfTag>
       </template>
       <template #instances="{ row }">
         <span class="xfo-num">{{ (row as ServiceRow).instances }}</span>

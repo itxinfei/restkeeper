@@ -24,6 +24,13 @@ export { default as XfAppShell } from './components/XfAppShell.vue'
 export { default as XfUserMenu } from './components/XfUserMenu.vue'
 export { useToast, resetToastState } from './toast'
 export type { ToastItem } from './toast'
-export { toneOf, labelOf, payTypeLabel } from './tone'
+export {
+  toneOf,
+  labelOf,
+  payTypeLabel,
+  remainTone,
+  remainLabel,
+  REMAIN_LOW_THRESHOLD,
+} from './tone'
 export { PAY_LABELS, PAY_TYPE_LABELS, TABLE_LABELS, SALE_LABELS, ACCOUNT_LABELS, STAFF_LABELS, CREDIT_LABELS } from './tone'
 export type { Tone, ToneDomain } from './tone'
