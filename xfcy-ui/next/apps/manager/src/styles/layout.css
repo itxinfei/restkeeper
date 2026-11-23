@@ -550,3 +550,154 @@
     width: 100%;
   }
 }
+
+/* ---------- 表单 ---------- */
+.xfm-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.xfm-form--grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.xfm-form__full {
+  grid-column: 1 / -1;
+}
+
+/* ---------- 桌台管理 ---------- */
+.xfm-tablegrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.xfm-tablecard {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px;
+  text-align: left;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.xfm-tablecard:hover {
+  border-color: var(--c-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.xfm-tablecard:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.xfm-tablecard.is-1 {
+  background: var(--c-success-soft);
+  border-color: color-mix(in srgb, var(--c-success) 35%, transparent);
+}
+
+.xfm-tablecard.is-2 {
+  background: var(--c-danger-soft);
+  border-color: color-mix(in srgb, var(--c-danger) 35%, transparent);
+}
+
+.xfm-tablecard__name {
+  font-size: 15px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfm-tablecard__meta {
+  font-size: 12px;
+  color: var(--c-text-3);
+}
+
+.xfm-tableempty {
+  padding: 12px 0;
+}
+
+.xfm-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.xfm-detail__name {
+  font-size: 17px;
+  font-weight: var(--weight-title);
+  color: var(--c-text);
+}
+
+.xfm-detail__line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+/* ---------- 经营报表 ---------- */
+.xfm-report__error {
+  margin-bottom: 12px;
+  color: var(--c-danger);
+  font-size: 13px;
+}
+
+.xfm-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  min-height: 200px;
+  padding-top: 12px;
+}
+
+.xfm-chart__col {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.xfm-chart__value {
+  font-size: 10px;
+  color: var(--c-text-3);
+  white-space: nowrap;
+}
+
+.xfm-chart__bar {
+  width: 100%;
+  min-height: 2px;
+  background: var(--c-primary);
+  border-radius: 3px 3px 0 0;
+}
+
+.xfm-chart__hour {
+  font-size: 10px;
+  color: var(--c-text-3);
+  white-space: nowrap;
+}
+
+@media (max-width: 900px) {
+  .xfm-form--grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .xfm-chart {
+    overflow-x: auto;
+  }
+
+  .xfm-chart__col {
+    min-width: 28px;
+  }
+}

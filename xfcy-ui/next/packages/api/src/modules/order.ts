@@ -13,6 +13,7 @@
 import { http, unwrap } from '../http'
 import type {
   CurrentAmountCollectDTO,
+  CurrentHourCollectDTO,
   OrderEntity,
   PayTypeCollectDTO,
   PrivilegeDTO,
@@ -80,11 +81,11 @@ export async function hourCollect(
   start: string,
   end: string,
   type: number,
-): Promise<Array<Record<string, unknown>>> {
+): Promise<CurrentHourCollectDTO[]> {
   const { data } = await http.get('/order/report/hourCollect', {
     params: { start, end, type },
   })
-  return unwrap<Array<Record<string, unknown>>>(data)
+  return unwrap<CurrentHourCollectDTO[]>(data)
 }
 
 /** 收款方式构成：GET /order/report/payType?start=&end= */

@@ -9,11 +9,14 @@
  */
 
 import type {
+  CurrentHourCollectDTO,
   Dish,
   DishCategory,
   EnterpriseAccount,
   OperatorUser,
   OrderEntity,
+  PayTypeCollectDTO,
+  PrivilegeDTO,
   SetMeal,
   SysDictionary,
   Table,
@@ -121,6 +124,37 @@ export const mockTables: Table[] = [
   { tableId: 'B01', areaId: 'area-3', tableName: 'B01 包间', tableSeatNumber: 8, status: 1 },
   { tableId: 'B02', areaId: 'area-3', tableName: 'B02 包间', tableSeatNumber: 10, status: 0 },
 ]
+
+/* ---------------- 报表（示意，金额单位：分） ---------------- */
+
+/** 分时统计（type=1 金额为分；type=2 时 totalAmount 为单数） */
+export const mockHourCollect: CurrentHourCollectDTO[] = [
+  { currentDateHour: 10, totalAmount: 42800 },
+  { currentDateHour: 11, totalAmount: 96400 },
+  { currentDateHour: 12, totalAmount: 218600 },
+  { currentDateHour: 13, totalAmount: 152300 },
+  { currentDateHour: 14, totalAmount: 64800 },
+  { currentDateHour: 17, totalAmount: 38600 },
+  { currentDateHour: 18, totalAmount: 128400 },
+  { currentDateHour: 19, totalAmount: 246800 },
+  { currentDateHour: 20, totalAmount: 187200 },
+  { currentDateHour: 21, totalAmount: 96400 },
+]
+
+/** 收款方式构成 */
+export const mockPayTypeCollect: PayTypeCollectDTO[] = [
+  { payType: 2, payName: '微信', totalCount: 20 },
+  { payType: 1, payName: '现金', totalCount: 12 },
+  { payType: 3, payName: '支付宝', totalCount: 8 },
+  { payType: 5, payName: '挂账', totalCount: 2 },
+]
+
+/** 优惠统计 */
+export const mockPrivilege: PrivilegeDTO = {
+  presentAmount: 12800,
+  freeAmount: 0,
+  smallAmount: 640,
+}
 
 /* ---------------- 订单（示意，金额单位：分） ---------------- */
 

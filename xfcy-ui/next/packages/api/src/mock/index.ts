@@ -15,7 +15,9 @@ import type {
   ProviderResult,
   StoreDTO,
   SysDictionary,
+  Table,
   TableArea,
+  TableLog,
 } from '../types'
 import { getApiConfig } from '../config'
 import type { HttpTransport } from '../transport'
@@ -24,8 +26,11 @@ import {
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,
+  mockHourCollect,
   mockOperatorUsers,
   mockOrders,
+  mockPayTypeCollect,
+  mockPrivilege,
   mockRemovedEnterpriseAccounts,
   mockSetMeals,
   mockTableAreas,
@@ -556,6 +561,66 @@ const bEndRoutes: MockRoute[] = [
       return mockTables.filter((table) => table.areaId === areaId && table.status === status).length
     },
   },
+  {
+    method: 'GET',
+    pattern: /^\/table\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      return mockTables.find((table) => table.tableId === id) ?? null
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/table\/add$/,
+    handler: ({ body }) => {
+      const table = (body ?? {}) as Table
+      if (!table.tableName) return false
+      mockTables.push({
+        ...table,
+        tableId: `T${String(mockTables.length + 1).padStart(2, '0')}`,
+        status: table.status ?? 0,
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/table$/,
+    handler: ({ body }) => {
+      const table = (body ?? {}) as Table
+      const index = mockTables.findIndex((item) => item.tableId === table.tableId)
+      if (index < 0) return false
+      mockTables[index] = { ...mockTables[index], ...table }
+      return true
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/table\/log\/open$/,
+    handler: ({ body }) => {
+      const log = (body ?? {}) as TableLog
+      const table = mockTables.find((item) => item.tableId === log.tableId)
+      if (!table) return false
+      table.status = 1
+      return true
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/table\/log\/open\/[^/]+$/,
+    handler: ({ url }) => {
+      const tableId = url.split('/').pop() as string
+      const table = mockTables.find((item) => item.tableId === tableId)
+      if (!table || table.status !== 1) return null
+      return {
+        logId: `log-${tableId}`,
+        tableId,
+        tableStatus: 1,
+        userNumbers: table.tableSeatNumber ?? 2,
+        createTime: new Date().toLocaleString('zh-CN', { hour12: false }),
+      } satisfies TableLog
+    },
+  },
 
   /* ---------------- order / report ---------------- */
   {
@@ -573,17 +638,29 @@ const bEndRoutes: MockRoute[] = [
   {
     method: 'GET',
     pattern: /^\/order\/report\/hourCollect$/,
-    handler: () => [],
+    handler: ({ params }) => {
+      const type = params.type !== undefined ? Number(params.type) : 1
+      // type=2 时后端把单数放进 totalAmount，这里按同一字段返回示意单数
+      const countMap: Record<number, number> = {
+        10: 3, 11: 7, 12: 14, 13: 9, 14: 4, 17: 2, 18: 8, 19: 15, 20: 11, 21: 6,
+      }
+      return type === 2
+        ? mockHourCollect.map((row) => ({
+            currentDateHour: row.currentDateHour,
+            totalAmount: countMap[row.currentDateHour ?? -1] ?? 0,
+          }))
+        : mockHourCollect
+    },
   },
   {
     method: 'GET',
     pattern: /^\/order\/report\/payType$/,
-    handler: () => [],
+    handler: () => mockPayTypeCollect,
   },
   {
     method: 'GET',
     pattern: /^\/order\/report\/privilege$/,
-    handler: () => ({}),
+    handler: () => mockPrivilege,
   },
   {
     method: 'GET',
@@ -657,8 +734,11 @@ export {
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,
+  mockHourCollect,
   mockOperatorUsers,
   mockOrders,
+  mockPayTypeCollect,
+  mockPrivilege,
   mockRemovedEnterpriseAccounts,
   mockSetMeals,
   mockTableAreas,

@@ -23,4 +23,9 @@ describe('XfPanel', () => {
     expect(wrapper.find('.xf-panel__header').exists()).toBe(true)
     expect(wrapper.get('.xf-panel__actions').text()).toBe('更多')
   })
+
+  it('does not render an empty title node when only actions are provided', () => {
+    const wrapper = mount(XfPanel, { slots: { actions: '<button>更多</button>' } })
+    expect(wrapper.find('.xf-panel__title').exists()).toBe(false)
+  })
 })

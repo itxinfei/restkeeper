@@ -40,6 +40,13 @@ describe('XfModal', () => {
     expect(document.body.style.overflow).toBe('')
   })
 
+  it('locks body scroll immediately when mounted open', async () => {
+    mount(XfModal, { props: { open: true } })
+    expect(document.body.style.overflow).toBe('hidden')
+    await nextTick()
+    expect(document.activeElement?.classList.contains('xf-modal')).toBe(true)
+  })
+
   it('emits update:open and close from the close button', async () => {
     const wrapper = mount(XfModal, { props: { open: true, title: 'x' } })
     await nextTick()

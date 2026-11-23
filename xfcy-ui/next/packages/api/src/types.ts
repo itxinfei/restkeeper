@@ -380,12 +380,22 @@ export interface CurrentAmountCollectDTO {
   currentPerson?: number
 }
 
-/** 收款方式构成项，对应 PayTypeCollectDTO（金额单位「分」） */
+/** 分时统计项，对应 CurrentHourCollectDTO（type=1 金额为「分」，type=2 为单数） */
+export interface CurrentHourCollectDTO {
+  /** 销售数据：金额（分）或单数，取决于查询 type */
+  totalAmount?: number
+  /** 小时值 0-23 */
+  currentDateHour?: number
+}
+
+/** 收款方式构成项，对应 PayTypeCollectDTO */
 export interface PayTypeCollectDTO {
+  /** 支付类型：0 免单 / 1 现金 / 2 微信 / 3 支付宝 / 4 银行卡 / 5 挂账 */
   payType?: number
-  /** 金额，单位「分」 */
-  amount?: number
-  count?: number
+  /** 支付方式名称 */
+  payName?: string
+  /** 收款笔数 */
+  totalCount?: number
 }
 
 /** 优惠统计，对应 PrivilegeDTO（金额单位「分」） */

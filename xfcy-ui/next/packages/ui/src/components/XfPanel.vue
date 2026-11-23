@@ -9,7 +9,7 @@ const slots = useSlots()
 <template>
   <section class="xf-panel">
     <header v-if="title || slots.actions" class="xf-panel__header">
-      <h3 class="xf-panel__title">{{ title }}</h3>
+      <h3 v-if="title" class="xf-panel__title">{{ title }}</h3>
       <div class="xf-panel__actions">
         <slot name="actions" />
       </div>

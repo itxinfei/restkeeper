@@ -37,7 +37,7 @@ export const router = createRouter({
         {
           path: 'tables',
           name: 'tables',
-          component: () => import('./views/PlaceholderView.vue'),
+          component: () => import('./views/TablesView.vue'),
           meta: { title: '桌台管理', group: '经营' },
         },
         {
@@ -61,7 +61,7 @@ export const router = createRouter({
         {
           path: 'reports',
           name: 'reports',
-          component: () => import('./views/PlaceholderView.vue'),
+          component: () => import('./views/ReportsView.vue'),
           meta: { title: '经营报表', group: '数据' },
         },
       ],
