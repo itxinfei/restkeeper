@@ -44,6 +44,7 @@ export default function Result() {
         <View className="result__ok">✓</View>
         <Text className="result__title">支付成功</Text>
         <Text className="result__sub">厨房已接单，请稍候上菜</Text>
+        <Text className="result__demo">开发演示环境 · 支付为模拟打桩，不会真实扣款</Text>
       </View>
 
       {/* 订单信息 */}

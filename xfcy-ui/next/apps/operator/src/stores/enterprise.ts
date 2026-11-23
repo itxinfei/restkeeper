@@ -40,8 +40,11 @@ export type RecycleRow = {
   deletedBy: string
 }
 
-/** 一次拉取的页大小：演示数据量小，前端做筛选/分页 */
-const PAGE_SIZE = 1000
+/** 一次拉取的页大小：回收站仍一次拉取（数据量小） */
+const RECYCLE_PAGE_SIZE = 1000
+/** 列表页大小：仅关键词走服务端分页，状态/套餐筛选时本地过滤（演示字段） */
+const PAGE_SIZE = 10
+const CLIENT_FILTER_PAGE_SIZE = 500
 
 export function statusText(status?: number): EnterpriseStatus {
   if (status === 0) return '试用'
@@ -93,19 +96,43 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const loaded = ref(false)
   const error = ref('')
 
+  const page = ref(1)
+  const total = ref(0)
+  const keyword = ref('')
+  const statusFilter = ref<'all' | EnterpriseStatus>('all')
+  const planFilter = ref<'all' | Plan>('all')
+
   const enterpriseRows = computed<EnterpriseRow[]>(() => accounts.value.map(toEnterpriseRow))
   const recycleRows = computed<RecycleRow[]>(() => removedAccounts.value.map(toRecycleRow))
+
+  /** 真实后端仅支持 enterpriseName 模糊；状态/套餐为演示字段，开启时退化为本地过滤 */
+  const clientSide = computed(() => statusFilter.value !== 'all' || planFilter.value !== 'all')
+
+  function matchClientFilters(account: EnterpriseAccount): boolean {
+    const row = toEnterpriseRow(account)
+    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) return false
+    if (planFilter.value !== 'all' && row.plan !== planFilter.value) return false
+    return true
+  }
 
   async function load() {
     if (loading.value) return
     loading.value = true
     error.value = ''
     try {
-      const [page, removed] = await Promise.all([
-        enterprise.page(1, PAGE_SIZE),
-        enterprise.removedPage(1, PAGE_SIZE),
+      const name = keyword.value.trim() || undefined
+      const listRequest = clientSide.value
+        ? enterprise.page(1, CLIENT_FILTER_PAGE_SIZE, name)
+        : enterprise.page(page.value, PAGE_SIZE, name)
+      const [pageResult, removed] = await Promise.all([
+        listRequest,
+        enterprise.removedPage(1, RECYCLE_PAGE_SIZE),
       ])
-      accounts.value = page.records
+      const records = clientSide.value
+        ? pageResult.records.filter(matchClientFilters)
+        : pageResult.records
+      accounts.value = records
+      total.value = clientSide.value ? records.length : pageResult.total
       removedAccounts.value = removed.records
       loaded.value = true
     } catch (err) {
@@ -116,6 +143,24 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   }
 
   function refresh() {
+    return load()
+  }
+
+  function search() {
+    page.value = 1
+    return load()
+  }
+
+  function setPage(next: number) {
+    page.value = next
+    return load()
+  }
+
+  function resetFilters() {
+    keyword.value = ''
+    statusFilter.value = 'all'
+    planFilter.value = 'all'
+    page.value = 1
     return load()
   }
 
@@ -170,10 +215,19 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     loading,
     loaded,
     error,
+    page,
+    total,
+    keyword,
+    statusFilter,
+    planFilter,
+    clientSide,
     enterpriseRows,
     recycleRows,
     load,
     refresh,
+    search,
+    setPage,
+    resetFilters,
     create,
     update,
     toggleStatus,

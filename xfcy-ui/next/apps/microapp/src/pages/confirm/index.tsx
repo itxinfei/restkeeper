@@ -69,7 +69,7 @@ export default function Confirm() {
               <Text className="xf-line__name">
                 {item.dish.name} × {item.qty}
               </Text>
-              <Text className="xf-line__sum">{yuan(item.qty * item.dish.price)}</Text>
+              <Text className="xf-line__sum xf-num">{yuan(item.qty * item.dish.price)}</Text>
             </View>
           ))}
         </View>
@@ -77,6 +77,7 @@ export default function Confirm() {
         {/* 支付方式（dev 打桩） */}
         <View className="xf-block">
           <Text className="xf-block__title">支付方式</Text>
+          <View className="confirm__stub">开发演示环境 · 支付为模拟打桩，不会真实扣款</View>
           {payMethods.map((m) => (
             <View
               key={m.id}
@@ -106,7 +107,7 @@ export default function Confirm() {
       <View className="xf-bar">
         <View className="xf-bar__total">
           <small>合计</small>
-          <b>{yuan(total)}</b>
+          <b className="xf-num">{yuan(total)}</b>
         </View>
         <View className={`xf-bar__go ${submitting ? 'is-disabled' : ''}`} onClick={submit}>
           {submitting ? '提交中…' : '提交订单'}

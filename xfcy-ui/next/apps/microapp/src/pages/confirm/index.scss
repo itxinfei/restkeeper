@@ -55,6 +55,16 @@
   border-color: var(--c-brand);
 }
 
+.confirm__stub {
+  margin-bottom: 10px;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--c-warning-soft);
+  color: var(--c-warning);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 .confirm__radio-dot {
   width: 10px;
   height: 10px;

@@ -15,11 +15,12 @@ import {
   XfTag,
   useToast,
 } from '@xfcy/ui'
-import { dish as dishApi, formatYuan } from '@xfcy/api'
+import { dish as dishApi, formatYuan, soldout as soldoutApi } from '@xfcy/api'
 import type {
   Dish as ApiDish,
   DishCategory as ApiDishCategory,
   DishWithFlavors,
+  SellCalculation,
   SetMeal as ApiSetMeal,
 } from '@xfcy/api'
 
@@ -100,7 +101,20 @@ function enableTone(status: string) {
 
 /* ---------------- 数据加载（mock 经 api mockAdapter，real 走 HTTP） ---------------- */
 
-function toDishRow(dish: ApiDish): DishRow {
+/** 沽清余量口径与「沽清管理」一致：-1 / 未设置 → 不限；剩余 ≤ 2 标红 */
+function toRemainText(item: SellCalculation | undefined): { text: string; danger: boolean } {
+  const remainder = item?.remainder
+  if (remainder === undefined || remainder === null || remainder < 0) {
+    return { text: '不限', danger: false }
+  }
+  return { text: String(remainder), danger: remainder <= 2 }
+}
+
+function toDishRow(
+  dish: ApiDish,
+  soldoutMap: Map<string, SellCalculation>,
+): DishRow {
+  const remain = toRemainText(soldoutMap.get(dish.id ?? ''))
   return {
     id: dish.id ?? '',
     name: dish.name,
@@ -108,8 +122,8 @@ function toDishRow(dish: ApiDish): DishRow {
     category: dish.dishCategory?.name ?? '',
     code: dish.code ?? '',
     price: formatYuan(dish.price),
-    remain: '不限',
-    remainDanger: false,
+    remain: remain.text,
+    remainDanger: remain.danger,
     status: dish.status === 1 ? '起售' : '停售',
     thumb: dish.image ?? '🍽️',
   }
@@ -149,12 +163,16 @@ const combos = ref<ComboRow[]>([])
 async function load() {
   error.value = ''
   try {
-    const [dishResult, categoryResult, comboResult] = await Promise.all([
+    const [dishResult, categoryResult, comboResult, soldoutResult] = await Promise.all([
       dishApi.page(1, 100),
       dishApi.categoryPage(1, 100),
       dishApi.setMealPage(1, 100),
+      soldoutApi.page(1, 200),
     ])
-    dishes.value = dishResult.records.map(toDishRow)
+    const soldoutMap = new Map(
+      soldoutResult.records.map((item) => [item.dishId ?? '', item]),
+    )
+    dishes.value = dishResult.records.map((item) => toDishRow(item, soldoutMap))
     categories.value = categoryResult.records.map(toCategoryRow)
     combos.value = comboResult.records.map(toComboRow)
     selectedComboId.value = comboResult.records[0]?.id ?? null

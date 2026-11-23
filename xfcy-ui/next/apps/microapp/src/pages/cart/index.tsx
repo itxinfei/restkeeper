@@ -56,7 +56,7 @@ export default function Cart() {
                     ＋
                   </View>
                 </View>
-                <Text className="xf-line__sum">{yuan(item.qty * item.dish.price)}</Text>
+                <Text className="xf-line__sum xf-num">{yuan(item.qty * item.dish.price)}</Text>
               </View>
             ))}
           </View>
@@ -95,7 +95,7 @@ export default function Cart() {
         <View className="xf-bar">
           <View className="xf-bar__total">
             <small>合计</small>
-            <b>{yuan(total)}</b>
+            <b className="xf-num">{yuan(total)}</b>
           </View>
           <View className="xf-bar__go" onClick={goConfirm}>
             去结算

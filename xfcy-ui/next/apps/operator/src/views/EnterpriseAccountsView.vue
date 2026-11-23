@@ -11,6 +11,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  useToast,
 } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import {
@@ -40,10 +41,7 @@ const columns: Column[] = [
 
 const store = useEnterpriseStore()
 const enterprises = computed(() => store.enterpriseRows)
-const keyword = ref('')
-const statusFilter = ref('all')
-const planFilter = ref('all')
-const page = ref(1)
+const rows = computed(() => store.enterpriseRows)
 const pageSize = 10
 
 const statusOptions = [
@@ -57,25 +55,8 @@ const planFilterOptions = computed(() => [
   ...planOptions.map((item) => ({ label: item, value: item })),
 ])
 
-const filtered = computed(() => {
-  const kw = keyword.value.trim().toLowerCase()
-  return enterprises.value.filter((row) => {
-    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) return false
-    if (planFilter.value !== 'all' && row.plan !== planFilter.value) return false
-    if (kw && !row.name.toLowerCase().includes(kw) && !row.code.toLowerCase().includes(kw)) {
-      return false
-    }
-    return true
-  })
-})
-
-const paged = computed(() => {
-  const start = (page.value - 1) * pageSize
-  return filtered.value.slice(start, start + pageSize)
-})
-
 const stat = computed(() => ({
-  total: enterprises.value.length,
+  total: store.total,
   trial: enterprises.value.filter((row) => row.status === '试用').length,
   official: enterprises.value.filter((row) => row.status === '正式').length,
   disabled: enterprises.value.filter((row) => row.status === '禁用').length,
@@ -87,15 +68,15 @@ function statusTone(status: EnterpriseStatus) {
   return 'neutral' as const
 }
 
-function resetFilters() {
-  keyword.value = ''
-  statusFilter.value = 'all'
-  planFilter.value = 'all'
-  page.value = 1
-}
+const toast = useToast()
 
 async function toggleStatus(row: EnterpriseRow) {
-  await store.toggleStatus(row)
+  try {
+    await store.toggleStatus(row)
+    toast.success(row.status === '禁用' ? `已启用「${row.name}」` : `已停用「${row.name}」`)
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : '状态更新失败')
+  }
 }
 
 /* -------- 开通 / 编辑弹窗 -------- */
@@ -215,7 +196,11 @@ async function save() {
       await store.create(draft)
     }
     modalOpen.value = false
-    page.value = 1
+    if (form.value.id == null) {
+      // 后端生成 6 位随机初始密码并通过短信下发，接口不返回明文
+      toast.success(`已开通「${name}」；初始密码已通过短信下发至 ${phone}`)
+    }
+    await store.search()
   } catch (error) {
     saveError.value = error instanceof Error ? error.message : '保存失败'
   } finally {
@@ -231,15 +216,16 @@ onMounted(() => {
 <template>
   <div class="xfo-toolbar">
     <div class="xfo-toolbar__search">
-      <XfInput v-model="keyword" placeholder="搜索企业名称 / 编码" />
+      <XfInput v-model="store.keyword" placeholder="搜索企业名称（服务端模糊）" />
     </div>
     <div class="xfo-toolbar__select">
-      <XfSelect v-model="statusFilter" :options="statusOptions" />
+      <XfSelect v-model="store.statusFilter" :options="statusOptions" />
     </div>
     <div class="xfo-toolbar__select">
-      <XfSelect v-model="planFilter" :options="planFilterOptions" />
+      <XfSelect v-model="store.planFilter" :options="planFilterOptions" />
     </div>
-    <XfButton variant="secondary" @click="resetFilters">重置</XfButton>
+    <XfButton variant="secondary" @click="store.search()">查询</XfButton>
+    <XfButton variant="secondary" @click="store.resetFilters()">重置</XfButton>
     <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
       {{ store.loading ? '刷新中…' : '刷新' }}
     </XfButton>
@@ -257,7 +243,8 @@ onMounted(() => {
     <XfTable
       v-else
       :columns="columns"
-      :data="paged"
+      :data="rows"
+      :loading="store.loading && !store.loaded"
       row-key="id"
       empty-text="暂无企业"
       empty-description="调整筛选条件，或点击右上角「开通企业」"
@@ -299,9 +286,11 @@ onMounted(() => {
 
     <div class="xfo-pager">
       <span class="xfo-pager__summary">
-        共 {{ stat.total }} 家 · 试用 {{ stat.trial }} · 正式 {{ stat.official }} · 禁用 {{ stat.disabled }}
+        共 {{ stat.total }} 家<template v-if="!store.clientSide">
+          · 当前页 试用 {{ stat.trial }} / 正式 {{ stat.official }} / 禁用 {{ stat.disabled }}
+        </template>
       </span>
-      <XfPagination v-model:page="page" :total="filtered.length" :page-size="pageSize" />
+      <XfPagination v-model:page="store.page" :total="store.total" :page-size="pageSize" />
     </div>
   </XfPanel>
 

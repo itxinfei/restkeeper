@@ -165,16 +165,33 @@ async function copyPassword() {
 
 const toast = useToast()
 
-async function toggleStatus(row: StaffRow) {
-  if (row.status === 1) {
-    await staff.pause(row.id)
-    toast.success(`已停用「${row.name}」`)
-  } else {
-    const current: Staff = row.raw ?? { staffName: row.name, staffId: row.id }
-    await staff.update({ ...current, staffId: row.id, status: 1 })
-    toast.success(`已启用「${row.name}」`)
+const statusConfirmOpen = ref(false)
+const statusRow = ref<StaffRow | null>(null)
+
+function askToggleStatus(row: StaffRow) {
+  statusRow.value = row
+  statusConfirmOpen.value = true
+}
+
+async function confirmToggleStatus() {
+  const row = statusRow.value
+  if (!row) return
+  try {
+    if (row.status === 1) {
+      await staff.pause(row.id)
+      toast.success(`已停用「${row.name}」`)
+    } else {
+      const current: Staff = row.raw ?? { staffName: row.name, staffId: row.id }
+      await staff.update({ ...current, staffId: row.id, status: 1 })
+      toast.success(`已启用「${row.name}」`)
+    }
+  } catch (err) {
+    toast.error(err instanceof Error ? err.message : '状态更新失败')
+  } finally {
+    statusConfirmOpen.value = false
+    statusRow.value = null
+    await load()
   }
-  await load()
 }
 </script>
 
@@ -202,7 +219,7 @@ async function toggleStatus(row: StaffRow) {
       <template #actions="{ row }">
         <div class="xfm-actions">
           <XfButton size="sm" variant="secondary" @click="openEdit(row as StaffRow)">编辑</XfButton>
-          <XfButton size="sm" :variant="row.status === 1 ? 'danger' : 'secondary'" @click="toggleStatus(row as StaffRow)">
+          <XfButton size="sm" :variant="row.status === 1 ? 'danger' : 'secondary'" @click="askToggleStatus(row as StaffRow)">
             {{ row.status === 1 ? '停用' : '启用' }}
           </XfButton>
         </div>
@@ -253,6 +270,22 @@ async function toggleStatus(row: StaffRow) {
     <template #footer>
       <XfButton variant="secondary" @click="modalOpen = false">取消</XfButton>
       <XfButton @click="save">保存</XfButton>
+    </template>
+  </XfModal>
+
+  <!-- 停用 / 启用二次确认 -->
+  <XfModal v-model:open="statusConfirmOpen" title="状态确认" width="440px">
+    <p v-if="statusRow" class="xfm-confirm">
+      <template v-if="statusRow.status === 1">
+        确认停用「{{ statusRow.name }}」？停用后该员工将无法登录收银端。
+      </template>
+      <template v-else> 确认启用「{{ statusRow.name }}」？启用后恢复该员工的登录资格。 </template>
+    </p>
+    <template #footer>
+      <XfButton variant="secondary" @click="statusConfirmOpen = false">取消</XfButton>
+      <XfButton :variant="statusRow?.status === 1 ? 'danger' : undefined" @click="confirmToggleStatus">
+        确认{{ statusRow?.status === 1 ? '停用' : '启用' }}
+      </XfButton>
     </template>
   </XfModal>
 
