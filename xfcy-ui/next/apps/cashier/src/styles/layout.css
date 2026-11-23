@@ -632,16 +632,6 @@
   color: var(--c-text-3);
 }
 
-.xfc-order__notice {
-  flex: none;
-  margin: 0;
-  padding: 8px 16px;
-  background: var(--c-primary-soft);
-  color: var(--c-primary);
-  font-size: 13px;
-  border-bottom: 1px solid var(--c-border);
-}
-
 .xfc-order__lines {
   flex: 1 1 auto;
   overflow-y: auto;
@@ -761,6 +751,67 @@
   margin-bottom: 12px;
   font-size: 13px;
   color: var(--c-text-2);
+}
+
+/* ---------- 反结账 ---------- */
+.xfc-reverse {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.xfc-reverse__lookup {
+  display: flex;
+  gap: 8px;
+}
+
+.xfc-reverse__lookup .xf-input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.xfc-reverse__error {
+  margin: -4px 0 0;
+  color: var(--c-danger);
+  font-size: 13px;
+}
+
+.xfc-reverse__summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius-sm);
+}
+
+.xfc-reverse__textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--c-text);
+  font: inherit;
+  font-size: var(--text-body);
+  resize: vertical;
+}
+
+.xfc-reverse__textarea:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.xfc-reverse__warn {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--c-warning-soft);
+  color: var(--c-warning);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  line-height: var(--leading-body);
 }
 
 .xfc-movetables {

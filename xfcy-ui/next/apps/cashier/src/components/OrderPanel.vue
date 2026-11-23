@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue'
-import { XfButton, XfEmpty, XfModal, XfTag } from '@xfcy/ui'
+import { computed, ref } from 'vue'
+import { XfButton, XfEmpty, XfField, XfInput, XfModal, XfTag, useToast } from '@xfcy/ui'
 import { formatYuan } from '@xfcy/api'
+import type { OrderEntity } from '@xfcy/api'
 import { useOrderStore } from '../stores/order'
 import type { OrderStatus } from '../stores/order'
 
 const order = useOrderStore()
+const { success, warning, error, info } = useToast()
 const emit = defineEmits<{ (e: 'checkout'): void }>()
 
 const statusTone = computed<'danger' | 'warning' | 'success'>(() => {
@@ -17,37 +19,41 @@ const statusTone = computed<'danger' | 'warning' | 'success'>(() => {
   return map[order.status]
 })
 
-/* 轻提示（示意操作反馈） */
-const notice = ref('')
-let noticeTimer: number | undefined
-function showNotice(text: string) {
-  notice.value = text
-  if (noticeTimer !== undefined) window.clearTimeout(noticeTimer)
-  noticeTimer = window.setTimeout(() => {
-    notice.value = ''
-  }, 2500)
+function errText(e: unknown) {
+  return e instanceof Error && e.message ? e.message : '服务异常，请稍后重试'
 }
-onBeforeUnmount(() => {
-  if (noticeTimer !== undefined) window.clearTimeout(noticeTimer)
-})
 
 function onHang() {
   order.markCredit()
-  showNotice('已挂账（示意），订单状态：挂账；真实模式在结账时选择「挂账」提交')
+  info('已挂账，订单状态：挂账；真实模式请在结账时选择「挂账」提交')
 }
 
 function onPrint() {
-  showNotice('已发送后厨打印（示意）')
+  info('已发送后厨打印（示意）')
 }
 
-function onRemoveLast() {
+/**
+ * 退菜：真实模式调 order.returnDish；已付订单退菜只冲 totalAmount，
+ * 会产生实收/应收差额，必须明确提示「差额需人工处理」。
+ */
+async function onRemoveLast() {
   const last = order.items[order.items.length - 1]
   if (!last) {
-    showNotice('订单为空，无可退菜品')
+    info('订单为空，无可退菜品')
     return
   }
-  order.removeLastItem()
-  showNotice(`已退 ${last.name} ×1（示意）`)
+  try {
+    const result = await order.removeLastItem()
+    if (result === 'empty') {
+      info('订单为空，无可退菜品')
+    } else if (result === 'paid') {
+      warning(`已退 ${last.name} ×1；该订单已结账，差额需人工处理（不自动退款）`)
+    } else {
+      success(`已退 ${last.name} ×1`)
+    }
+  } catch (e) {
+    error(`退菜失败：${errText(e)}`)
+  }
 }
 
 /* 换台：仅可选择空闲桌台 */
@@ -55,9 +61,72 @@ const moveOpen = ref(false)
 const freeTables = computed(() => order.tables.filter((t) => t.status === '空闲'))
 
 async function onMove(id: string) {
-  await order.moveTable(id)
-  moveOpen.value = false
-  showNotice(`已换台至 ${id}`)
+  try {
+    await order.moveTable(id)
+    moveOpen.value = false
+    success(`已换台至 ${id}`)
+  } catch (e) {
+    error(`换台失败：${errText(e)}`)
+  }
+}
+
+/* 反结账：仅已付订单；入口用流水号反查，确认框明确告知影响 */
+const reverseOpen = ref(false)
+const reverseNumber = ref('')
+const reverseRemark = ref('')
+const reverseTarget = ref<OrderEntity | null>(null)
+const reverseBusy = ref(false)
+const reverseError = ref('')
+
+const reverseTableName = computed(() => {
+  const target = reverseTarget.value
+  if (!target?.tableId) return ''
+  return order.tables.find((t) => t.id === target.tableId)?.name ?? target.tableId
+})
+
+function openReverse() {
+  reverseNumber.value = ''
+  reverseRemark.value = ''
+  reverseTarget.value = null
+  reverseError.value = ''
+  reverseOpen.value = true
+}
+
+async function onLookupReverse() {
+  reverseError.value = ''
+  reverseTarget.value = null
+  try {
+    const found = await order.lookupPaidOrder(reverseNumber.value)
+    if (!found) {
+      reverseError.value = '未找到已结账订单，仅已付订单可反结账'
+      return
+    }
+    reverseTarget.value = found
+  } catch (e) {
+    reverseError.value = `查询失败：${errText(e)}`
+  }
+}
+
+async function onConfirmReverse() {
+  const target = reverseTarget.value
+  if (!target?.orderId) return
+  reverseBusy.value = true
+  try {
+    const ok = await order.reverseOrder({
+      orderId: target.orderId,
+      remark: reverseRemark.value.trim() || undefined,
+    })
+    if (ok) {
+      success(`反结账成功：${target.orderNumber ?? ''} 已恢复为未结账`)
+      reverseOpen.value = false
+    } else {
+      error('反结账失败，请稍后重试')
+    }
+  } catch (e) {
+    error(`反结账失败：${errText(e)}`)
+  } finally {
+    reverseBusy.value = false
+  }
 }
 </script>
 
@@ -72,8 +141,6 @@ async function onMove(id: string) {
       </div>
       <XfTag :tone="statusTone">{{ order.status }}</XfTag>
     </header>
-
-    <p v-if="notice" class="xfc-order__notice" role="status">{{ notice }}</p>
 
     <div class="xfc-order__lines">
       <XfEmpty
@@ -129,6 +196,7 @@ async function onMove(id: string) {
       <XfButton variant="secondary" size="lg" @click="moveOpen = true">换台</XfButton>
       <XfButton variant="secondary" size="lg" @click="onRemoveLast">退菜</XfButton>
       <XfButton variant="secondary" size="lg" @click="onPrint">打印</XfButton>
+      <XfButton variant="secondary" size="lg" @click="openReverse">反结账</XfButton>
       <XfButton
         size="xl"
         block
@@ -160,6 +228,74 @@ async function onMove(id: string) {
         </button>
         <p v-if="freeTables.length === 0" class="xfc-order__muted">当前没有空闲桌台（示意）</p>
       </div>
+    </XfModal>
+
+    <XfModal
+      v-model:open="reverseOpen"
+      title="反结账（仅已结账订单）"
+      width="520px"
+    >
+      <div class="xfc-reverse">
+        <XfField label="订单流水号" required>
+          <template #default="{ id }">
+            <div class="xfc-reverse__lookup">
+              <XfInput
+                :id="id"
+                v-model="reverseNumber"
+                placeholder="输入已结账订单流水号"
+                @keyup.enter="onLookupReverse"
+              />
+              <XfButton variant="secondary" :disabled="reverseBusy" @click="onLookupReverse">
+                查询
+              </XfButton>
+            </div>
+          </template>
+        </XfField>
+
+        <p v-if="reverseError" class="xfc-reverse__error" role="alert">{{ reverseError }}</p>
+
+        <div v-if="reverseTarget" class="xfc-reverse__summary">
+          <div class="xfc-row">
+            <span>流水号</span>
+            <b>{{ reverseTarget.orderNumber || '—' }}</b>
+          </div>
+          <div class="xfc-row">
+            <span>桌台</span>
+            <b>{{ reverseTableName || '—' }}</b>
+          </div>
+          <div class="xfc-row">
+            <span>实收金额</span>
+            <b class="xfc-num">
+              {{ formatYuan(reverseTarget.payAmount ?? reverseTarget.totalAmount ?? 0) }}
+            </b>
+          </div>
+        </div>
+
+        <XfField label="反结账原因">
+          <template #default="{ id }">
+            <textarea
+              :id="id"
+              v-model="reverseRemark"
+              class="xfc-reverse__textarea"
+              rows="3"
+              placeholder="选填，如：收银员操作失误"
+            ></textarea>
+          </template>
+        </XfField>
+
+        <p class="xfc-reverse__warn" role="alert">
+          反结账仅把订单支付状态恢复为「未结账」，不会恢复桌台状态、不会回冲沽清数量，也不会自动退款。
+        </p>
+      </div>
+
+      <template #footer>
+        <XfButton variant="secondary" :disabled="reverseBusy" @click="reverseOpen = false">
+          取消
+        </XfButton>
+        <XfButton :disabled="!reverseTarget || reverseBusy" @click="onConfirmReverse">
+          确认反结账
+        </XfButton>
+      </template>
     </XfModal>
   </aside>
 </template>

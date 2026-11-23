@@ -34,6 +34,7 @@ export function useToast() {
   return {
     toasts: readonly(state.toasts),
     success: (text: string) => push(text, 'success'),
+    warning: (text: string) => push(text, 'warning'),
     error: (text: string) => push(text, 'danger'),
     info: (text: string) => push(text, 'info'),
     dismiss,

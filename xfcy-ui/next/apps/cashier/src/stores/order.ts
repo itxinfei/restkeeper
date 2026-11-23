@@ -232,9 +232,30 @@ export const useOrderStore = defineStore('order', () => {
     items.value = items.value.filter((it) => it.dishId !== id)
   }
 
-  function removeLastItem() {
+  /**
+   * 退菜（真实模式最后一份）。
+   *
+   * 真实模式必须调 order.returnDish(detailId)，detailId 需从当前订单明细里按
+   * dishId + detailStatus=1 反查；已付订单退菜只冲 totalAmount，会产生实收/应收
+   * 差额，由 UI 明确提示「差额需人工处理」。返回 'paid' 表示发生了已付退菜。
+   */
+  async function removeLastItem(): Promise<'empty' | 'ok' | 'paid'> {
     const last = items.value[items.value.length - 1]
-    if (last) removeItem(last.dishId)
+    if (!last) return 'empty'
+
+    let paid = status.value === '已结'
+    if (!isMockMode() && currentOrderId.value) {
+      const current = await order.getById(currentOrderId.value)
+      paid = current?.payStatus === 1
+      const detail = current?.orderDetails?.find(
+        (item) => item.detailStatus === 1 && item.dishId === last.dishId,
+      )
+      if (detail?.detailId) await order.returnDish(detail.detailId, [])
+    }
+
+    if (last.qty > 1) decQty(last.dishId)
+    else removeItem(last.dishId)
+    return paid ? 'paid' : 'ok'
   }
 
   function clearItems() {
@@ -255,6 +276,23 @@ export const useOrderStore = defineStore('order', () => {
     if (currentTableId.value) setTableStatus(currentTableId.value, '空闲')
     setTableStatus(id, '开台')
     currentTableId.value = id
+  }
+
+  /**
+   * 反结账入口：仅允许已付订单。
+   *
+   * 必须经 GET /order/number/{orderNumber} 反查（后端只返回 pay_status=1 的单），
+   * 不允许直接暴露 orderId 裸调 POST /order/reverse，避免反结未付订单。
+   */
+  async function lookupPaidOrder(orderNumber: string) {
+    const keyword = orderNumber.trim()
+    if (!keyword) return null
+    return await order.getByOrderNumber(keyword)
+  }
+
+  /** 反结账：仅恢复支付状态为未付，不恢复桌台、不回冲沽清（UI 需明确告知） */
+  async function reverseOrder(payload: { orderId: string; remark?: string }): Promise<boolean> {
+    return await order.reverse(payload)
   }
 
   /** 结账：真实模式调用 order.pay / order.payByCredit */
@@ -318,6 +356,8 @@ export const useOrderStore = defineStore('order', () => {
     decQty,
     removeItem,
     removeLastItem,
+    lookupPaidOrder,
+    reverseOrder,
     clearItems,
     markCredit,
     moveTable,

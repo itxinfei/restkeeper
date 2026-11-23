@@ -928,7 +928,40 @@ const bEndRoutes: MockRoute[] = [
     pattern: /^\/order\/number\/[^/]+$/,
     handler: ({ url }) => {
       const orderNumber = url.split('/').pop() as string
-      return mockOrders.find((order) => order.orderNumber === orderNumber) ?? null
+      // 与真实契约一致：只返回已付订单，作为反结账入口约束
+      return (
+        mockOrders.find(
+          (order) => order.orderNumber === orderNumber && order.payStatus === 1,
+        ) ?? null
+      )
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/order\/returnDish$/,
+    handler: ({ body }) => {
+      const { detailId } = (body ?? {}) as { detailId?: string; remarks?: string[] }
+      if (!detailId) return false
+      for (const order of mockOrders) {
+        const detail = order.orderDetails?.find((item) => item.detailId === detailId)
+        if (detail) {
+          detail.detailStatus = 2
+          return true
+        }
+      }
+      return false
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/order\/reverse$/,
+    handler: ({ body }) => {
+      const { orderId } = (body ?? {}) as { orderId?: string; remark?: string }
+      const target = mockOrders.find((order) => order.orderId === orderId)
+      // 仅已付订单允许反结账，与真实契约一致
+      if (!target || target.payStatus !== 1) return false
+      target.payStatus = 0
+      return true
     },
   },
   {

@@ -79,6 +79,12 @@ export async function getById(id: string): Promise<OrderEntity> {
   return unwrap<OrderEntity>(data)
 }
 
+/** 反结账：POST /order/reverse（body: { orderId, remark }，仅已付订单可反结） */
+export async function reverse(payload: { orderId: string; remark?: string }): Promise<boolean> {
+  const { data } = await http.post('/order/reverse', payload)
+  return unwrap<boolean>(data)
+}
+
 /** 按流水号查已付订单（反结账入口）：GET /order/number/{orderNumber} */
 export async function getByOrderNumber(orderNumber: string): Promise<OrderEntity | null> {
   const { data } = await http.get(`/order/number/${orderNumber}`)
