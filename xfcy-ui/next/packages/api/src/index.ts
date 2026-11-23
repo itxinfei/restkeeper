@@ -86,14 +86,17 @@ export type {
 } from './modules/microapp'
 
 import * as auth from './modules/auth'
+import * as credit from './modules/credit'
 import * as dish from './modules/dish'
 import * as enterprise from './modules/enterprise'
 import * as microapp from './modules/microapp'
 import * as order from './modules/order'
+import * as soldout from './modules/soldout'
+import * as staff from './modules/staff'
 import * as system from './modules/system'
 import * as table from './modules/table'
 
-export { auth, dish, enterprise, microapp, order, system, table }
+export { auth, credit, dish, enterprise, microapp, order, soldout, staff, system, table }
 
 /** 金额格式化：分 → 「¥x,xxx.xx」（展示层统一入口） */
 export function formatYuan(cents?: number | null): string {

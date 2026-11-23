@@ -701,3 +701,23 @@
     min-width: 28px;
   }
 }
+
+/* ---------- 挂账：用餐人编辑 ---------- */
+.xfm-users {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.xfm-users__row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+@media (max-width: 560px) {
+  .xfm-users__row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

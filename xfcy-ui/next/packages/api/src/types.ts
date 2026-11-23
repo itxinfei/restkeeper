@@ -271,7 +271,8 @@ export interface TableLog {
 
 /** t_staff */
 export interface Staff {
-  staffId: string
+  /** 新增时省略，由后端 UUID 生成 */
+  staffId?: string
   staffName: string
   password?: string
   phone?: string
@@ -287,15 +288,88 @@ export interface Staff {
 
 /** t_sell_calculation（remainder 无记录约定 -1 表示不限量） */
 export interface SellCalculation {
-  id: string
+  /** 新增时省略，由后端雪花 ID 生成 */
+  id?: string
   dishId?: string
   dishName?: string
+  /** 1 普通菜品 / 2 套餐 */
   dishType?: number
+  /** 估清总数 */
+  sellLimitTotal?: number
   /** 剩余数量；-1 表示不限量 */
   remainder?: number
   shopId?: string
   storeId?: string
   lastUpdateTime?: string
+}
+
+/* ----------------  store 域：挂账 ---------------- */
+
+/** t_credit_company_user */
+export interface CreditCompanyUser {
+  id?: string
+  creditId?: string
+  userName?: string
+  phone?: string
+  lastUpdateTime?: string
+  shopId?: string
+  storeId?: string
+}
+
+/** t_credit */
+export interface Credit {
+  creditId?: string
+  /** 1 公司 / 2 个人 */
+  creditType?: number
+  companyName?: string
+  userName?: string
+  phone?: string
+  /** 1 开启 / 0 停用 */
+  status?: number
+  /** 挂账金额，单位「分」 */
+  creditAmount?: number
+  /** 总还款金额，单位「分」 */
+  totalRepaymentAmount?: number
+  users?: CreditCompanyUser[]
+  lastUpdateTime?: string
+  shopId?: string
+  storeId?: string
+  isDeleted?: number
+}
+
+/** 挂账新增 / 修改提交体，对应 BFF CreditVO */
+export interface CreditPayload {
+  /** 修改时必填（BFF 字段名为 id） */
+  id?: string
+  /** 1 公司 / 2 个人 */
+  creditType: number
+  companyName?: string
+  userName?: string
+  phone?: string
+  /** 挂账额度，单位「分」 */
+  creditAmount?: number
+  /** 1 开启 / 0 停用 */
+  status?: number
+  users?: Array<{ userName?: string; phone?: string }>
+}
+
+/** 还款提交体，对应 BFF CreditRepaymentVO（金额单位「分」） */
+export interface CreditRepaymentPayload {
+  /** 1 公司 / 2 个人 */
+  creditType: string
+  creditId: string
+  companyName?: string
+  userName?: string
+  /** 还款方式（如 现金 / 微信 / 支付宝 / 银行卡） */
+  repaymentType: string
+  /** 还款金额，单位「分」 */
+  repaymentAmount: number
+}
+
+/** 挂账新增 / 修改请求体，对应 provider CreditWithCompanyUsers */
+export interface CreditWithCompanyUsers {
+  credit: Credit
+  users: CreditCompanyUser[]
 }
 
 /* ----------------  order 域 ---------------- */

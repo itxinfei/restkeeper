@@ -8,11 +8,15 @@
 
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import type {
+  CreditPayload,
+  CreditRepaymentPayload,
   CurrentAmountCollectDTO,
   Dish,
   EnterpriseAccount,
   PageResult,
   ProviderResult,
+  SellCalculation,
+  Staff,
   StoreDTO,
   SysDictionary,
   Table,
@@ -23,6 +27,7 @@ import { getApiConfig } from '../config'
 import type { HttpTransport } from '../transport'
 import {
   mockCategories,
+  mockCredits,
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,
@@ -32,7 +37,9 @@ import {
   mockPayTypeCollect,
   mockPrivilege,
   mockRemovedEnterpriseAccounts,
+  mockSellCalculations,
   mockSetMeals,
+  mockStaffs,
   mockTableAreas,
   mockTables,
 } from './data'
@@ -518,6 +525,255 @@ const bEndRoutes: MockRoute[] = [
     },
   },
 
+  /* ---------------- staff（员工） ---------------- */
+  {
+    method: 'GET',
+    pattern: /^\/staff\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[3])
+      const size = Number(segments[4])
+      const name = params.staffName ? String(params.staffName).toLowerCase() : ''
+      const phone = params.phone ? String(params.phone) : ''
+      const filtered = mockStaffs.filter((item) => {
+        if (name && !item.staffName.toLowerCase().includes(name)) return false
+        if (phone && !(item.phone ?? '').includes(phone)) return false
+        return true
+      })
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/staff\/add$/,
+    handler: ({ body }) => {
+      const staff = (body ?? {}) as Staff
+      if (!staff.staffName) return false
+      mockStaffs.unshift({
+        ...staff,
+        staffId: `S${String(mockStaffs.length + 1).padStart(3, '0')}`,
+        status: staff.status ?? 1,
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/staff$/,
+    handler: ({ body }) => {
+      const staff = (body ?? {}) as Staff
+      const index = mockStaffs.findIndex((item) => item.staffId === staff.staffId)
+      if (index < 0) return false
+      mockStaffs[index] = { ...mockStaffs[index], ...staff }
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/staff\/pause\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      const staff = mockStaffs.find((item) => item.staffId === id)
+      if (!staff) return false
+      staff.status = 0
+      return true
+    },
+  },
+
+  /* ---------------- credit（挂账） ---------------- */
+  {
+    method: 'GET',
+    pattern: /^\/credit\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[3])
+      const size = Number(segments[4])
+      const name = params.userName ? String(params.userName).toLowerCase() : ''
+      const filtered = mockCredits.filter((item) => {
+        if (!name) return true
+        const hit = `${item.companyName ?? ''}${item.userName ?? ''}`.toLowerCase()
+        return hit.includes(name)
+      })
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/credit\/[^/]+$/,
+    handler: ({ url }) => {
+      const id = url.split('/').pop() as string
+      const credit = mockCredits.find((item) => item.creditId === id)
+      if (!credit) return null
+      // 回显为 BFF CreditVO 形状（主键字段名为 id）
+      return {
+        id: credit.creditId,
+        creditType: credit.creditType ?? 2,
+        companyName: credit.companyName,
+        userName: credit.userName,
+        phone: credit.phone,
+        creditAmount: credit.creditAmount,
+        status: credit.status,
+        users: credit.users ?? [],
+      } satisfies CreditPayload
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/credit\/add$/,
+    handler: ({ body }) => {
+      const payload = (body ?? {}) as CreditPayload
+      if (!payload.userName && !payload.companyName) return false
+      const creditId = `CR${String(mockCredits.length + 1).padStart(3, '0')}`
+      mockCredits.unshift({
+        creditId,
+        creditType: payload.creditType,
+        companyName: payload.companyName,
+        userName: payload.userName,
+        phone: payload.phone,
+        status: payload.status ?? 1,
+        creditAmount: payload.creditAmount ?? 0,
+        totalRepaymentAmount: 0,
+        users: (payload.users ?? []).map((user, index) => ({
+          id: `${creditId}-U${index + 1}`,
+          creditId,
+          userName: user.userName,
+          phone: user.phone,
+        })),
+      })
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/credit$/,
+    handler: ({ body }) => {
+      const payload = (body ?? {}) as CreditPayload
+      const index = mockCredits.findIndex((item) => item.creditId === payload.id)
+      if (index < 0) return false
+      const prev = mockCredits[index]
+      mockCredits[index] = {
+        ...prev,
+        creditType: payload.creditType,
+        companyName: payload.companyName,
+        userName: payload.userName,
+        phone: payload.phone,
+        status: payload.status ?? prev.status,
+        creditAmount: payload.creditAmount ?? prev.creditAmount,
+        users: (payload.users ?? prev.users ?? []).map((user, i) => ({
+          id: prev.users?.[i]?.id ?? `${prev.creditId ?? 'CR'}-U${i + 1}`,
+          creditId: prev.creditId,
+          userName: user.userName,
+          phone: user.phone,
+        })),
+      }
+      return true
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/credit\/repayment$/,
+    handler: ({ body }) => {
+      const payload = (body ?? {}) as CreditRepaymentPayload
+      const credit = mockCredits.find((item) => item.creditId === payload.creditId)
+      if (!credit) return false
+      credit.totalRepaymentAmount = (credit.totalRepaymentAmount ?? 0) + (payload.repaymentAmount ?? 0)
+      return true
+    },
+  },
+
+  /* ---------------- sellCalculation（沽清） ---------------- */
+  {
+    method: 'GET',
+    pattern: /^\/sellCalculation\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const segments = url.split('/')
+      const page = Number(segments[3])
+      const size = Number(segments[4])
+      const name = params.dishName ? String(params.dishName).toLowerCase() : ''
+      const dishType = params.dishType !== undefined && params.dishType !== '' ? Number(params.dishType) : undefined
+      const filtered = mockSellCalculations.filter((row) => {
+        if (name && !(row.dishName ?? '').toLowerCase().includes(name)) return false
+        if (dishType !== undefined && row.dishType !== dishType) return false
+        return true
+      })
+      return paginate(filtered, page, size)
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/sellCalculation\/remainder\/[^/]+$/,
+    handler: ({ url }) => {
+      const dishId = url.split('/').pop() as string
+      return mockSellCalculations.find((row) => row.dishId === dishId)?.remainder ?? -1
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/sellCalculation$/,
+    handler: ({ body }) => {
+      const record = (body ?? {}) as SellCalculation
+      if (!record.dishId) return false
+      const exist = mockSellCalculations.find((row) => row.dishId === record.dishId)
+      if (exist) {
+        exist.dishName = record.dishName ?? exist.dishName
+        exist.sellLimitTotal = record.sellLimitTotal ?? exist.sellLimitTotal
+        exist.remainder = record.remainder ?? exist.remainder
+      } else {
+        mockSellCalculations.push({
+          ...record,
+          id: `SC${String(mockSellCalculations.length + 1).padStart(3, '0')}`,
+        })
+      }
+      return true
+    },
+  },
+  {
+    method: 'DELETE',
+    pattern: /^\/sellCalculation$/,
+    handler: ({ body }) => {
+      const ids = new Set((body ?? []) as string[])
+      for (let i = mockSellCalculations.length - 1; i >= 0; i--) {
+        const id = mockSellCalculations[i].id
+        if (id !== undefined && ids.has(id)) mockSellCalculations.splice(i, 1)
+      }
+      return true
+    },
+  },
+  {
+    method: 'PUT',
+    pattern: /^\/sellCalculation\/decrease$/,
+    handler: ({ params }) => {
+      const dishId = String(params.dishId ?? '')
+      const num = Number(params.dishNumber ?? 1)
+      const row = mockSellCalculations.find((item) => item.dishId === dishId)
+      if (row && row.remainder !== undefined && row.remainder >= 0) {
+        row.remainder = Math.max(0, row.remainder - num)
+      }
+    },
+  },
+  {
+    method: 'POST',
+    pattern: /^\/sellCalculation\/add$/,
+    handler: ({ params }) => {
+      const dishId = String(params.dishId ?? '')
+      const num = Number(params.dishNumber ?? 1)
+      const row = mockSellCalculations.find((item) => item.dishId === dishId)
+      if (row) {
+        if (row.remainder !== undefined && row.remainder >= 0) row.remainder += num
+        return
+      }
+      const dish = mockDishes.find((item) => item.id === dishId)
+      mockSellCalculations.push({
+        id: `SC${String(mockSellCalculations.length + 1).padStart(3, '0')}`,
+        dishId,
+        dishName: dish?.name,
+        dishType: dish?.categoryId === 'cat-combo' ? 2 : 1,
+        sellLimitTotal: num,
+        remainder: num,
+      })
+    },
+  },
+
   /* ---------------- table ---------------- */
   {
     method: 'GET',
@@ -731,6 +987,7 @@ export function createMockTransport(): HttpTransport {
 /** 供外部读取的 mock 数据（演示/测试用） */
 export {
   mockCategories,
+  mockCredits,
   mockDictItems,
   mockDishes,
   mockEnterpriseAccounts,
@@ -740,7 +997,9 @@ export {
   mockPayTypeCollect,
   mockPrivilege,
   mockRemovedEnterpriseAccounts,
+  mockSellCalculations,
   mockSetMeals,
+  mockStaffs,
   mockTableAreas,
   mockTables,
 }

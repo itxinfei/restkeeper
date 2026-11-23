@@ -9,6 +9,7 @@
  */
 
 import type {
+  Credit,
   CurrentHourCollectDTO,
   Dish,
   DishCategory,
@@ -17,7 +18,9 @@ import type {
   OrderEntity,
   PayTypeCollectDTO,
   PrivilegeDTO,
+  SellCalculation,
   SetMeal,
+  Staff,
   SysDictionary,
   Table,
   TableArea,
@@ -315,4 +318,60 @@ export const mockOperatorUsers: MockOperatorUser[] = [
   { uid: '1', loginname: 'admin', name: '王运营', role: '平台运营', status: '启用', lastLogin: '2026-11-22 09:12' },
   { uid: '2', loginname: 'ops01', name: '陈晓', role: '运营', status: '启用', lastLogin: '2026-11-21 18:40' },
   { uid: '3', loginname: 'ops02', name: '刘洋', role: '客服', status: '停用', lastLogin: '2026-10-30 11:05' },
+]
+
+/* ---------------- 员工（store 域，示意） ---------------- */
+
+export const mockStaffs: Staff[] = [
+  { staffId: 'S001', staffName: '李国栋', phone: '13801002301', sex: '男', idNumber: '110101199001011234', status: 1 },
+  { staffId: 'S002', staffName: '张倩', phone: '13801002302', sex: '女', idNumber: '110101199203022345', status: 1 },
+  { staffId: 'S003', staffName: '王强', phone: '13801002303', sex: '男', status: 0 },
+  { staffId: 'S004', staffName: '刘敏', phone: '13801002304', sex: '女', status: 1 },
+]
+
+/* ---------------- 挂账（store 域，示意，金额单位：分） ---------------- */
+
+export const mockCredits: Credit[] = [
+  {
+    creditId: 'CR001',
+    creditType: 1,
+    companyName: '心飞科技有限公司',
+    userName: '陈国栋',
+    phone: '13901001101',
+    status: 1,
+    creditAmount: 500000,
+    totalRepaymentAmount: 320000,
+    users: [
+      { id: 'CU001', creditId: 'CR001', userName: '陈国栋', phone: '13901001101' },
+      { id: 'CU002', creditId: 'CR001', userName: '林晓', phone: '13901001102' },
+    ],
+  },
+  {
+    creditId: 'CR002',
+    creditType: 2,
+    userName: '赵敏',
+    phone: '13901001103',
+    status: 1,
+    creditAmount: 80000,
+    totalRepaymentAmount: 20000,
+  },
+  {
+    creditId: 'CR003',
+    creditType: 1,
+    companyName: '蓝湾贸易',
+    userName: '孙浩',
+    phone: '13901001104',
+    status: 0,
+    creditAmount: 120000,
+    totalRepaymentAmount: 120000,
+  },
+]
+
+/* ---------------- 沽清（store 域，示意） ---------------- */
+
+export const mockSellCalculations: SellCalculation[] = [
+  { id: 'SC001', dishId: 'D001', dishName: '招牌红烧肉', dishType: 1, sellLimitTotal: 20, remainder: 3 },
+  { id: 'SC002', dishId: 'D002', dishName: '清蒸鲈鱼', dishType: 1, sellLimitTotal: 10, remainder: 0 },
+  { id: 'SC003', dishId: 'D007', dishName: '夫妻肺片', dishType: 1, sellLimitTotal: 15, remainder: 4 },
+  { id: 'SC004', dishId: 'D014', dishName: '家庭四人餐', dishType: 2, sellLimitTotal: 8, remainder: 2 },
 ]

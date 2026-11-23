@@ -43,19 +43,19 @@ export const router = createRouter({
         {
           path: 'staff',
           name: 'staff',
-          component: () => import('./views/PlaceholderView.vue'),
+          component: () => import('./views/StaffView.vue'),
           meta: { title: '员工管理', group: '经营' },
         },
         {
           path: 'credit',
           name: 'credit',
-          component: () => import('./views/PlaceholderView.vue'),
+          component: () => import('./views/CreditView.vue'),
           meta: { title: '挂账管理', group: '账务' },
         },
         {
           path: 'soldout',
           name: 'soldout',
-          component: () => import('./views/PlaceholderView.vue'),
+          component: () => import('./views/SoldoutView.vue'),
           meta: { title: '沽清管理', group: '账务' },
         },
         {
