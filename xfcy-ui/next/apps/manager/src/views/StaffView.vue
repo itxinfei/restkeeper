@@ -6,6 +6,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPagination,
   XfPanel,
   XfSelect,
@@ -198,6 +199,12 @@ async function confirmToggleStatus() {
 </script>
 
 <template>
+  <XfPageHead title="员工管理" description="员工账号、状态与初始密码">
+    <template #actions>
+      <XfButton @click="openCreate">＋ 新增员工</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-toolbar">
     <div class="xfm-toolbar__search">
       <XfInput v-model="nameKeyword" placeholder="姓名" />
@@ -207,7 +214,6 @@ async function confirmToggleStatus() {
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
     <div class="xfm-toolbar__grow"></div>
-    <XfButton @click="openCreate">＋ 新增员工</XfButton>
   </div>
 
   <XfPanel>

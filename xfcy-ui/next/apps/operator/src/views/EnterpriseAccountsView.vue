@@ -6,6 +6,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPagination,
   XfPanel,
   XfSelect,
@@ -210,6 +211,12 @@ onMounted(() => {
 </script>
 
 <template>
+  <XfPageHead title="企业管理" description="企业账号、套餐与状态总览">
+    <template #actions>
+      <XfButton @click="openCreate">＋ 开通企业</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfo-toolbar">
     <div class="xfo-toolbar__search">
       <XfInput v-model="store.keyword" placeholder="搜索企业名称（服务端模糊）" />
@@ -227,7 +234,6 @@ onMounted(() => {
     </XfButton>
     <div class="xfo-toolbar__grow"></div>
     <span class="xfo-muted">{{ isMockMode() ? '数据源：@xfcy/api mock' : '数据源：真实后端' }}</span>
-    <XfButton @click="openCreate">＋ 开通企业</XfButton>
   </div>
 
   <XfPanel>

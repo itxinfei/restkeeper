@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag, labelOf, payTypeLabel, toneOf } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfKpi, XfPageHead, XfPanel, XfTable, XfTag, labelOf, payTypeLabel, toneOf } from '@xfcy/ui'
 import {
   demoDashboardKpis,
   demoLatestOrders,
@@ -140,6 +140,8 @@ onMounted(load)
 </script>
 
 <template>
+  <XfPageHead title="工作台" description="今日经营概览、桌台与沽清实时状态" />
+
   <XfEmpty
     v-if="error"
     title="工作台数据加载失败"

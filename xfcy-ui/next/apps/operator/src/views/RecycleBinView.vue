@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { XfButton, XfErrorState, XfModal, XfPanel, XfTable, useToast } from '@xfcy/ui'
+import {
+  XfButton,
+  XfErrorState,
+  XfModal,
+  XfPageHead,
+  XfPanel,
+  XfTable,
+  useToast,
+} from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useEnterpriseStore } from '../stores/enterprise'
 import type { RecycleRow } from '../stores/enterprise'
@@ -72,12 +80,17 @@ onMounted(() => {
 </script>
 
 <template>
+  <XfPageHead title="回收站" description="已删除企业可恢复或彻底删除">
+    <template #actions>
+      <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
+        {{ store.loading ? '刷新中…' : '刷新' }}
+      </XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfo-toolbar">
     <span class="xfo-muted">{{ summary }} · 数据源：{{ isMockMode() ? '@xfcy/api mock' : '真实后端' }}</span>
     <div class="xfo-toolbar__grow"></div>
-    <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
-      {{ store.loading ? '刷新中…' : '刷新' }}
-    </XfButton>
   </div>
 
   <XfPanel>

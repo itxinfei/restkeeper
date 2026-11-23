@@ -7,6 +7,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPanel,
   XfSelect,
   XfTabs,
@@ -246,6 +247,13 @@ async function saveArea() {
 </script>
 
 <template>
+  <XfPageHead title="桌台管理" description="区域、桌台与状态总览">
+    <template #actions>
+      <XfButton variant="secondary" @click="openAreaModal">＋ 新增区域</XfButton>
+      <XfButton @click="openTableModal">＋ 新增桌台</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-toolbar">
     <div class="xfm-toolbar__select">
       <XfSelect v-model="statusFilter" :options="statusOptions" />
@@ -254,8 +262,6 @@ async function saveArea() {
       共 {{ stat.total }} 桌 · 空闲 {{ stat.free }} · 开台 {{ stat.open }} · 锁定 {{ stat.locked }}
     </span>
     <div class="xfm-toolbar__grow"></div>
-    <XfButton variant="secondary" @click="openAreaModal">＋ 新增区域</XfButton>
-    <XfButton @click="openTableModal">＋ 新增桌台</XfButton>
   </div>
 
   <XfTabs v-model="activeAreaId" :tabs="areaTabs" />

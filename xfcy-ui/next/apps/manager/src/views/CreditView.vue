@@ -6,6 +6,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPagination,
   XfPanel,
   XfSelect,
@@ -403,6 +404,15 @@ async function confirmToggleStatus() {
 </script>
 
 <template>
+  <XfPageHead title="挂账管理" description="挂账主体、还款与流水">
+    <template #actions>
+      <XfButton v-if="activeTab === 'subject'" @click="openCreate">＋ 新增挂账</XfButton>
+      <XfButton v-else :disabled="exporting" @click="exportLog">
+        {{ exporting ? '导出中…' : '导出流水' }}
+      </XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-tabs">
     <XfTabs v-model="activeTab" :tabs="tabs" />
   </div>
@@ -417,7 +427,6 @@ async function confirmToggleStatus() {
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
     <div class="xfm-toolbar__grow"></div>
-    <XfButton @click="openCreate">＋ 新增挂账</XfButton>
   </div>
 
   <XfPanel>
@@ -478,9 +487,6 @@ async function confirmToggleStatus() {
       </XfField>
       <XfButton variant="secondary" @click="searchLogs">查询</XfButton>
       <div class="xfm-toolbar__grow"></div>
-      <XfButton :disabled="exporting" @click="exportLog">
-        {{ exporting ? '导出中…' : '导出流水' }}
-      </XfButton>
     </div>
 
     <XfPanel>

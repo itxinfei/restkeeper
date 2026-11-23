@@ -19,17 +19,17 @@
 | 项 | 现状 | 问题 |
 |---|---|---|
 | 设计 token | `packages/ui/tokens.css`，各端引用 | ✅ 已统一 |
-| 组件库 | `@xfcy/ui` 12 组件（Button/Input/Select/Table/Modal/Panel/Kpi/Tag/Tabs/Field/Pagination/Empty） | ✅ 已统一，Vitest 61 用例 |
-| 应用布局 | manager / operator 各一份 `AppLayout.vue` + 一份 `layout.css` | ❌ **两套近乎重复实现**（前缀 `xfm-` / `xfo-`），维护双倍 |
-| 收银端布局 | `PosLayout.vue` + `layout.css`（`xfc-`） | ⚠️ 与 B 端未复用顶部用户菜单/时间逻辑 |
-| 页面骨架 | 各页自己拼 `toolbar / kpis / cols / side` | ❌ 无统一页面头（标题+说明+主操作）与筛选栏规范 |
-| 轻提示 | Dishes/Credit/Soldout/Reports 各写 `noticeOpen + XfModal` | ❌ **4 处重复且语义错误**（用模态承载 toast，遮罩打断操作） |
-| 空状态 | `XfEmpty` 仅 Dishes/Tables/Placeholder 使用 | ❌ 列表/面板空态不统一 |
-| 用户菜单 | 三端各写 avatar + 外部点击关闭 | ❌ 重复逻辑 |
-| user store | manager/operator/cashier 各一份 `useUserStore` | ❌ 高度重复 |
-| 响应式 | 三端各有 `@media` 断点，阈值不一（560/900/1100/1180） | ⚠️ 断点未按 DESIGN.md §7 统一 |
-| 路由守卫 | 三端各一份 `beforeEach` | ⚠️ 重复但简单，可后置 |
-| 登录页 | 三端各一份 `LoginView.vue` | ⚠️ 视觉一致但代码重复（含双身份分发逻辑） |
+| 组件库 | `@xfcy/ui` 19 组件（Button/Input/Select/Table/Modal/Panel/Kpi/Tag/Tabs/Field/Pagination/Empty/ErrorState/AppShell/UserMenu/LoginPage/ToastHost/DemoBadge/PageHead） | ✅ 已统一，Vitest 101 用例 |
+| 应用布局 | `XfAppShell` + `XfUserMenu`，manager/operator 共用 | ✅ 已统一（B4） |
+| 收银端布局 | `PosLayout.vue` + `layout.css`（`xfc-`） | ✅ 复用 `XfUserMenu`（B4） |
+| 页面骨架 | `XfPageHead`（标题+说明+主操作），manager/operator 全部列表页接入 | ✅ 已统一（B9） |
+| 轻提示 | `useToast()` + `XfToastHost` | ✅ 已统一（B1） |
+| 空状态 | `XfEmpty`（图标位+主/副文案+主操作，支持 `actionText`/`@action`） | ✅ 已统一（B1/B9） |
+| 用户菜单 | `XfUserMenu`（B 端默认 / `touch` 触屏态） | ✅ 已统一（B4） |
+| user store | `@xfcy/auth` `createUserStore(kind, defaults)` | ✅ 已统一（B7） |
+| 响应式 | 三端断点统一 1280 / 1024 / 768 / 560 | ✅ 已统一（B4） |
+| 路由守卫 | `@xfcy/auth` `createAuthGuard({loginName, homeName, isLoggedIn})` | ✅ 已统一（B7） |
+| 登录页 | `XfLoginPage`（props 注入品牌/副标题/尺寸），三端薄封装 | ✅ 已统一（B7） |
 
 ### 2.2 管家端（manager）
 
@@ -156,6 +156,7 @@
 | **B6（运营/口径收口）** ✅ | 企业账号服务端分页 + 开通密码提示、员工停用确认、菜品余量接沽清、C 端支付打桩标注 | operator/manager/microapp |
 | **B7（登录复用）** ✅ | 登录页/用户 store/路由守卫抽公共（`@xfcy/auth` + `XfLoginPage`） | 三端 |
 | **B8（清零收口）** ✅ | G6 真正落地（页面统一 toneOf/labelOf）、K16 检索空态、K19 报表口径、安全区与批量反馈收口 | 全部页面 |
+| **B9（页面头落地）** ✅ | G1 真正落地（`XfPageHead` 全端接入）、`XfEmpty` 空态操作（`actionText`/`@action`） | manager/operator |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -185,3 +186,7 @@
 > - **K19**：报表页固定展示口径提示——历史订单仅归档在 `t_his_order` / `t_his_order_detail`，区间跨归档日期时历史段可能不连续。
 > - **C 端安全区**：`index.html` viewport 补 `viewport-fit=cover`；购物车 / 下单确认 / 支付结果页底部留白改为 `calc(120px + env(safe-area-inset-bottom))`。
 > - **批量反馈**：菜品列表新增勾选列，批量停售按已选数量执行并 Toast 反馈结果，未勾选时按钮禁用。
+>
+> B9 已落地：
+> - **G1 页面骨架真正落地**：新增 `XfPageHead` 组件（标题 + 说明 + 主操作插槽），`layout.css` 补 `.xf-page__text` / `.xf-page__actions` 规则；manager 7 页（Dashboard/Dishes/Tables/Staff/Credit/Soldout/Reports）与 operator 5 页（企业管理/回收站/字典管理/运营人员/服务监控）全部接入，主操作按钮统一迁入页面头 actions（如 Dishes 的批量停售/新增、Credit 的新增挂账/导出流水）。
+> - **空态操作**：`XfEmpty` 新增 `actionText` prop 与 `action` emit（也支持 `#action` 插槽），修复 Dashboard 重试按钮因无效 prop 不渲染的问题（G3「加载失败 + 重试」闭环）。

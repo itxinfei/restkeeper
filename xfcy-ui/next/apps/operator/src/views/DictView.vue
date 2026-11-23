@@ -5,6 +5,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPanel,
   XfSelect,
   XfTable,
@@ -212,6 +213,12 @@ onMounted(load)
 </script>
 
 <template>
+  <XfPageHead title="字典管理" description="系统字典的类型、编码与启停">
+    <template #actions>
+      <XfButton :disabled="!writable" @click="openCreate">＋ 新增字典</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfo-toolbar">
     <div class="xfo-toolbar__search">
       <XfInput v-model="keyword" placeholder="搜索类型 / 编码 / 值" />
@@ -220,7 +227,6 @@ onMounted(load)
     <span class="xfo-muted">
       共 {{ rows.length }} 项 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}
     </span>
-    <XfButton :disabled="!writable" @click="openCreate">＋ 新增字典</XfButton>
   </div>
 
   <XfPanel>

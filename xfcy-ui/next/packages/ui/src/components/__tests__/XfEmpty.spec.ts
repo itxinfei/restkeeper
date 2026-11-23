@@ -20,4 +20,12 @@ describe('XfEmpty', () => {
     const wrapper = mount(XfEmpty, { slots: { action: '<button>刷新</button>' } })
     expect(wrapper.get('.xf-empty__action').text()).toBe('刷新')
   })
+
+  it('renders actionText as a button and emits action', async () => {
+    const wrapper = mount(XfEmpty, { props: { actionText: '重试' } })
+    const action = wrapper.get('.xf-empty__action button')
+    expect(action.text()).toBe('重试')
+    await action.trigger('click')
+    expect(wrapper.emitted('action')).toHaveLength(1)
+  })
 })

@@ -5,6 +5,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPanel,
   XfSelect,
   XfTable,
@@ -223,10 +224,15 @@ onMounted(load)
 </script>
 
 <template>
+  <XfPageHead title="运营人员" description="账号、角色与启停状态">
+    <template #actions>
+      <XfButton :disabled="!writable" @click="openCreate">＋ 新增运营人员</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfo-toolbar">
     <span class="xfo-muted">共 {{ rows.length }} 名运营人员 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}</span>
     <div class="xfo-toolbar__grow"></div>
-    <XfButton :disabled="!writable" @click="openCreate">＋ 新增运营人员</XfButton>
   </div>
 
   <XfPanel>

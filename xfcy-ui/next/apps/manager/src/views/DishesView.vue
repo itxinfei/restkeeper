@@ -8,6 +8,7 @@ import {
   XfInput,
   XfModal,
   XfPagination,
+  XfPageHead,
   XfPanel,
   XfSelect,
   XfTable,
@@ -525,6 +526,20 @@ function toggleFlavor(row: FlavorRow) {
 </script>
 
 <template>
+  <XfPageHead title="菜品管理" description="维护菜品、套餐、分类与口味库">
+    <template #actions>
+      <XfButton
+        v-if="activeTab === 'dish'"
+        variant="secondary"
+        :disabled="dishSelected.size === 0"
+        @click="batchForbid"
+      >
+        批量停售{{ dishSelected.size ? `（${dishSelected.size}）` : '' }}
+      </XfButton>
+      <XfButton v-if="activeTab === 'dish'" @click="openDishModal">＋ 新增菜品</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-tabs">
     <XfTabs v-model="activeTab" :tabs="tabs" />
   </div>
@@ -544,10 +559,6 @@ function toggleFlavor(row: FlavorRow) {
         <XfSelect v-model="statusFilter" :options="statusOptions" />
       </div>
       <div class="xfm-toolbar__grow"></div>
-      <XfButton variant="secondary" :disabled="dishSelected.size === 0" @click="batchForbid">
-        批量停售{{ dishSelected.size ? `（${dishSelected.size}）` : '' }}
-      </XfButton>
-      <XfButton @click="openDishModal">＋ 新增菜品</XfButton>
     </div>
 
     <XfPanel>

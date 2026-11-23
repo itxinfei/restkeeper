@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { monitorKpis, serviceList } from '../api/mock'
 import type { ServiceRow } from '../api/mock'
-import { XfKpi, XfPanel, XfTable, XfTag, labelOf, toneOf } from '@xfcy/ui'
+import { XfKpi, XfPageHead, XfPanel, XfTable, XfTag, labelOf, toneOf } from '@xfcy/ui'
 
 type Column = {
   key: string
@@ -30,6 +30,8 @@ const kpiTrend: Record<string, 'up' | 'down' | 'flat'> = {
 </script>
 
 <template>
+  <XfPageHead title="服务监控" description="Nacos 服务注册、心跳与告警（示意）" />
+
   <section class="xfo-monitor" aria-label="服务监控 KPI（示意）">
     <XfKpi
       v-for="kpi in monitorKpis"

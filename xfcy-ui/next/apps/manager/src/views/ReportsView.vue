@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { XfButton, XfField, XfInput, XfKpi, XfPanel, XfTabs, useToast } from '@xfcy/ui'
+import { XfButton, XfField, XfInput, XfKpi, XfPageHead, XfPanel, XfTabs, useToast } from '@xfcy/ui'
 import { formatYuan, order } from '@xfcy/api'
 import type {
   CurrentAmountCollectDTO,
@@ -140,6 +140,15 @@ function exportCsv() {
 </script>
 
 <template>
+  <XfPageHead title="经营报表" description="营业数据、分时与收款构成">
+    <template #actions>
+      <XfButton variant="secondary" @click="toast.info('报表区间为左闭右开，传「今天/明天」即当日。')">
+        口径说明
+      </XfButton>
+      <XfButton @click="exportCsv">导出 CSV</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-toolbar">
     <XfField label="开始日期">
       <template #default="{ id }">
@@ -153,10 +162,6 @@ function exportCsv() {
     </XfField>
     <div class="xfm-toolbar__grow"></div>
     <span v-if="loading" class="xfm-muted">加载中…</span>
-    <XfButton variant="secondary" @click="toast.info('报表区间为左闭右开，传「今天/明天」即当日。')">
-      口径说明
-    </XfButton>
-    <XfButton @click="exportCsv">导出 CSV</XfButton>
     <XfButton @click="load">查询</XfButton>
   </div>
 

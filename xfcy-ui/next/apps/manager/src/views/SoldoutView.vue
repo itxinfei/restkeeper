@@ -6,6 +6,7 @@ import {
   XfField,
   XfInput,
   XfModal,
+  XfPageHead,
   XfPagination,
   XfPanel,
   XfSelect,
@@ -177,6 +178,12 @@ async function remove(row: SoldoutRow) {
 </script>
 
 <template>
+  <XfPageHead title="沽清管理" description="菜品 / 套餐限量与余量">
+    <template #actions>
+      <XfButton @click="openCreate">＋ 新增沽清</XfButton>
+    </template>
+  </XfPageHead>
+
   <div class="xfm-toolbar">
     <div class="xfm-toolbar__search">
       <XfInput v-model="keyword" placeholder="菜品名称" />
@@ -186,7 +193,6 @@ async function remove(row: SoldoutRow) {
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
     <div class="xfm-toolbar__grow"></div>
-    <XfButton @click="openCreate">＋ 新增沽清</XfButton>
   </div>
 
   <XfPanel>

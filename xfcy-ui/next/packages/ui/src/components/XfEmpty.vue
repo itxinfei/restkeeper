@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { useSlots } from 'vue'
+import XfButton from './XfButton.vue'
 
 withDefaults(
   defineProps<{
     title?: string
     description?: string
+    /** 快捷操作文案；传入后渲染次要按钮并触发 action 事件 */
+    actionText?: string
   }>(),
-  { title: '', description: '' },
+  { title: '', description: '', actionText: '' },
 )
+
+const emit = defineEmits<{ (e: 'action'): void }>()
 
 const slots = useSlots()
 </script>
@@ -25,8 +30,10 @@ const slots = useSlots()
     </div>
     <p v-if="title" class="xf-empty__title">{{ title }}</p>
     <p v-if="description" class="xf-empty__description">{{ description }}</p>
-    <div v-if="slots.action" class="xf-empty__action">
-      <slot name="action" />
+    <div v-if="slots.action || actionText" class="xf-empty__action">
+      <slot name="action">
+        <XfButton variant="secondary" @click="emit('action')">{{ actionText }}</XfButton>
+      </slot>
     </div>
   </div>
 </template>
