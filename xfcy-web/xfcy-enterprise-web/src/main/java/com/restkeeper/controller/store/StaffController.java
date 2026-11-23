@@ -44,9 +44,9 @@ public class StaffController {
         return result;
     }
 
-    @Operation(summary = "新增员工")
+    @Operation(summary = "新增员工（返回初始登录密码）")
     @PostMapping("/add")
-    public boolean add(@RequestBody Staff staff) {
+    public String add(@RequestBody Staff staff) {
         return staffService.addStaff(staff);
     }
 

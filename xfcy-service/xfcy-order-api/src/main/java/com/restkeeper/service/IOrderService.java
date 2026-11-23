@@ -7,6 +7,7 @@ import com.restkeeper.dto.DetailDTO;
 import com.restkeeper.dto.PayTypeCollectDTO;
 import com.restkeeper.dto.PrivilegeDTO;
 import com.restkeeper.entity.OrderEntity;
+import com.restkeeper.http.PageResult;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -72,6 +73,16 @@ public interface IOrderService {
     PrivilegeDTO getPrivilegeCollect(
             @RequestParam("start") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam("end") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end);
+
+    //订单分页（只读；按最后更新时间倒序，可选时间区间/支付状态/支付方式/流水号）
+    @GetExchange("/page/{pageNum}/{pageSize}")
+    PageResult<OrderEntity> queryPage(@PathVariable("pageNum") int pageNum,
+                                      @PathVariable("pageSize") int pageSize,
+                                      @RequestParam(value = "start", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+                                      @RequestParam(value = "end", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+                                      @RequestParam(value = "payStatus", required = false) Integer payStatus,
+                                      @RequestParam(value = "payType", required = false) Integer payType,
+                                      @RequestParam(value = "orderNumber", required = false) String orderNumber);
 
     //按主键查询订单
     @GetExchange("/{id}")

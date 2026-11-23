@@ -6,6 +6,7 @@ import com.restkeeper.dto.DetailDTO;
 import com.restkeeper.entity.OrderDetailEntity;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReverseOrder;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.service.IOrderService;
 import com.restkeeper.service.IReverseOrderService;
 import com.restkeeper.store.entity.Dish;
@@ -20,6 +21,7 @@ import com.restkeeper.vo.OrderDetailVO;
 import com.restkeeper.vo.OrderVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,6 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -177,6 +180,20 @@ public class OrderController {
     public boolean changeTable(@RequestParam("orderId") String orderId,
                                @RequestParam("targetTableId") String targetTableId) {
         return orderService.changeTable(orderId, targetTableId);
+    }
+
+    @Operation(summary = "订单分页")
+    @GetMapping("/order/page/{pageNum}/{pageSize}")
+    public PageResult<OrderEntity> page(@PathVariable("pageNum") int pageNum,
+                                        @PathVariable("pageSize") int pageSize,
+                                        @RequestParam(value = "start", required = false)
+                                        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+                                        @RequestParam(value = "end", required = false)
+                                        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+                                        @RequestParam(value = "payStatus", required = false) Integer payStatus,
+                                        @RequestParam(value = "payType", required = false) Integer payType,
+                                        @RequestParam(value = "orderNumber", required = false) String orderNumber) {
+        return orderService.queryPage(pageNum, pageSize, start, end, payStatus, payType, orderNumber);
     }
 
     @Operation(summary = "按流水号查已付订单（反结账入口）")

@@ -35,9 +35,9 @@ public interface IStaffService {
     @PutExchange("/pause/{id}")
     boolean pause(@PathVariable("id") String id);
 
-    //新增员工信息
+    //新增员工信息（返回实际生效的登录密码：未传密码时后端生成 8 位随机数字）
     @PostExchange("/add")
-    boolean addStaff(@RequestBody Staff staff);
+    String addStaff(@RequestBody Staff staff);
 
     //登录
     @PostExchange("/login")

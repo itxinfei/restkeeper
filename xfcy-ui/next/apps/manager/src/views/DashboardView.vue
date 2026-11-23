@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag, payTypeLabel } from '@xfcy/ui'
 import {
   demoDashboardKpis,
   demoLatestOrders,
@@ -111,8 +111,26 @@ async function load() {
         danger: (item.remainder ?? 0) <= 2,
       }))
 
-    // 最新订单：无订单列表契约，real 模式不渲染演示数据
-    latestOrders.value = []
+    // 最新订单：只读分页契约（时间区间与报表口径一致，左闭右开）
+    const ordersPage = await order.page(1, 6, {
+      start: isoDate(now),
+      end: isoDate(new Date(now.getTime() + 86_400_000)),
+    })
+    latestOrders.value = (ordersPage.records ?? []).map((item, index) => {
+      const paid = item.payStatus === 1
+      const credit = item.payType === 5
+      const status: DemoOrderStatus = paid ? (credit ? '挂账' : '已结') : '未结'
+      return {
+        id: index + 1,
+        orderNo: item.orderNumber ?? item.orderId ?? '—',
+        table: item.tableId ?? '—',
+        guests: item.personNumbers ?? 0,
+        amount: formatYuan(item.payAmount ?? item.totalAmount ?? 0),
+        pay: payTypeLabel(item.payType),
+        status,
+        time: (item.lastUpdateTime ?? '').slice(11, 16) || '—',
+      }
+    })
   } catch (err) {
     error.value = err instanceof Error ? err.message : '数据加载失败'
   }
@@ -175,8 +193,8 @@ onMounted(load)
         </XfTable>
         <XfEmpty
           v-else
-          title="暂无订单数据"
-          description="订单列表契约未开放，暂无法展示实时订单"
+          title="今日暂无订单"
+          description="订单产生后将在此展示"
         />
       </XfPanel>
 

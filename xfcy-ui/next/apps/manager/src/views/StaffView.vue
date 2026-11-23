@@ -95,6 +95,9 @@ const sexOptions = [
 
 const modalOpen = ref(false)
 const editing = ref<StaffRow | null>(null)
+const passwordOpen = ref(false)
+const initialPassword = ref('')
+const copied = ref(false)
 const form = ref({ name: '', phone: '', sex: '男', idNumber: '', password: '' })
 const errors = ref({ name: '', phone: '', password: '' })
 
@@ -124,8 +127,7 @@ async function save() {
   errors.value = { name: '', phone: '', password: '' }
   if (!name) errors.value.name = '请填写员工姓名'
   if (!phone) errors.value.phone = '请填写手机号'
-  if (!editing.value && !form.value.password) errors.value.password = '请设置初始密码'
-  if (errors.value.name || errors.value.phone || errors.value.password) return
+  if (errors.value.name || errors.value.phone) return
 
   const payload: Staff = {
     staffName: name,
@@ -137,11 +139,26 @@ async function save() {
   }
   if (editing.value) {
     await staff.update({ ...payload, staffId: editing.value.id })
+    toast.success(`已保存「${name}」`)
   } else {
-    await staff.add(payload)
+    const generated = await staff.add(payload)
+    initialPassword.value = generated ?? form.value.password
+    passwordOpen.value = true
   }
   modalOpen.value = false
   await load()
+}
+
+async function copyPassword() {
+  try {
+    await navigator.clipboard.writeText(initialPassword.value)
+    copied.value = true
+    window.setTimeout(() => {
+      copied.value = false
+    }, 1600)
+  } catch {
+    toast.error('复制失败，请手动选择密码')
+  }
 }
 
 /* ---------------- 停用 / 启用 ---------------- */
@@ -225,9 +242,8 @@ async function toggleStatus(row: StaffRow) {
       </XfField>
       <XfField
         :label="editing ? '重置密码' : '初始密码'"
-        :required="!editing"
         :error="errors.password || ''"
-        :hint="editing ? '留空表示不修改密码' : ''"
+        :hint="editing ? '留空表示不修改密码' : '留空由系统生成 8 位数字'"
       >
         <template #default="{ id }">
           <XfInput :id="id" v-model="form.password" type="password" placeholder="如 123456" />
@@ -240,5 +256,17 @@ async function toggleStatus(row: StaffRow) {
     </template>
   </XfModal>
 
-  <!-- 提示 -->
+  <!-- 初始密码告知（新增成功后必须展示，否则员工无法登录） -->
+  <XfModal v-model:open="passwordOpen" title="员工初始密码">
+    <p class="xfm-muted">请将该密码告知员工，员工登录使用姓名 + 此密码。</p>
+    <div class="xfm-pwd">
+      <code class="xfm-pwd__code xf-num">{{ initialPassword || '—' }}</code>
+      <XfButton size="sm" variant="secondary" @click="copyPassword">
+        {{ copied ? '已复制' : '复制' }}
+      </XfButton>
+    </div>
+    <template #footer>
+      <XfButton @click="passwordOpen = false">我已知晓</XfButton>
+    </template>
+  </XfModal>
 </template>

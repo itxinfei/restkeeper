@@ -71,8 +71,12 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
      * 新增员工：未指定密码时生成 8 位随机初始密码，BCrypt 加密入库
      */
     @Transactional
-    public boolean addStaff(Staff staff) {
-        return super.save(encodePassword(staff));
+    public String addStaff(Staff staff) {
+        String rawPassword = StringUtils.hasText(staff.getPassword())
+                ? staff.getPassword()
+                : RandomCodeUtil.randomNumeric(8);
+        staff.setPassword(rawPassword);
+        return super.save(encodePassword(staff)) ? rawPassword : null;
     }
 
     /**

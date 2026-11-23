@@ -150,8 +150,8 @@
 |---|---|---|
 | **B1（全局基础）** ✅ | G1 骨架类、G2 Toast、G3 空状态、G6 枚举 tone | 全部页面 |
 | **B2（数据可信）** ✅ | G4 演示标识 + real 兜底治理、Dashboard 补齐 | manager / operator |
-| **B3（业务兜底）** | G7 员工密码/回收站/反结账/退菜差额 | manager/operator/cashier |
+| **B3（业务兜底）** 部分 | G7 员工密码/回收站提示已落地；反结账入口、退菜差额待做 | manager/operator/cashier |
 | **B4（复用重构）** | G5 AppShell 抽公共 + 断点统一 + 清理重复 CSS | 三端 |
 | **B5（页面精修）** | 逐页按 §4 精修（报表图表/导出、挂账流水、收银入口补全） | 逐页 |
 
-> B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page`，无契约的翻台率显式「暂无口径」、最新订单显式空态；manager 5 页与 operator 2 页具备错误态 + 重试。
+> B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。

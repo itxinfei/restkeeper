@@ -1,6 +1,7 @@
 package com.restkeeper.order.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.OrderDetailType;
 import com.restkeeper.constants.OrderPayType;
@@ -17,6 +18,7 @@ import com.restkeeper.entity.OrderDetailEntity;
 import com.restkeeper.entity.OrderDetailMealEntity;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.exception.BussinessException;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.order.mapper.OrderMapper;
 import com.restkeeper.store.entity.Credit;
 import com.restkeeper.store.entity.CreditCompanyUser;
@@ -333,6 +335,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         detailWrapper.lambda().eq(OrderDetailEntity::getOrderId, orderEntity.getOrderId());
         orderEntity.setOrderDetails(orderDetailService.list(detailWrapper));
         return orderEntity;
+    }
+
+    /**
+     * 订单分页（只读）。
+     * <p>与报表口径一致：时间过滤用 lastUpdateTime（自动填充，createTime 未填充）；区间左闭右开。
+     */
+    @Override
+    public PageResult<OrderEntity> queryPage(int pageNum, int pageSize, LocalDate start, LocalDate end,
+                                             Integer payStatus, Integer payType, String orderNumber) {
+        Page<OrderEntity> page = new Page<>(pageNum, pageSize);
+        QueryWrapper<OrderEntity> wrapper = new QueryWrapper<OrderEntity>().lambda()
+                .ge(start != null, OrderEntity::getLastUpdateTime, start.atStartOfDay())
+                .lt(end != null, OrderEntity::getLastUpdateTime, end.plusDays(1).atStartOfDay())
+                .eq(payStatus != null, OrderEntity::getPayStatus, payStatus)
+                .eq(payType != null, OrderEntity::getPayType, payType)
+                .like(StringUtils.hasText(orderNumber), OrderEntity::getOrderNumber, orderNumber)
+                .orderByDesc(OrderEntity::getLastUpdateTime);
+        return PageResult.of(this.page(page, wrapper));
     }
 
     //指定日期区间经营数据统计

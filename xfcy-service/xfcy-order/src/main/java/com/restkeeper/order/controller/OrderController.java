@@ -7,6 +7,7 @@ import com.restkeeper.dto.DetailDTO;
 import com.restkeeper.dto.PayTypeCollectDTO;
 import com.restkeeper.dto.PrivilegeDTO;
 import com.restkeeper.entity.OrderEntity;
+import com.restkeeper.http.PageResult;
 import com.restkeeper.order.service.OrderServiceImpl;
 import com.restkeeper.service.IOrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +68,12 @@ public class OrderController implements IOrderService {
     @Override
     public PrivilegeDTO getPrivilegeCollect(LocalDate start, LocalDate end) {
         return orderService.getPrivilegeCollect(start, end);
+    }
+
+    @Override
+    public PageResult<OrderEntity> queryPage(int pageNum, int pageSize, LocalDate start, LocalDate end,
+                                             Integer payStatus, Integer payType, String orderNumber) {
+        return orderService.queryPage(pageNum, pageSize, start, end, payStatus, payType, orderNumber);
     }
 
     @Override

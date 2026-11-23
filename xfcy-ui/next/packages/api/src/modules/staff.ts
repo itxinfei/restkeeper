@@ -21,10 +21,10 @@ export async function page(
   return unwrap<PageResult<Staff>>(data)
 }
 
-/** 新增员工：POST /staff/add */
-export async function add(staff: Staff): Promise<boolean> {
+/** 新增员工：POST /staff/add（返回实际生效的登录密码，未传密码时后端生成） */
+export async function add(staff: Staff): Promise<string | null> {
   const { data } = await http.post('/staff/add', staff)
-  return unwrap<boolean>(data)
+  return unwrap<string | null>(data)
 }
 
 /** 按主键更新员工（含停用后重新启用：status=1）：PUT /staff */

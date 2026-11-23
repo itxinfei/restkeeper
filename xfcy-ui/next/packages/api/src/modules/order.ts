@@ -15,6 +15,7 @@ import type {
   CurrentAmountCollectDTO,
   CurrentHourCollectDTO,
   OrderEntity,
+  PageResult,
   PayTypeCollectDTO,
   PrivilegeDTO,
 } from '../types'
@@ -54,6 +55,22 @@ export async function changeTable(orderId: string, targetTableId: string): Promi
     params: { orderId, targetTableId },
   })
   return unwrap<boolean>(data)
+}
+
+/** 订单分页（只读）：GET /order/page/{pageNum}/{pageSize} */
+export async function page(
+  pageNum: number,
+  pageSize: number,
+  options?: {
+    start?: string
+    end?: string
+    payStatus?: number
+    payType?: number
+    orderNumber?: string
+  },
+): Promise<PageResult<OrderEntity>> {
+  const { data } = await http.get(`/order/page/${pageNum}/${pageSize}`, { params: options })
+  return unwrap<PageResult<OrderEntity>>(data)
 }
 
 /** 订单详情：GET /order/{id} */

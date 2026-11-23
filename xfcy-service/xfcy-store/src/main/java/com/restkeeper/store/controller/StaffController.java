@@ -38,7 +38,7 @@ public class StaffController implements IStaffService {
     }
 
     @Override
-    public boolean addStaff(Staff staff) {
+    public String addStaff(Staff staff) {
         return staffService.addStaff(staff);
     }
 

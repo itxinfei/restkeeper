@@ -548,13 +548,18 @@ const bEndRoutes: MockRoute[] = [
     pattern: /^\/staff\/add$/,
     handler: ({ body }) => {
       const staff = (body ?? {}) as Staff
-      if (!staff.staffName) return false
+      if (!staff.staffName) return null
+      const rawPassword = staff.password
+        ? String(staff.password)
+        : String(Math.floor(10000000 + Math.random() * 90000000))
+      const record = { ...staff } as Staff
+      delete record.password
       mockStaffs.unshift({
-        ...staff,
+        ...record,
         staffId: `S${String(mockStaffs.length + 1).padStart(3, '0')}`,
         status: staff.status ?? 1,
       })
-      return true
+      return rawPassword
     },
   },
   {
@@ -924,6 +929,23 @@ const bEndRoutes: MockRoute[] = [
     handler: ({ url }) => {
       const orderNumber = url.split('/').pop() as string
       return mockOrders.find((order) => order.orderNumber === orderNumber) ?? null
+    },
+  },
+  {
+    method: 'GET',
+    pattern: /^\/order\/page\/\d+\/\d+$/,
+    handler: ({ url, params }) => {
+      const [, , pageNum, pageSize] = url.split('/')
+      const page = Number(pageNum)
+      const size = Number(pageSize)
+      const keyword = params.orderNumber ? String(params.orderNumber) : ''
+      const filtered = mockOrders.filter((order) => {
+        if (params.payStatus !== undefined && order.payStatus !== Number(params.payStatus)) return false
+        if (params.payType !== undefined && order.payType !== Number(params.payType)) return false
+        if (keyword && !String(order.orderNumber ?? '').includes(keyword)) return false
+        return true
+      })
+      return paginate(filtered, page, size)
     },
   },
   {
