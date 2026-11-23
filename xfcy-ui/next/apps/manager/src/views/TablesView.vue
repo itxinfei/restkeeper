@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { XfButton, XfEmpty, XfField, XfInput, XfModal, XfPanel, XfSelect, XfTabs, XfTag } from '@xfcy/ui'
+import {
+  XfButton,
+  XfEmpty,
+  XfErrorState,
+  XfField,
+  XfInput,
+  XfModal,
+  XfPanel,
+  XfSelect,
+  XfTabs,
+  XfTag,
+} from '@xfcy/ui'
 import { table } from '@xfcy/api'
 import type { TableArea } from '@xfcy/api'
 
@@ -29,6 +40,7 @@ const areas = ref<AreaRow[]>([])
 const tables = ref<TableRow[]>([])
 const loading = ref(false)
 const loaded = ref(false)
+const error = ref('')
 
 const activeAreaId = ref<string>('all')
 const statusFilter = ref<'all' | 'free' | 'open' | 'locked'>('all')
@@ -89,6 +101,7 @@ function toRow(item: {
 async function load() {
   if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     const areaRows = (await table.areaList()) as unknown as AreaRow[]
     areas.value = areaRows
@@ -100,6 +113,8 @@ async function load() {
     )
     tables.value = pages.flatMap((page) => page.records.map(toRow))
     loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '桌台数据加载失败'
   } finally {
     loading.value = false
   }
@@ -250,7 +265,8 @@ function statusTone(status: TableStatus) {
   <XfTabs v-model="activeAreaId" :tabs="areaTabs" />
 
   <XfPanel>
-    <div v-if="loading && !loaded" class="xfm-muted">加载中…</div>
+    <XfErrorState v-if="error && !tables.length" :message="error" @retry="load" />
+    <div v-else-if="loading && !loaded" class="xfm-muted">加载中…</div>
     <div v-else-if="filteredTables.length === 0" class="xfm-tableempty">
       <XfEmpty title="暂无桌台" description="点击右上角「新增桌台」创建，或「新增区域」先建分区" />
     </div>

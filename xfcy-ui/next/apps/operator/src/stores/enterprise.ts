@@ -91,6 +91,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const removedAccounts = ref<EnterpriseAccount[]>([])
   const loading = ref(false)
   const loaded = ref(false)
+  const error = ref('')
 
   const enterpriseRows = computed<EnterpriseRow[]>(() => accounts.value.map(toEnterpriseRow))
   const recycleRows = computed<RecycleRow[]>(() => removedAccounts.value.map(toRecycleRow))
@@ -98,6 +99,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   async function load() {
     if (loading.value) return
     loading.value = true
+    error.value = ''
     try {
       const [page, removed] = await Promise.all([
         enterprise.page(1, PAGE_SIZE),
@@ -106,6 +108,8 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
       accounts.value = page.records
       removedAccounts.value = removed.records
       loaded.value = true
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : '企业账号加载失败'
     } finally {
       loading.value = false
     }
@@ -165,6 +169,7 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     removedAccounts,
     loading,
     loaded,
+    error,
     enterpriseRows,
     recycleRows,
     load,

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { XfDemoBadge } from '@xfcy/ui'
+import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 
 type NavItem = {
@@ -42,6 +44,9 @@ const navGroups: NavGroup[] = [
 const route = useRoute()
 const router = useRouter()
 const user = useUserStore()
+
+/* mock 模式数据均为演示，全局显式标识（DESIGN.md §2 数据可信） */
+const demoMode = isMockMode()
 
 const pageTitle = computed(() => String(route.meta.title ?? ''))
 const pageGroup = computed(() => String(route.meta.group ?? ''))
@@ -146,6 +151,7 @@ function logout() {
         <span class="xfo-topbar__crumb">{{ breadcrumb }}</span>
 
         <div class="xfo-topbar__right">
+          <XfDemoBadge :show="demoMode" />
           <span class="xfo-topbar__time">{{ timeText }}</span>
           <div ref="menuRef" class="xfo-user">
             <button

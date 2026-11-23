@@ -2,6 +2,7 @@
 import { onMounted, ref, watch } from 'vue'
 import {
   XfButton,
+  XfErrorState,
   XfField,
   XfInput,
   XfModal,
@@ -32,6 +33,7 @@ const total = ref(0)
 const page = ref(1)
 const loading = ref(false)
 const loaded = ref(false)
+const error = ref('')
 const nameKeyword = ref('')
 const phoneKeyword = ref('')
 
@@ -58,6 +60,7 @@ function toRow(item: Staff): StaffRow {
 async function load() {
   if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     const result = await staff.page(
       page.value,
@@ -68,6 +71,8 @@ async function load() {
     rows.value = result.records.map(toRow)
     total.value = result.total
     loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '员工列表加载失败'
   } finally {
     loading.value = false
   }
@@ -170,7 +175,8 @@ async function toggleStatus(row: StaffRow) {
   </div>
 
   <XfPanel>
-    <XfTable :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
+    <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
+    <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #status="{ row }">
         <XfTag :tone="row.status === 1 ? 'success' : 'neutral'">
           {{ row.status === 1 ? '在职' : '停用' }}

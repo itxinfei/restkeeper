@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { XfButton, XfKpi, XfPanel, XfTable, XfTag } from '@xfcy/ui'
+import { XfButton, XfEmpty, XfKpi, XfPanel, XfTable, XfTag } from '@xfcy/ui'
 import {
   demoDashboardKpis,
   demoLatestOrders,
@@ -9,8 +9,16 @@ import {
   formatYuan,
   isMockMode,
   order,
+  soldout,
+  table,
 } from '@xfcy/api'
-import type { DemoKpi, DemoOrderRow, DemoOrderStatus } from '@xfcy/api'
+import type {
+  DemoKpi,
+  DemoOrderRow,
+  DemoOrderStatus,
+  DemoSoldoutRow,
+  DemoTableStat,
+} from '@xfcy/api'
 
 type Column = {
   key: string
@@ -30,37 +38,85 @@ const columns: Column[] = [
   { key: 'time', label: '时间' },
 ]
 
-// mock 模式直接使用迁移自 api 的演示数据；real 模式按契约拉取实时统计
+/* mock 模式用迁移自 api 的演示数据；real 模式按契约拉取，失败显式报错 */
 const kpis = ref<DemoKpi[]>(demoDashboardKpis)
 const latestOrders = ref<DemoOrderRow[]>(demoLatestOrders)
-const tableStats = ref(demoTableStats)
-const soldoutRows = ref(demoSoldoutRows)
+const tableStats = ref<DemoTableStat[]>(demoTableStats)
+const soldoutRows = ref<DemoSoldoutRow[]>(demoSoldoutRows)
+
+const error = ref('')
 
 function isoDate(d: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 }
 
-onMounted(async () => {
-  if (isMockMode()) return
-  const now = new Date()
-  const start = isoDate(now)
-  const end = isoDate(new Date(now.getTime() + 24 * 60 * 60 * 1000))
+async function load() {
+  error.value = ''
+  if (isMockMode()) {
+    kpis.value = demoDashboardKpis
+    latestOrders.value = demoLatestOrders
+    tableStats.value = demoTableStats
+    soldoutRows.value = demoSoldoutRows
+    return
+  }
+
   try {
+    const now = new Date()
     // 契约：GET /order/report/currentAmount?start=&end=（区间 >=start 且 <end）
-    const stat = await order.currentAmount(start, end)
-    const avg =
-      stat.payTotal && stat.payTotalCount ? Math.round(stat.payTotal / stat.payTotalCount) : 0
+    const stat = await order.currentAmount(isoDate(now), isoDate(new Date(now.getTime() + 86_400_000)))
+    const avg = stat.payTotal && stat.payTotalCount ? Math.round(stat.payTotal / stat.payTotalCount) : 0
     kpis.value = [
       { key: 'revenue', label: '今日营业额', value: formatYuan(stat.payTotal), trend: 'flat', trendText: '' },
       { key: 'orders', label: '今日单量', value: String(stat.payTotalCount ?? 0), trend: 'flat', trendText: '' },
       { key: 'avg', label: '客单价', value: formatYuan(avg), trend: 'flat', trendText: '' },
-      { key: 'turnover', label: '翻台率', value: '—', trend: 'flat', trendText: '' },
+      // 翻台率无对应契约，显式标注口径缺失，不编造数值
+      { key: 'turnover', label: '翻台率', value: '暂无口径', trend: 'flat', trendText: '契约未提供' },
     ]
-  } catch {
-    // 保留演示数据，避免报表接口不可用时页面空白
+
+    // 桌台盘：按区域聚合三种状态计数
+    const areas = await table.areaList()
+    const counts = await Promise.all(
+      areas.flatMap((area) => {
+        const id = String(area.areaId ?? '')
+        return [0, 1, 2].map((status) => table.countByStatus(id, status))
+      }),
+    )
+    let cursor = 0
+    let free = 0
+    let opened = 0
+    let locked = 0
+    for (const _area of areas) {
+      free += Number(counts[cursor] ?? 0)
+      opened += Number(counts[cursor + 1] ?? 0)
+      locked += Number(counts[cursor + 2] ?? 0)
+      cursor += 3
+    }
+    tableStats.value = [
+      { key: 'free', label: '空闲', value: free, tone: 'normal' },
+      { key: 'opened', label: '开台', value: opened, tone: 'warn' },
+      { key: 'locked', label: '锁定', value: locked, tone: 'normal' },
+    ]
+
+    // 沽清余量：只取限量菜（remainder >= 0），按余量升序展示前 5
+    const page = await soldout.page(1, 50)
+    soldoutRows.value = (page.records ?? [])
+      .filter((item) => typeof item.remainder === 'number' && item.remainder >= 0)
+      .sort((a, b) => (a.remainder ?? 0) - (b.remainder ?? 0))
+      .slice(0, 5)
+      .map((item, index) => ({
+        id: index + 1,
+        name: item.dishName ?? '未命名',
+        remain: `余 ${item.remainder ?? 0}`,
+        danger: (item.remainder ?? 0) <= 2,
+      }))
+
+    // 最新订单：无订单列表契约，real 模式不渲染演示数据
+    latestOrders.value = []
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '数据加载失败'
   }
-})
+}
 
 function statusTone(status: DemoOrderStatus) {
   if (status === '已结') return 'success' as const
@@ -68,67 +124,94 @@ function statusTone(status: DemoOrderStatus) {
   if (status === '未结') return 'danger' as const
   return 'neutral' as const
 }
+
+onMounted(load)
 </script>
 
 <template>
-  <section class="xfm-kpis" aria-label="今日经营 KPI">
-    <XfKpi
-      v-for="kpi in kpis"
-      :key="kpi.key"
-      :label="kpi.label"
-      :value="kpi.value"
-      :trend="kpi.trend"
-      :trend-text="kpi.trendText"
-    />
-  </section>
+  <XfEmpty
+    v-if="error"
+    title="工作台数据加载失败"
+    :description="error"
+    action-text="重试"
+    @action="load"
+  />
 
-  <div class="xfm-cols">
-    <XfPanel title="最新订单">
-      <template #actions>
-        <XfButton size="sm" variant="secondary">全部订单</XfButton>
-      </template>
-      <XfTable :columns="columns" :data="latestOrders" row-key="id">
-        <template #guests="{ row }">
-          <span class="xfm-num">{{ row.guests }}</span>
-        </template>
-        <template #amount="{ row }">
-          <span class="xfm-num">{{ row.amount }}</span>
-        </template>
-        <template #status="{ row }">
-          <XfTag :tone="statusTone(row.status as DemoOrderStatus)">{{ row.status }}</XfTag>
-        </template>
-        <template #time="{ row }">
-          <span class="xfm-num">{{ row.time }}</span>
-        </template>
-      </XfTable>
-    </XfPanel>
+  <template v-else>
+    <section class="xfm-kpis" aria-label="今日经营 KPI">
+      <XfKpi
+        v-for="kpi in kpis"
+        :key="kpi.key"
+        :label="kpi.label"
+        :value="kpi.value"
+        :trend="kpi.trend"
+        :trend-text="kpi.trendText"
+      />
+    </section>
 
-    <div class="xfm-side">
-      <XfPanel title="桌台盘">
-        <div class="xfm-tgrid">
-          <div
-            v-for="stat in tableStats"
-            :key="stat.key"
-            class="xfm-tcell"
-            :class="{ 'is-warn': stat.tone === 'warn' }"
-          >
-            <b class="xfm-num">{{ stat.value }}</b>
-            {{ stat.label }}
-          </div>
-        </div>
-      </XfPanel>
-
-      <XfPanel title="沽清余量">
+    <div class="xfm-cols">
+      <XfPanel title="最新订单">
         <template #actions>
-          <XfButton size="sm" variant="ghost">登记</XfButton>
+          <XfButton size="sm" variant="secondary">全部订单</XfButton>
         </template>
-        <div v-for="row in soldoutRows" :key="row.id" class="xfm-rowline">
-          <span>{{ row.name }}</span>
-          <b class="xfm-num" :style="row.danger ? { color: 'var(--c-danger)' } : undefined">
-            {{ row.remain }}
-          </b>
-        </div>
+        <XfTable
+          v-if="latestOrders.length"
+          :columns="columns"
+          :data="latestOrders"
+          row-key="id"
+        >
+          <template #guests="{ row }">
+            <span class="xfm-num">{{ row.guests }}</span>
+          </template>
+          <template #amount="{ row }">
+            <span class="xfm-num">{{ row.amount }}</span>
+          </template>
+          <template #status="{ row }">
+            <XfTag :tone="statusTone(row.status as DemoOrderStatus)">{{ row.status }}</XfTag>
+          </template>
+          <template #time="{ row }">
+            <span class="xfm-num">{{ row.time }}</span>
+          </template>
+        </XfTable>
+        <XfEmpty
+          v-else
+          title="暂无订单数据"
+          description="订单列表契约未开放，暂无法展示实时订单"
+        />
       </XfPanel>
+
+      <div class="xfm-side">
+        <XfPanel title="桌台盘">
+          <div class="xfm-tgrid">
+            <div
+              v-for="stat in tableStats"
+              :key="stat.key"
+              class="xfm-tcell"
+              :class="{ 'is-warn': stat.tone === 'warn' }"
+            >
+              <b class="xfm-num">{{ stat.value }}</b>
+              {{ stat.label }}
+            </div>
+          </div>
+        </XfPanel>
+
+        <XfPanel title="沽清余量">
+          <template #actions>
+            <XfButton size="sm" variant="ghost">登记</XfButton>
+          </template>
+          <div v-for="row in soldoutRows" :key="row.id" class="xfm-rowline">
+            <span>{{ row.name }}</span>
+            <b class="xfm-num" :style="row.danger ? { color: 'var(--c-danger)' } : undefined">
+              {{ row.remain }}
+            </b>
+          </div>
+          <XfEmpty
+            v-if="!soldoutRows.length"
+            title="暂无限量菜品"
+            description="未登记沽清的菜品默认不限量"
+          />
+        </XfPanel>
+      </div>
     </div>
-  </div>
+  </template>
 </template>

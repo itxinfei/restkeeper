@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { XfSelect } from '@xfcy/ui'
+import { XfDemoBadge, XfSelect } from '@xfcy/ui'
+import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 import { useShopStore } from '../stores/shop'
 
@@ -48,6 +49,9 @@ const route = useRoute()
 const router = useRouter()
 const user = useUserStore()
 const shop = useShopStore()
+
+/* mock 模式数据均为演示，全局显式标识（DESIGN.md §2 数据可信） */
+const demoMode = isMockMode()
 
 const pageTitle = computed(() => String(route.meta.title ?? ''))
 const pageGroup = computed(() => String(route.meta.group ?? ''))
@@ -156,6 +160,7 @@ function logout() {
         <span class="xfm-topbar__crumb">{{ breadcrumb }}</span>
 
         <div class="xfm-topbar__right">
+          <XfDemoBadge :show="demoMode" />
           <XfSelect
             :model-value="shop.currentShopId"
             :options="shop.shopOptions"

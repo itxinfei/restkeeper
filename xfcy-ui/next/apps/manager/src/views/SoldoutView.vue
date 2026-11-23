@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   XfButton,
+  XfErrorState,
   XfField,
   XfInput,
   XfModal,
@@ -34,6 +35,7 @@ const total = ref(0)
 const page = ref(1)
 const loading = ref(false)
 const loaded = ref(false)
+const error = ref('')
 const keyword = ref('')
 const typeFilter = ref<'all' | '1' | '2'>('all')
 const dishes = ref<DishOption[]>([])
@@ -80,6 +82,7 @@ async function loadDishes() {
 async function load() {
   if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     const result = await soldout.page(
       page.value,
@@ -90,6 +93,8 @@ async function load() {
     rows.value = result.records.map(toRow)
     total.value = result.total
     loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '沽清列表加载失败'
   } finally {
     loading.value = false
   }
@@ -186,7 +191,8 @@ async function remove(row: SoldoutRow) {
   </div>
 
   <XfPanel>
-    <XfTable :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
+    <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
+    <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #type="{ row }">
         <XfTag :tone="row.type === 2 ? 'primary' : 'neutral'">
           {{ row.type === 2 ? '套餐' : '菜品' }}

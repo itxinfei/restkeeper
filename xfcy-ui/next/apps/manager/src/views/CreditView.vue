@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   XfButton,
+  XfErrorState,
   XfField,
   XfInput,
   XfModal,
@@ -45,6 +46,7 @@ const total = ref(0)
 const page = ref(1)
 const loading = ref(false)
 const loaded = ref(false)
+const error = ref('')
 const keyword = ref('')
 const typeFilter = ref<'all' | '1' | '2'>('all')
 
@@ -88,6 +90,7 @@ function toRow(item: Credit): CreditRow {
 async function load() {
   if (loading.value) return
   loading.value = true
+  error.value = ''
   try {
     const result = await credit.page(page.value, PAGE_SIZE, keyword.value.trim() || undefined)
     const all = result.records.map(toRow)
@@ -95,6 +98,8 @@ async function load() {
       typeFilter.value === 'all' ? all : all.filter((row) => String(row.type) === typeFilter.value)
     total.value = result.total
     loaded.value = true
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '挂账列表加载失败'
   } finally {
     loading.value = false
   }
@@ -258,7 +263,8 @@ async function toggleStatus(row: CreditRow) {
   </div>
 
   <XfPanel>
-    <XfTable :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
+    <XfErrorState v-if="error && !rows.length" :message="error" @retry="load" />
+    <XfTable v-else :columns="columns" :data="rows" :loading="loading && !loaded" row-key="id">
       <template #type="{ row }">
         <XfTag :tone="row.type === 1 ? 'primary' : 'info'">{{ row.type === 1 ? '公司' : '个人' }}</XfTag>
       </template>

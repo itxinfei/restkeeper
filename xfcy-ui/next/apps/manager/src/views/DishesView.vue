@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import {
   XfButton,
   XfEmpty,
+  XfErrorState,
   XfField,
   XfInput,
   XfModal,
@@ -141,19 +142,25 @@ function toComboRow(setMeal: ApiSetMeal): ComboRow {
 }
 
 const dishes = ref<DishRow[]>([])
+const error = ref('')
 const categories = ref<CategoryRow[]>([])
 const combos = ref<ComboRow[]>([])
 
 async function load() {
-  const [dishResult, categoryResult, comboResult] = await Promise.all([
-    dishApi.page(1, 100),
-    dishApi.categoryPage(1, 100),
-    dishApi.setMealPage(1, 100),
-  ])
-  dishes.value = dishResult.records.map(toDishRow)
-  categories.value = categoryResult.records.map(toCategoryRow)
-  combos.value = comboResult.records.map(toComboRow)
-  selectedComboId.value = comboResult.records[0]?.id ?? null
+  error.value = ''
+  try {
+    const [dishResult, categoryResult, comboResult] = await Promise.all([
+      dishApi.page(1, 100),
+      dishApi.categoryPage(1, 100),
+      dishApi.setMealPage(1, 100),
+    ])
+    dishes.value = dishResult.records.map(toDishRow)
+    categories.value = categoryResult.records.map(toCategoryRow)
+    combos.value = comboResult.records.map(toComboRow)
+    selectedComboId.value = comboResult.records[0]?.id ?? null
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '菜品数据加载失败'
+  }
 }
 
 onMounted(load)
@@ -481,6 +488,8 @@ function toggleFlavor(row: FlavorRow) {
   <div class="xfm-tabs">
     <XfTabs v-model="activeTab" :tabs="tabs" />
   </div>
+
+  <XfErrorState v-if="error && !dishes.length" :message="error" @retry="load" />
 
   <!-- ============ 菜品 ============ -->
   <template v-if="activeTab === 'dish'">

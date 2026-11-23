@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import {
   XfButton,
+  XfErrorState,
   XfField,
   XfInput,
   XfModal,
@@ -248,7 +249,13 @@ onMounted(() => {
   </div>
 
   <XfPanel>
+    <XfErrorState
+      v-if="store.error && !store.accounts.length"
+      :message="store.error"
+      @retry="store.load"
+    />
     <XfTable
+      v-else
       :columns="columns"
       :data="paged"
       row-key="id"

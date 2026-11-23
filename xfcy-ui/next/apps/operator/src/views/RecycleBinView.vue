@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { XfButton, XfModal, XfPanel, XfTable, useToast } from '@xfcy/ui'
+import { XfButton, XfErrorState, XfModal, XfPanel, XfTable, useToast } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useEnterpriseStore } from '../stores/enterprise'
 import type { RecycleRow } from '../stores/enterprise'
@@ -81,7 +81,13 @@ onMounted(() => {
   </div>
 
   <XfPanel>
+    <XfErrorState
+      v-if="store.error && !store.removedAccounts.length"
+      :message="store.error"
+      @retry="store.load"
+    />
     <XfTable
+      v-else
       :columns="columns"
       :data="rows"
       row-key="id"
