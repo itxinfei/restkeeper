@@ -10,6 +10,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  useToast,
 } from '@xfcy/ui'
 import { dish, soldout } from '@xfcy/api'
 import type { SellCalculation } from '@xfcy/api'
@@ -146,12 +147,12 @@ async function save() {
 
 /* ---------------- 数量调整 / 删除 ---------------- */
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const toast = useToast()
 
-function notify(text: string) {
-  noticeText.value = text
-  noticeOpen.value = true
+function notify(text: string, tone: 'info' | 'success' | 'warning' = 'info') {
+  if (tone === 'success') toast.success(text)
+  else if (tone === 'warning') toast.info(text)
+  else toast.info(text)
 }
 
 async function change(row: SoldoutRow, delta: number) {
@@ -166,7 +167,7 @@ async function change(row: SoldoutRow, delta: number) {
 
 async function remove(row: SoldoutRow) {
   await soldout.remove([row.id])
-  notify(`已删除「${row.name}」的沽清设置`)
+  notify(`已删除「${row.name}」的沽清设置`, 'success')
   await load()
 }
 </script>
@@ -248,11 +249,4 @@ async function remove(row: SoldoutRow) {
     </template>
   </XfModal>
 
-  <!-- 提示 -->
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 </template>

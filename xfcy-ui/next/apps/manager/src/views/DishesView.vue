@@ -12,6 +12,7 @@ import {
   XfTable,
   XfTabs,
   XfTag,
+  useToast,
 } from '@xfcy/ui'
 import { dish as dishApi, formatYuan } from '@xfcy/api'
 import type {
@@ -85,12 +86,10 @@ const activeTab = ref<TabKey>('dish')
 
 /* ---------------- 通用 ---------------- */
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const toast = useToast()
 
 function openNotice(text: string) {
-  noticeText.value = text
-  noticeOpen.value = true
+  toast.info(text)
 }
 
 function enableTone(status: string) {
@@ -738,14 +737,6 @@ function toggleFlavor(row: FlavorRow) {
       </div>
     </XfPanel>
   </template>
-
-  <!-- ============ 提示弹窗 ============ -->
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 
   <!-- ============ 菜品新增 / 编辑弹窗 ============ -->
   <XfModal

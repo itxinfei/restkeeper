@@ -1,0 +1,114 @@
+/**
+ * 页面骨架与工具栏通用样式（DESIGN.md §5.1 / §6）。
+ * 各端引入：@import '@xfcy/ui/styles/layout.css'（Vite 中直接 import）。
+ * 结构约定：页面头（标题 + 说明 + 主操作）→ 工具栏（筛选左 / 操作右）→ 内容。
+ */
+
+.xf-page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.xf-page__head {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.xf-page__head .spacer {
+  flex: 1 1 auto;
+}
+
+.xf-page__title {
+  font-size: var(--text-h2);
+  font-weight: var(--weight-title);
+  line-height: var(--leading-title);
+  color: var(--c-text);
+}
+
+.xf-page__desc {
+  margin-top: 2px;
+  font-size: var(--text-caption);
+  line-height: var(--leading-body);
+  color: var(--c-text-2);
+}
+
+.xf-page__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* 工具栏：筛选左 / 操作右，允许换行 */
+.xf-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.xf-toolbar__grow {
+  flex: 1 1 auto;
+}
+
+.xf-toolbar__item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.xf-toolbar__label {
+  font-size: var(--text-caption);
+  color: var(--c-text-2);
+  white-space: nowrap;
+}
+
+/* 内容分栏：主区 + 侧栏（≥1280 两栏，窄屏堆叠） */
+.xf-cols {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.xf-cols__side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .xf-cols {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* 列表页：工具栏 + 表格 + 分页 */
+.xf-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.xf-list__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.xf-list__foot .spacer {
+  flex: 1 1 auto;
+}
+
+.xf-muted {
+  font-size: var(--text-caption);
+  color: var(--c-text-2);
+}

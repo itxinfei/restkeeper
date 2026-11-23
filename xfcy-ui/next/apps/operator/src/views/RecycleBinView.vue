@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { XfButton, XfModal, XfPanel, XfTable } from '@xfcy/ui'
+import { XfButton, XfModal, XfPanel, XfTable, useToast } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useEnterpriseStore } from '../stores/enterprise'
 import type { RecycleRow } from '../stores/enterprise'
@@ -26,8 +26,7 @@ const store = useEnterpriseStore()
 const rows = computed(() => store.recycleRows)
 
 /* 恢复 / 彻底删除 */
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const toast = useToast()
 const confirmOpen = ref(false)
 const pendingRow = ref<RecycleRow | null>(null)
 const busy = ref(false)
@@ -38,11 +37,9 @@ async function restore(row: RecycleRow) {
   busy.value = true
   try {
     await store.restore(row.id)
-    noticeText.value = `已恢复「${row.name}」，并写回企业账号列表`
-    noticeOpen.value = true
+    toast.success(`已恢复「${row.name}」；若账号为停用状态，需再次编辑启用`)
   } catch (error) {
-    noticeText.value = error instanceof Error ? error.message : '恢复失败'
-    noticeOpen.value = true
+    toast.error(error instanceof Error ? error.message : '恢复失败')
   } finally {
     busy.value = false
   }
@@ -61,11 +58,9 @@ async function confirmDelete() {
   busy.value = true
   try {
     await store.destroy(row.id)
-    noticeText.value = `已彻底删除「${row.name}」（mock 本地生效）`
-    noticeOpen.value = true
+    toast.success(`已彻底删除「${row.name}」`)
   } catch (error) {
-    noticeText.value = error instanceof Error ? error.message : '删除失败'
-    noticeOpen.value = true
+    toast.error(error instanceof Error ? error.message : '删除失败')
   } finally {
     busy.value = false
   }
@@ -118,13 +113,6 @@ onMounted(() => {
       </template>
     </XfTable>
   </XfPanel>
-
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfo-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 
   <XfModal v-model:open="confirmOpen" title="彻底删除">
     <p class="xfo-muted">

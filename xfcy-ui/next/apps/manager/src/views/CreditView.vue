@@ -10,6 +10,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  useToast,
 } from '@xfcy/ui'
 import { credit, formatYuan } from '@xfcy/api'
 import type { Credit, CreditPayload } from '@xfcy/api'
@@ -224,8 +225,7 @@ async function saveRepay() {
 
 /* ---------------- 状态切换 ---------------- */
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const toast = useToast()
 
 async function toggleStatus(row: CreditRow) {
   const next = row.status === 1 ? 0 : 1
@@ -239,8 +239,7 @@ async function toggleStatus(row: CreditRow) {
     status: next,
     users: (row.raw?.users ?? []).map((user) => ({ userName: user.userName, phone: user.phone })),
   })
-  noticeText.value = next === 1 ? `已启用「${row.name}」` : `已停用「${row.name}」`
-  noticeOpen.value = true
+  toast.success(next === 1 ? `已启用「${row.name}」` : `已停用「${row.name}」`)
   await load()
 }
 </script>
@@ -411,11 +410,4 @@ async function toggleStatus(row: CreditRow) {
     </template>
   </XfModal>
 
-  <!-- 提示 -->
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { XfButton, XfField, XfInput, XfKpi, XfModal, XfPanel, XfTabs } from '@xfcy/ui'
+import { XfButton, XfField, XfInput, XfKpi, XfPanel, XfTabs, useToast } from '@xfcy/ui'
 import { formatYuan, order } from '@xfcy/api'
 import type {
   CurrentAmountCollectDTO,
@@ -98,13 +98,7 @@ onMounted(load)
 
 /* ---------------- 提示 ---------------- */
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
-
-function showNotice(text: string) {
-  noticeText.value = text
-  noticeOpen.value = true
-}
+const toast = useToast()
 
 // 切换金额 / 单数口径时重新拉取分时数据
 watch(metric, () => {
@@ -126,7 +120,7 @@ watch(metric, () => {
     </XfField>
     <div class="xfm-toolbar__grow"></div>
     <span v-if="loading" class="xfm-muted">加载中…</span>
-    <XfButton variant="secondary" @click="showNotice('示意：报表区间为左闭右开，传「今天/明天」即当日。')">
+    <XfButton variant="secondary" @click="toast.info('报表区间为左闭右开，传「今天/明天」即当日。')">
       口径说明
     </XfButton>
     <XfButton @click="load">查询</XfButton>
@@ -180,10 +174,4 @@ watch(metric, () => {
     </div>
   </div>
 
-  <XfModal v-model:open="noticeOpen" title="口径说明">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 </template>

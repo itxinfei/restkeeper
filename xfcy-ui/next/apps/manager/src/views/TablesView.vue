@@ -226,11 +226,6 @@ async function saveArea() {
   await load()
 }
 
-/* ---------------- 提示 ---------------- */
-
-const noticeOpen = ref(false)
-const noticeText = ref('')
-
 function statusTone(status: TableStatus) {
   if (status === '开台') return 'success' as const
   if (status === '锁定') return 'danger' as const
@@ -349,11 +344,4 @@ function statusTone(status: TableStatus) {
     </template>
   </XfModal>
 
-  <!-- 提示 -->
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 </template>

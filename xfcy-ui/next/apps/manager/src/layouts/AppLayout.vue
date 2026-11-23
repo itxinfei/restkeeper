@@ -194,7 +194,9 @@ function logout() {
       </header>
 
       <main class="xfm-content">
-        <router-view />
+        <div class="xf-page">
+          <router-view />
+        </div>
       </main>
     </div>
   </div>

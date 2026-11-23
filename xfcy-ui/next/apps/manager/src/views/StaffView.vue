@@ -10,6 +10,7 @@ import {
   XfSelect,
   XfTable,
   XfTag,
+  useToast,
 } from '@xfcy/ui'
 import { staff } from '@xfcy/api'
 import type { Staff } from '@xfcy/api'
@@ -140,19 +141,17 @@ async function save() {
 
 /* ---------------- 停用 / 启用 ---------------- */
 
-const noticeOpen = ref(false)
-const noticeText = ref('')
+const toast = useToast()
 
 async function toggleStatus(row: StaffRow) {
   if (row.status === 1) {
     await staff.pause(row.id)
-    noticeText.value = `已停用「${row.name}」`
+    toast.success(`已停用「${row.name}」`)
   } else {
     const current: Staff = row.raw ?? { staffName: row.name, staffId: row.id }
     await staff.update({ ...current, staffId: row.id, status: 1 })
-    noticeText.value = `已启用「${row.name}」`
+    toast.success(`已启用「${row.name}」`)
   }
-  noticeOpen.value = true
   await load()
 }
 </script>
@@ -236,10 +235,4 @@ async function toggleStatus(row: StaffRow) {
   </XfModal>
 
   <!-- 提示 -->
-  <XfModal v-model:open="noticeOpen" title="提示">
-    <p class="xfm-muted">{{ noticeText }}</p>
-    <template #footer>
-      <XfButton variant="secondary" @click="noticeOpen = false">知道了</XfButton>
-    </template>
-  </XfModal>
 </template>
