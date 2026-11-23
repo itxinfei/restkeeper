@@ -2,10 +2,7 @@
  * 员工模块（store 域）。
  * 契约：
  * - IStaffService @HttpExchange("/staff")
- * 网关：/staff/** → enterprise-web。
- *
- * 注意：enterprise-web 当前仅暴露 POST /staff/add；
- * 分页 / 更新 / 停用走 provider 契约路径，BFF 端点待补（mock 模式不受影响）。
+ * 网关：/staff/** → enterprise-web（分页 / 更新 / 停用端点已补齐）。
  */
 
 import { http, unwrap } from '../http'

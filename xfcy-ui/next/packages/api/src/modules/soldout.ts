@@ -2,10 +2,7 @@
  * 沽清模块（store 域）。
  * 契约：
  * - ISellCalculationService @HttpExchange("/sellCalculation")
- * 网关：/sellCalculation → cash-web。
- *
- * 注意：cash-web BFF 当前仅暴露 POST /sellCalculation 与 DELETE /sellCalculation；
- * 分页 / 余量 / 增减走 provider 契约路径，BFF 端点待补（mock 模式不受影响）。
+ * 网关：/sellCalculation/** → cash-web（分页 / 余量 / 增减端点已补齐）。
  *
  * 金额无关，数量为整数；remainder 为 -1 / undefined 表示不限量。
  */

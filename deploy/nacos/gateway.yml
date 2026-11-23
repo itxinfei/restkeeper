@@ -19,7 +19,7 @@ spring:
         - id: cash-web
           uri: lb://cash-web
           predicates:
-            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation,/search/**
+            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation/**,/search/**
         - id: microapp-web
           uri: lb://microapp-web
           predicates:

@@ -26,7 +26,7 @@ spring:
         - id: cash-web
           uri: lb://cash-web
           predicates:
-            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation,/search/**
+            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation/**,/search/**
         # 移动端 BFF（规划，8087，context-path /microApp）
         - id: microapp-web
           uri: lb://microapp-web
