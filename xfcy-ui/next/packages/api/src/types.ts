@@ -417,3 +417,43 @@ export interface LoginPayload {
   phone: string
   loginPass: string
 }
+
+/**
+ * C 端登录用户（xfcy-microapp-web dev 打桩）。
+ * 真实环境 openid 由微信 code2session 换取，shopId/storeId 由扫码上下文透传。
+ */
+export interface MicroappLoginUser {
+  openid?: string
+  shopId?: string
+  storeId?: string
+  userType?: string
+}
+
+/** C 端菜品检索文档（ES 索引 dish，字段名为下划线） */
+export interface DishEsItem {
+  id: string
+  code?: string
+  dishName?: string
+  image?: string
+  /** 1 菜品 / 2 套餐 */
+  type?: number
+  /** 单价，单位「分」 */
+  price?: number
+  /** 菜品描述（mock 检索附带，真实 DishEs 无此字段） */
+  description?: string
+  lastUpdateTime?: string
+  storeId?: string
+  shopId?: string
+}
+
+/** C 端检索结果包装 */
+export interface MicroappSearchResult<T = DishEsItem> {
+  records: T[]
+  total: number
+}
+
+/** C 端检索响应：菜品与套餐合并返回 */
+export interface MicroappSearchResponse {
+  dish?: MicroappSearchResult
+  setMeal?: MicroappSearchResult
+}

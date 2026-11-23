@@ -16,6 +16,7 @@
     "ios >= 8"
   ],
   "dependencies": {
+    "@xfcy/api": "workspace:*",
     "@tarojs/components": "4.3.3",
     "@tarojs/plugin-framework-react": "4.3.3",
     "@tarojs/plugin-platform-h5": "4.3.3",

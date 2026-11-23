@@ -1,7 +1,7 @@
 import { Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { getLastOrder } from '../../store/cart'
-import { mockStore } from '../../api/mock'
+import { getStoreInfo } from '../../api/service'
 import { yuan } from '../../utils/format'
 import './index.scss'
 
@@ -11,6 +11,7 @@ import './index.scss'
  */
 export default function Result() {
   const order = getLastOrder()
+  const store = getStoreInfo()
 
   const backToMenu = () => {
     Taro.reLaunch({ url: '/pages/menu/index' })
@@ -54,7 +55,7 @@ export default function Result() {
         <View className="result__row">
           <Text>桌台</Text>
           <Text>
-            {mockStore.tableName} · {mockStore.areaName}
+            {store.tableName} · {store.areaName}
           </Text>
         </View>
         <View className="result__row">

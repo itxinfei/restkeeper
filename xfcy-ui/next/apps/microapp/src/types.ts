@@ -36,6 +36,8 @@ export interface Dish {
   soldOut?: boolean
   /** 是否招牌 */
   signature?: boolean
+  /** 1 菜品 / 2 套餐（下单明细 dishType，缺省按分类推断） */
+  dishType?: number
 }
 
 /** 购物车行 */

@@ -2,24 +2,26 @@ import { useState } from 'react'
 import { Text, View } from '@tarojs/components'
 import Taro from '@tarojs/taro'
 import { clearCart, setLastOrder, useCart } from '../../store/cart'
-import { mockPayMethods, mockStore, submitOrder } from '../../api/mock'
+import { getPayMethods, getStoreInfo, submitOrder } from '../../api/service'
 import { yuan } from '../../utils/format'
 import './index.scss'
 
 /**
  * 下单确认（原型 microapp-cart.html 的「确认订单」用餐信息 + 提交订单部分）
- * 提交后模拟支付，跳转支付结果页。
+ * 提交后调用 /order/submit → /pay/mock，跳转支付结果页。
  */
 export default function Confirm() {
   const { items, count, total } = useCart()
-  const [payMethod, setPayMethod] = useState(mockPayMethods[0].id)
+  const payMethods = getPayMethods()
+  const store = getStoreInfo()
+  const [payMethod, setPayMethod] = useState(payMethods[0].id)
   const [submitting, setSubmitting] = useState(false)
 
   const submit = async () => {
     if (submitting || count === 0) return
     setSubmitting(true)
     try {
-      const order = await submitOrder(total)
+      const order = await submitOrder(items, '', payMethod)
       setLastOrder(order)
       clearCart()
       // redirectTo：结果页返回时不回到确认页
@@ -45,17 +47,17 @@ export default function Confirm() {
           <Text className="xf-block__title">用餐信息</Text>
           <View className="xf-sumrow">
             <Text>门店</Text>
-            <b>{mockStore.name}</b>
+            <b>{store.name}</b>
           </View>
           <View className="xf-sumrow">
             <Text>桌台</Text>
             <b>
-              {mockStore.tableName} · {mockStore.areaName}
+              {store.tableName} · {store.areaName}
             </b>
           </View>
           <View className="xf-sumrow">
             <Text>人数</Text>
-            <b>{mockStore.people} 人</b>
+            <b>{store.people} 人</b>
           </View>
         </View>
 
@@ -75,7 +77,7 @@ export default function Confirm() {
         {/* 支付方式（dev 打桩） */}
         <View className="xf-block">
           <Text className="xf-block__title">支付方式</Text>
-          {mockPayMethods.map((m) => (
+          {payMethods.map((m) => (
             <View
               key={m.id}
               className={`confirm__pay ${payMethod === m.id ? 'is-on' : ''}`}

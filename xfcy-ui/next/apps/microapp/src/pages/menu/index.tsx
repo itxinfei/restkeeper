@@ -1,23 +1,74 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Input, ScrollView, Text, View } from '@tarojs/components'
+import Taro from '@tarojs/taro'
+import { mockMicroappCategories, mockMicroappDishes, mockMicroappStore } from '@xfcy/api'
 import CartBar from '../../components/CartBar'
 import DishCard from '../../components/DishCard'
-import { mockCategories, mockDishes, mockStore } from '../../api/mock'
+import { fetchMenu, searchMenu, useMockData } from '../../api/service'
+import type { Category, Dish, StoreInfo } from '../../types'
 import './index.scss'
 
 /**
  * 门店菜单（原型 microapp-menu.html）
  * 结构：门店头 → 搜索 → 分类锚点 → 菜品大图卡（2 列）→ 底部购物车条
+ * 数据：@xfcy/api microapp 模块（默认本地 mock，可切真实后端）
  */
 export default function Menu() {
+  const mockMode = useMockData()
   const [keyword, setKeyword] = useState('')
-  const [activeCat, setActiveCat] = useState(mockCategories[0].id)
+  const [activeCat, setActiveCat] = useState(mockMicroappCategories[0].id)
   const [anchor, setAnchor] = useState('')
+  const [store, setStore] = useState<StoreInfo>(mockMicroappStore)
+  const [categories, setCategories] = useState<Category[]>(() =>
+    mockMode ? mockMicroappCategories.map((c) => ({ id: c.id, name: c.name })) : [],
+  )
+  const [dishes, setDishes] = useState<Dish[]>(mockMode ? mockMicroappDishes : [])
+  const [searchResults, setSearchResults] = useState<Dish[] | null>(null)
+  const seqRef = useRef(0)
 
+  /* 菜单加载：mock 模式立即以本地数据渲染，真实模式拉取后替换 */
+  useEffect(() => {
+    let alive = true
+    fetchMenu()
+      .then((menu) => {
+        if (!alive) return
+        setStore(menu.store)
+        setCategories(menu.categories)
+        setDishes(menu.dishes)
+        setActiveCat((prev) =>
+          prev && menu.categories.some((c) => c.id === prev)
+            ? prev
+            : (menu.categories[0]?.id ?? ''),
+        )
+      })
+      .catch((err) => {
+        console.error('[microapp] 菜单加载失败', err)
+        if (alive) Taro.showToast({ title: '菜单加载失败，请重试', icon: 'none' })
+      })
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  /* 关键词检索（ES 索引：菜品 + 套餐） */
   const kw = keyword.trim()
-  const searchResult = kw
-    ? mockDishes.filter((d) => d.name.includes(kw) || d.desc.includes(kw))
-    : null
+  useEffect(() => {
+    if (!kw) {
+      seqRef.current += 1
+      setSearchResults(null)
+      return
+    }
+    const seq = ++seqRef.current
+    searchMenu(kw)
+      .then((rows) => {
+        if (seqRef.current === seq) setSearchResults(rows)
+      })
+      .catch(() => {
+        if (seqRef.current === seq) setSearchResults([])
+      })
+  }, [kw])
+
+  const searchResult = kw ? (searchResults ?? []) : null
 
   const scrollTo = (id: string) => {
     setActiveCat(id)
@@ -29,9 +80,9 @@ export default function Menu() {
       {/* 门店头 */}
       <View className="menu__head">
         <View>
-          <Text className="menu__name">{mockStore.name}</Text>
+          <Text className="menu__name">{store.name}</Text>
           <Text className="menu__sub">
-            堂食点餐 · 桌台 {mockStore.tableName}
+            堂食点餐 · 桌台 {store.tableName}
           </Text>
         </View>
         <View className="menu__mode">
@@ -54,7 +105,7 @@ export default function Menu() {
       {!searchResult && (
         <ScrollView scrollX className="menu__cats">
           <View className="menu__cats-inner">
-            {mockCategories.map((cat) => (
+            {categories.map((cat) => (
               <View
                 key={cat.id}
                 className={`menu__cat ${activeCat === cat.id ? 'is-on' : ''}`}
@@ -92,8 +143,8 @@ export default function Menu() {
             )}
           </View>
         ) : (
-          mockCategories.map((cat) => {
-            const list = mockDishes.filter((d) => d.categoryId === cat.id)
+          categories.map((cat) => {
+            const list = dishes.filter((d) => d.categoryId === cat.id)
             return (
               <View key={cat.id} id={`cat-${cat.id}`} className="menu__section">
                 <Text className="menu__sec">

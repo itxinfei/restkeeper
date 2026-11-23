@@ -1,11 +1,11 @@
 /**
- * mock 数据源与 axios mockAdapter。
+ * mock 数据源与传输。
  *
- * 切换方式：VITE_USE_MOCK === '1'（默认 '1'，即默认走 mock）。
- * 命中 mock 时 http 实例会挂载本 adapter，所有请求在本地应答，不发出真实 HTTP。
+ * 切换方式：配置 mock === true（默认，Vite 端取 VITE_USE_MOCK，默认 '1'）。
+ * 命中 mock 时客户端使用本地传输，所有请求在本地应答，不发出真实 HTTP。
+ * B 端沿用 axios adapter；C 端（Taro）使用传输无关的 createMockTransport。
  */
 
-import { AxiosError } from 'axios'
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import type {
   CurrentAmountCollectDTO,
@@ -17,6 +17,8 @@ import type {
   SysDictionary,
   TableArea,
 } from '../types'
+import { getApiConfig } from '../config'
+import type { HttpTransport } from '../transport'
 import {
   mockCategories,
   mockDictItems,
@@ -30,10 +32,20 @@ import {
   mockTables,
 } from './data'
 import type { MockOperatorUser } from './data'
+import { microappRoutes } from './microapp'
+import type { MockCtx, MockRoute } from './types'
 
 /** 是否启用 mock（默认开启，便于前端独立演示） */
 export function isMockMode(): boolean {
-  return (import.meta.env.VITE_USE_MOCK ?? '1') === '1'
+  return getApiConfig().mock
+}
+
+/** mock 未命中路由时抛出，便于定位缺失契约 */
+export class MockNotFoundError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MockNotFoundError'
+  }
 }
 
 const MOCK_TOKEN = 'xfcy-mock-token'
@@ -55,30 +67,20 @@ function paginate<T>(items: T[], page: number, size: number): PageResult<T> {
   }
 }
 
+/** 兼容 axios（字符串）与通用传输（对象）两种 body 形态 */
 function parseBody(data: unknown): any {
-  if (typeof data !== 'string' || data.length === 0) return undefined
-  try {
-    return JSON.parse(data)
-  } catch {
-    return undefined
+  if (typeof data === 'string') {
+    if (data.length === 0) return undefined
+    try {
+      return JSON.parse(data)
+    } catch {
+      return undefined
+    }
   }
+  return data
 }
 
-interface MockCtx {
-  url: string
-  params: Record<string, unknown>
-  body: any
-}
-
-type MockHandler = (ctx: MockCtx) => unknown
-
-interface MockRoute {
-  method: string
-  pattern: RegExp
-  handler: MockHandler
-}
-
-const routes: MockRoute[] = [
+const bEndRoutes: MockRoute[] = [
   /* ---------------- auth ---------------- */
   {
     method: 'POST',
@@ -601,19 +603,29 @@ const routes: MockRoute[] = [
   },
 ]
 
-/** axios 自定义 adapter：命中 mock 路由时本地应答 */
+/** C 端路由先注册，保证 /order/micro-order-* 等具体路由优先于 B 端通用路由 */
+const routes: MockRoute[] = [...microappRoutes, ...bEndRoutes]
+
+/** 路由匹配与执行（axios adapter 与通用传输共用） */
+export function dispatchMock(
+  method: string,
+  url: string,
+  params: Record<string, unknown>,
+  body: unknown,
+): unknown {
+  const route = routes.find((item) => item.method === method && item.pattern.test(url))
+  if (!route) {
+    throw new MockNotFoundError(`[mock] 未实现的请求：${method} ${url}`)
+  }
+  const ctx: MockCtx = { url, params, body: parseBody(body) }
+  return route.handler(ctx)
+}
+
+/** axios 自定义 adapter：命中 mock 路由时本地应答（B 端默认） */
 export const mockAdapter: AxiosAdapter = async (config: InternalAxiosRequestConfig) => {
   const method = (config.method ?? 'get').toUpperCase()
   const url = config.url ?? ''
-  const route = routes.find((item) => item.method === method && item.pattern.test(url))
-  if (!route) {
-    throw new AxiosError(`[mock] 未实现的请求：${method} ${url}`, 'MOCK_NOT_FOUND', config)
-  }
-  const data = await route.handler({
-    url,
-    params: (config.params ?? {}) as Record<string, unknown>,
-    body: parseBody(config.data),
-  })
+  const data = dispatchMock(method, url, (config.params ?? {}) as Record<string, unknown>, config.data)
   const response: AxiosResponse = {
     data,
     status: 200,
@@ -622,6 +634,21 @@ export const mockAdapter: AxiosAdapter = async (config: InternalAxiosRequestConf
     config,
   }
   return response
+}
+
+/** 传输无关的 mock 传输（C 端 Taro / 测试用） */
+export function createMockTransport(): HttpTransport {
+  return {
+    async request(req) {
+      const data = dispatchMock(
+        req.method.toUpperCase(),
+        req.url,
+        req.params ?? {},
+        req.data,
+      )
+      return { status: 200, data }
+    },
+  }
 }
 
 /** 供外部读取的 mock 数据（演示/测试用） */
@@ -637,3 +664,15 @@ export {
   mockTableAreas,
   mockTables,
 }
+export {
+  mockMicroappCategories,
+  mockMicroappDishes,
+  mockMicroappPayMethods,
+  mockMicroappStore,
+} from './microapp'
+export type {
+  MockMicroappCategory,
+  MockMicroappDish,
+  MockMicroappStore,
+  MockPayMethod,
+} from './microapp'

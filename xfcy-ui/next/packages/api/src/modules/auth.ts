@@ -15,25 +15,27 @@
  * 网关未配置 StripPrefix，路径原样透传。
  */
 
+import { getApiConfig } from '../config'
 import { http, setToken, unwrapLogin } from '../http'
 import type {
   EnterpriseAccount,
   LoginPayload,
   LoginResult,
+  MicroappLoginUser,
   OperatorUser,
   Staff,
   StoreManager,
 } from '../types'
 
-const USER_CACHE_KEY = 'xfcy.user'
-
 function cacheUser(user: unknown, userType: string): void {
-  localStorage.setItem(USER_CACHE_KEY, JSON.stringify({ user, userType }))
+  const cfg = getApiConfig()
+  cfg.storage.setItem(cfg.userStorageKey, JSON.stringify({ user, userType }))
 }
 
 /** 读取本地缓存的当前用户（后端无专用「当前用户」端点，见报告决策点） */
 export function getCurrentUser(): { user: unknown; userType: string } | null {
-  const raw = localStorage.getItem(USER_CACHE_KEY)
+  const cfg = getApiConfig()
+  const raw = cfg.storage.getItem(cfg.userStorageKey)
   if (!raw) return null
   try {
     return JSON.parse(raw) as { user: unknown; userType: string }
@@ -45,7 +47,8 @@ export function getCurrentUser(): { user: unknown; userType: string } | null {
 /** 登出：契约层无登出端点，仅清理本地会话 */
 export function logout(): void {
   setToken('')
-  localStorage.removeItem(USER_CACHE_KEY)
+  const cfg = getApiConfig()
+  cfg.storage.removeItem(cfg.userStorageKey)
 }
 
 function postParams(url: string, params: Record<string, string>) {
@@ -106,9 +109,18 @@ export async function loginStaff(
 }
 
 /**
- * C 端登录占位（§4.4）：xfcy-microapp-web 使用独立 StpLogic，
- * 网关对 /microApp/** 放行，鉴权在 C 端 BFF 内部完成，契约层暂无对应端点。
+ * C 端登录（§4.4）：xfcy-microapp-web LoginController POST /login。
+ * dev 打桩用 code 派生 mock openid，会话写入 shopId/storeId；
+ * 网关对 /microApp/** 放行，鉴权由 C 端 BFF 内部用独立 StpLogic 完成。
  */
-export async function loginCustomer(): Promise<LoginResult> {
-  throw new Error('C 端登录尚未接入：等待 microapp-web 契约（/microApp）落地')
+export async function loginCustomer(
+  code: string,
+  shopId: string,
+  storeId: string,
+): Promise<LoginResult<MicroappLoginUser>> {
+  const { data } = await http.post('/login', { code, shopId, storeId })
+  const { token, user } = unwrapLogin<MicroappLoginUser>(data)
+  setToken(token)
+  cacheUser(user, 'microapp')
+  return { token, user, userType: 'microapp' }
 }

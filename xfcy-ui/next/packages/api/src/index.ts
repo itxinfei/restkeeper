@@ -15,6 +15,9 @@ export {
   TOKEN_HEADER,
   TOKEN_STORAGE_KEY,
   clearToken,
+  configureApi,
+  createBrowserStorage,
+  getApiConfig,
   getBaseURL,
   getToken,
   http,
@@ -22,7 +25,18 @@ export {
   unwrap,
   unwrapLogin,
 } from './http'
-export { isMockMode, mockAdapter } from './mock'
+export type {
+  ApiRuntimeConfig,
+  HttpClient,
+  HttpClientConfig,
+  HttpClientResponse,
+  HttpMethod,
+  HttpTransport,
+  StorageLike,
+  TransportRequest,
+  TransportResponse,
+} from './http'
+export { createMockTransport, isMockMode, MockNotFoundError, mockAdapter } from './mock'
 export {
   demoDashboardKpis,
   demoLatestOrders,
@@ -39,6 +53,12 @@ export {
   mockTableAreas,
   mockTables,
 } from './mock/data'
+export {
+  mockMicroappCategories,
+  mockMicroappDishes,
+  mockMicroappPayMethods,
+  mockMicroappStore,
+} from './mock/microapp'
 export type {
   DemoKpi,
   DemoOrderRow,
@@ -52,15 +72,28 @@ export type {
   MockRemovedEnterpriseAccount,
   Trend,
 } from './mock/data'
+export type {
+  MockMicroappCategory,
+  MockMicroappDish,
+  MockMicroappStore,
+  MockPayMethod,
+} from './mock/microapp'
+export type {
+  MicroappAreaRow,
+  MicroappCategoryRow,
+  MicroappDishRow,
+  MicroappSetMeal,
+} from './modules/microapp'
 
 import * as auth from './modules/auth'
 import * as dish from './modules/dish'
 import * as enterprise from './modules/enterprise'
+import * as microapp from './modules/microapp'
 import * as order from './modules/order'
 import * as system from './modules/system'
 import * as table from './modules/table'
 
-export { auth, dish, enterprise, order, system, table }
+export { auth, dish, enterprise, microapp, order, system, table }
 
 /** 金额格式化：分 → 「¥x,xxx.xx」（展示层统一入口） */
 export function formatYuan(cents?: number | null): string {

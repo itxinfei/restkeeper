@@ -99,6 +99,9 @@ importers:
       '@tarojs/taro':
         specifier: 4.3.3
         version: 4.3.3(@tarojs/components@4.3.3(@tarojs/helper@4.3.3)(@types/react@18.3.31)(html-webpack-plugin@5.6.8(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33)))(postcss@8.5.33)(rollup@3.30.0)(vue@3.5.46(typescript@5.8.3))(webpack-chain@6.5.1)(webpack-dev-server@4.15.2(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33)))(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33)))(@tarojs/helper@4.3.3)(@tarojs/shared@4.3.3)(@types/react@18.3.31)(html-webpack-plugin@5.6.8(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33)))(postcss@8.5.33)(rollup@3.30.0)(vue@3.5.46(typescript@5.8.3))(webpack-chain@6.5.1)(webpack-dev-server@4.15.2(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33)))(webpack@5.91.0(@swc/core@1.3.96)(postcss@8.5.33))
+      '@xfcy/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       react:
         specifier: ^18.3.1
         version: 18.3.1
