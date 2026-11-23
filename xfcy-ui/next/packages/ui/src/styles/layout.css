@@ -68,7 +68,7 @@
   white-space: nowrap;
 }
 
-/* 内容分栏：主区 + 侧栏（≥1280 两栏，窄屏堆叠） */
+/* 内容分栏：主区 + 侧栏（≥1024 两栏，窄屏堆叠） */
 .xf-cols {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 320px;
@@ -83,7 +83,8 @@
   min-width: 0;
 }
 
-@media (max-width: 1180px) {
+/* 内容分栏：主区 + 侧栏（≥1024 两栏，窄屏堆叠） */
+@media (max-width: 1023px) {
   .xf-cols {
     grid-template-columns: minmax(0, 1fr);
   }

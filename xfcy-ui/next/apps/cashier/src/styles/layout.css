@@ -102,69 +102,6 @@
   color: var(--c-text-3);
 }
 
-.xfc-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--c-primary);
-  color: var(--c-surface);
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-}
-
-.xfc-avatar:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-ring);
-}
-
-.xfc-user {
-  position: relative;
-}
-
-.xfc-menu {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 8px);
-  z-index: 50;
-  min-width: 160px;
-  padding: 4px;
-  background: var(--c-surface);
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-md);
-}
-
-.xfc-menu__head {
-  padding: 8px 12px;
-  margin-bottom: 4px;
-  border-bottom: 1px solid var(--c-border);
-  font-size: 12px;
-  color: var(--c-text-3);
-}
-
-.xfc-menu__item {
-  display: block;
-  width: 100%;
-  min-height: 48px;
-  padding: 10px 12px;
-  border: none;
-  background: transparent;
-  border-radius: var(--radius-xs);
-  text-align: left;
-  font-size: 14px;
-  color: var(--c-text);
-  cursor: pointer;
-}
-
-.xfc-menu__item:hover {
-  background: var(--c-surface-2);
-}
-
-.xfc-menu__item.is-danger {
-  color: var(--c-danger);
-}
-
 .xfc-body {
   flex: 1 1 auto;
   min-height: 0;
@@ -929,14 +866,16 @@
   color: var(--c-danger);
 }
 
-/* ---------- 响应式（§7：1024–1280 两栏） ---------- */
-@media (max-width: 1100px) {
+/* ---------- 响应式（§7：≥1280 三栏；1024–1280 两栏；<1024 堆叠） ----------
+ * 断点与 @xfcy/ui 的 XfAppShell 保持一致：1280 / 1024 / 768 / 560。
+ */
+@media (max-width: 1279px) {
   .xfc-pos {
     grid-template-columns: minmax(0, 1fr) 340px;
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .xfc-topbar {
     flex-wrap: wrap;
     gap: 8px 16px;

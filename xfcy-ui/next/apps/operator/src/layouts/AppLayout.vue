@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { XfDemoBadge } from '@xfcy/ui'
+import { XfAppShell, XfDemoBadge } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 
@@ -48,13 +48,16 @@ const user = useUserStore()
 /* mock 模式数据均为演示，全局显式标识（DESIGN.md §2 数据可信） */
 const demoMode = isMockMode()
 
+/* 1024–1280 侧栏收起（XfAppShell 内部断点，见 DESIGN.md §7） */
+const collapsed = ref(false)
+
 const pageTitle = computed(() => String(route.meta.title ?? ''))
 const pageGroup = computed(() => String(route.meta.group ?? ''))
 const breadcrumb = computed(() =>
   pageGroup.value ? `${pageGroup.value} / ${pageTitle.value}` : pageTitle.value,
 )
 
-/* 顶栏时间：每 30s 刷新一次（示意） */
+/* 顶栏时间：每 30s 刷新一次 */
 const now = ref(new Date())
 let timer: number | undefined
 onMounted(() => {
@@ -73,121 +76,41 @@ const timeText = computed(() => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 星期${weekdays[d.getDay()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 })
 
-/* 用户菜单：点击外部关闭 */
-const menuOpen = ref(false)
-const menuRef = ref<HTMLElement | null>(null)
-
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value
+function onNavigate(path: string) {
+  router.push(path)
 }
-
-function onDocClick(event: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
-    menuOpen.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-})
 
 function logout() {
-  menuOpen.value = false
   user.logout()
   router.push({ name: 'login' })
 }
 </script>
 
 <template>
-  <div class="xfo-shell">
-    <aside class="xfo-rail">
-      <div class="xfo-brand">
-        <span class="xfo-brand__logo" aria-hidden="true">心</span>
-        <span>
-          心飞运营中心
-          <span class="xfo-brand__sub">{{ user.profile.name }} · {{ user.profile.role }}</span>
-        </span>
-      </div>
-
-      <nav class="xfo-nav" aria-label="主导航">
-        <template v-for="group in navGroups" :key="group.label">
-          <div class="xfo-nav__grp">{{ group.label }}</div>
-          <router-link
-            v-for="item in group.items"
-            :key="item.key"
-            class="xfo-nav__item"
-            :class="{ 'is-active': route.path === item.path }"
-            :to="item.path"
-          >
-            <svg
-              class="xfo-nav__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path :d="item.icon" />
-            </svg>
-            {{ item.label }}
-          </router-link>
-        </template>
-      </nav>
-
-      <div class="xfo-railfoot">
-        <b>{{ user.profile.name }}</b>
-        {{ user.profile.role }}
-      </div>
-    </aside>
-
-    <div class="xfo-main">
-      <header class="xfo-topbar">
-        <h1 class="xfo-topbar__title">{{ pageTitle }}</h1>
-        <span class="xfo-topbar__crumb">{{ breadcrumb }}</span>
-
-        <div class="xfo-topbar__right">
-          <XfDemoBadge :show="demoMode" />
-          <span class="xfo-topbar__time">{{ timeText }}</span>
-          <div ref="menuRef" class="xfo-user">
-            <button
-              type="button"
-              class="xfo-avatar"
-              :aria-label="`用户菜单：${user.profile.name}`"
-              :aria-expanded="menuOpen"
-              @click="toggleMenu"
-            >
-              {{ user.avatarText }}
-            </button>
-            <div v-if="menuOpen" class="xfo-menu" role="menu">
-              <div class="xfo-menu__head">
-                {{ user.profile.name }} · {{ user.profile.role }}
-              </div>
-              <button type="button" class="xfo-menu__item" role="menuitem" @click="menuOpen = false">
-                账户信息（示意）
-              </button>
-              <button
-                type="button"
-                class="xfo-menu__item is-danger"
-                role="menuitem"
-                @click="logout"
-              >
-                退出登录
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="xfo-content">
-        <div class="xf-page">
-          <router-view />
-        </div>
-      </main>
-    </div>
-  </div>
+  <XfAppShell
+    brand-title="心飞运营中心"
+    :brand-sub="`${user.profile.name} · ${user.profile.role}`"
+    :nav-groups="navGroups"
+    :active-path="route.path"
+    :title="pageTitle"
+    :breadcrumb="breadcrumb"
+    :user-name="user.profile.name"
+    :user-role="user.profile.role"
+    :avatar-text="user.avatarText"
+    v-model:collapsed="collapsed"
+    @navigate="onNavigate"
+    @logout="logout"
+  >
+    <template #topbar>
+      <XfDemoBadge :show="demoMode" />
+      <span class="xfo-topbar__time">{{ timeText }}</span>
+    </template>
+  </XfAppShell>
 </template>
+
+<style scoped>
+.xfo-topbar__time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+</style>

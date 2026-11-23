@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { XfDemoBadge, XfSelect } from '@xfcy/ui'
+import { XfAppShell, XfDemoBadge, XfSelect } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 import { useShopStore } from '../stores/shop'
@@ -53,13 +53,16 @@ const shop = useShopStore()
 /* mock 模式数据均为演示，全局显式标识（DESIGN.md §2 数据可信） */
 const demoMode = isMockMode()
 
+/* 1024–1280 侧栏收起（XfAppShell 内部断点，见 DESIGN.md §7） */
+const collapsed = ref(false)
+
 const pageTitle = computed(() => String(route.meta.title ?? ''))
 const pageGroup = computed(() => String(route.meta.group ?? ''))
 const breadcrumb = computed(() =>
   pageGroup.value ? `${pageGroup.value} / ${pageTitle.value}` : pageTitle.value,
 )
 
-/* 顶栏时间：每 30s 刷新一次（示意） */
+/* 顶栏时间：每 30s 刷新一次 */
 const now = ref(new Date())
 let timer: number | undefined
 onMounted(() => {
@@ -78,131 +81,52 @@ const timeText = computed(() => {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} 星期${weekdays[d.getDay()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 })
 
-/* 用户菜单：点击外部关闭 */
-const menuOpen = ref(false)
-const menuRef = ref<HTMLElement | null>(null)
-
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value
+function onNavigate(path: string) {
+  router.push(path)
 }
-
-function onDocClick(event: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(event.target as Node)) {
-    menuOpen.value = false
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-})
 
 function onShopChange(id: string | number | null) {
   if (id !== null) shop.switchShop(String(id))
 }
 
 function logout() {
-  menuOpen.value = false
   user.logout()
   router.push({ name: 'login' })
 }
 </script>
 
 <template>
-  <div class="xfm-shell">
-    <aside class="xfm-rail">
-      <div class="xfm-brand">
-        <span class="xfm-brand__logo" aria-hidden="true">心</span>
-        <span>
-          心飞管家端
-          <span class="xfm-brand__sub">{{ user.profile.name }} · {{ shop.currentShop.short }}</span>
-        </span>
-      </div>
-
-      <nav class="xfm-nav" aria-label="主导航">
-        <template v-for="group in navGroups" :key="group.label">
-          <div class="xfm-nav__grp">{{ group.label }}</div>
-          <router-link
-            v-for="item in group.items"
-            :key="item.key"
-            class="xfm-nav__item"
-            :class="{ 'is-active': route.path === item.path }"
-            :to="item.path"
-          >
-            <svg
-              class="xfm-nav__icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.8"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              aria-hidden="true"
-            >
-              <path :d="item.icon" />
-            </svg>
-            {{ item.label }}
-          </router-link>
-        </template>
-      </nav>
-
-      <div class="xfm-railfoot">
-        <b>{{ user.profile.name }}</b>
-        {{ user.profile.role }} · {{ user.profile.shopCount }} 家门店
-      </div>
-    </aside>
-
-    <div class="xfm-main">
-      <header class="xfm-topbar">
-        <h1 class="xfm-topbar__title">{{ pageTitle }}</h1>
-        <span class="xfm-topbar__crumb">{{ breadcrumb }}</span>
-
-        <div class="xfm-topbar__right">
-          <XfDemoBadge :show="demoMode" />
-          <XfSelect
-            :model-value="shop.currentShopId"
-            :options="shop.shopOptions"
-            placeholder="切换门店"
-            @update:model-value="onShopChange"
-          />
-          <span class="xfm-topbar__time">{{ timeText }}</span>
-          <div ref="menuRef" class="xfm-user">
-            <button
-              type="button"
-              class="xfm-avatar"
-              :aria-label="`用户菜单：${user.profile.name}`"
-              :aria-expanded="menuOpen"
-              @click="toggleMenu"
-            >
-              {{ user.avatarText }}
-            </button>
-            <div v-if="menuOpen" class="xfm-menu" role="menu">
-              <div class="xfm-menu__head">
-                {{ user.profile.name }} · {{ user.profile.role }}
-              </div>
-              <button type="button" class="xfm-menu__item" role="menuitem" @click="menuOpen = false">
-                账户信息（示意）
-              </button>
-              <button
-                type="button"
-                class="xfm-menu__item is-danger"
-                role="menuitem"
-                @click="logout"
-              >
-                退出登录
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <main class="xfm-content">
-        <div class="xf-page">
-          <router-view />
-        </div>
-      </main>
-    </div>
-  </div>
+  <XfAppShell
+    brand-title="心飞管家端"
+    :brand-sub="`${user.profile.name} · ${shop.currentShop.short}`"
+    :nav-groups="navGroups"
+    :active-path="route.path"
+    :title="pageTitle"
+    :breadcrumb="breadcrumb"
+    :user-name="user.profile.name"
+    :user-role="user.profile.role"
+    :user-meta="`${user.profile.shopCount} 家门店`"
+    :avatar-text="user.avatarText"
+    v-model:collapsed="collapsed"
+    @navigate="onNavigate"
+    @logout="logout"
+  >
+    <template #topbar>
+      <XfDemoBadge :show="demoMode" />
+      <XfSelect
+        :model-value="shop.currentShopId"
+        :options="shop.shopOptions"
+        placeholder="切换门店"
+        @update:model-value="onShopChange"
+      />
+      <span class="xfm-topbar__time">{{ timeText }}</span>
+    </template>
+  </XfAppShell>
 </template>
+
+<style scoped>
+.xfm-topbar__time {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+</style>

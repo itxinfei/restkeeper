@@ -151,9 +151,11 @@
 | **B1（全局基础）** ✅ | G1 骨架类、G2 Toast、G3 空状态、G6 枚举 tone | 全部页面 |
 | **B2（数据可信）** ✅ | G4 演示标识 + real 兜底治理、Dashboard 补齐 | manager / operator |
 | **B3（业务兜底）** ✅ | G7 员工密码/回收站提示、反结账入口、退菜差额 | manager/operator/cashier |
-| **B4（复用重构）** | G5 AppShell 抽公共 + 断点统一 + 清理重复 CSS | 三端 |
+| **B4（复用重构）** ✅ | G5 AppShell 抽公共 + 断点统一 + 清理重复 CSS | 三端 |
 | **B5（页面精修）** | 逐页按 §4 精修（报表图表/导出、挂账流水、收银入口补全） | 逐页 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
 > B3 已落地：收银端退菜在 real 模式调 `order.returnDish(detailId)`（detailId 由当前订单明细按 `dishId` + `detailStatus=1` 反查），已付订单退菜强提示「差额需人工处理」；反结账入口改为流水号反查（`GET /order/number/{orderNumber}` 只返回已付单），确认框明示「不恢复桌台、不回冲沽清、不自动退款」，再调 `POST /order/reverse`。订单面板本地 notice 统一改为全局 Toast。
+>
+> B4 已落地：`@xfcy/ui` 新增 `XfAppShell`（侧栏 + 顶栏 + 导航 + 用户菜单 + 内容插槽）与 `XfUserMenu`（B 端默认 / `touch` 触屏态）。管家端与运营中心共用同一套布局与导航断点；收银端 `PosLayout` 保留三栏结构但复用 `XfUserMenu`。三端断点统一为 1280 / 1024 / 768 / 560（CSS 变量不能用于 `@media`，故在各样式文件内保持一致）；删除 manager/operator 重复的框架与用户菜单样式，manager 重复的 `.xfm-form` 合并为单一定义。

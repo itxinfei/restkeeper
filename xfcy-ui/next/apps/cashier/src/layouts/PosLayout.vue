@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { XfDemoBadge, XfTag } from '@xfcy/ui'
+import { XfDemoBadge, XfTag, XfUserMenu } from '@xfcy/ui'
 import { isMockMode } from '@xfcy/api'
 import { useUserStore } from '../stores/user'
 import { useOrderStore } from '../stores/order'
@@ -39,20 +39,7 @@ const dateText = computed(() => {
 const pageTitle = computed(() => String(route.meta.title ?? ''))
 const currentTable = computed(() => order.currentTable)
 
-/* 用户菜单：点击外部关闭 */
-const menuOpen = ref(false)
-const menuRef = ref<HTMLElement | null>(null)
-function toggleMenu() {
-  menuOpen.value = !menuOpen.value
-}
-function onDocClick(event: MouseEvent) {
-  if (menuRef.value && !menuRef.value.contains(event.target as Node)) menuOpen.value = false
-}
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
-
 function logout() {
-  menuOpen.value = false
   user.logout()
   router.push({ name: 'login' })
 }
@@ -81,28 +68,14 @@ function logout() {
           <b class="xfc-num">{{ timeText }}</b>
           <small class="xfc-num">{{ dateText }}</small>
         </span>
-        <div ref="menuRef" class="xfc-user">
-          <button
-            type="button"
-            class="xfc-avatar"
-            :aria-label="`用户菜单：${user.profile.name}`"
-            :aria-expanded="menuOpen"
-            @click="toggleMenu"
-          >
-            {{ user.avatarText }}
-          </button>
-          <div v-if="menuOpen" class="xfc-menu" role="menu">
-            <div class="xfc-menu__head">{{ user.profile.name }} · {{ user.profile.role }}</div>
-            <button
-              type="button"
-              class="xfc-menu__item is-danger"
-              role="menuitem"
-              @click="logout"
-            >
-              退出登录
-            </button>
-          </div>
-        </div>
+        <XfUserMenu
+          :user-name="user.profile.name"
+          :role="user.profile.role"
+          :avatar-text="user.avatarText"
+          :avatar-size="40"
+          touch
+          @logout="logout"
+        />
       </div>
     </header>
 
