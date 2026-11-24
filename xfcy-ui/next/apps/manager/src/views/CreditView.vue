@@ -89,13 +89,13 @@ const logError = ref('')
 const exporting = ref(false)
 
 const logColumns = [
-  { key: 'orderId', label: '订单号' },
-  { key: 'userName', label: '挂账人' },
-  { key: 'type', label: '类型' },
-  { key: 'orderAmount', label: '订单金额', align: 'right' as const },
-  { key: 'receivedAmount', label: '应收', align: 'right' as const },
-  { key: 'creditAmount', label: '挂账金额', align: 'right' as const },
-  { key: 'lastUpdateTime', label: '时间' },
+  { key: 'orderId', label: '订单号', width: '180px' },
+  { key: 'userName', label: '挂账人', width: '110px' },
+  { key: 'type', label: '类型', width: '90px' },
+  { key: 'orderAmount', label: '订单金额', align: 'right' as const, width: '120px' },
+  { key: 'receivedAmount', label: '应收', align: 'right' as const, width: '110px' },
+  { key: 'creditAmount', label: '挂账金额', align: 'right' as const, width: '120px' },
+  { key: 'lastUpdateTime', label: '时间', width: '170px' },
 ]
 
 function toLogRow(item: CreditLog): CreditLogRow {
@@ -125,13 +125,13 @@ const repayTypeOptions = [
 ]
 
 const columns = [
-  { key: 'type', label: '类型' },
-  { key: 'name', label: '名称' },
-  { key: 'contact', label: '联系人' },
-  { key: 'creditAmount', label: '挂账额度', align: 'right' as const },
-  { key: 'totalRepayment', label: '已还', align: 'right' as const },
-  { key: 'status', label: '状态' },
-  { key: 'actions', label: '操作', align: 'right' as const },
+  { key: 'type', label: '类型', width: '80px' },
+  { key: 'name', label: '名称', width: '190px', wrap: true },
+  { key: 'contact', label: '联系人', width: '140px' },
+  { key: 'creditAmount', label: '挂账额度', align: 'right' as const, width: '110px' },
+  { key: 'totalRepayment', label: '已还', align: 'right' as const, width: '100px' },
+  { key: 'status', label: '状态', width: '90px' },
+  { key: 'actions', label: '操作', align: 'right' as const, width: '210px' },
 ]
 
 function toRow(item: Credit): CreditRow {

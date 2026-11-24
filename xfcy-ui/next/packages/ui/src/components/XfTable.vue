@@ -8,6 +8,8 @@ interface Column {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  /** 允许单元格内换行（长文本主列使用，默认不换行） */
+  wrap?: boolean
 }
 
 const props = withDefaults(
@@ -74,11 +76,20 @@ function sortIcon(column: Column): string {
   if (sortKey.value !== column.key) return '↕'
   return sortOrder.value === 'asc' ? '↑' : '↓'
 }
+
+// 声明的列宽视为最小宽度：容器不足时表格横向滚动，避免列被挤压成逐字换行
+function px(value: string | undefined): number {
+  const n = Number.parseFloat(value ?? '')
+  return Number.isFinite(n) ? n : 0
+}
+const tableMinWidth = computed(
+  () => `${props.columns.reduce((sum, column) => sum + px(column.width), 0)}px`,
+)
 </script>
 
 <template>
   <div class="xf-table">
-    <table>
+    <table :style="{ minWidth: tableMinWidth }">
       <thead>
         <tr>
           <th
@@ -115,7 +126,7 @@ function sortIcon(column: Column): string {
             <td
               v-for="column in columns"
               :key="column.key"
-              :class="`is-${column.align ?? 'left'}`"
+              :class="[`is-${column.align ?? 'left'}`, { 'is-wrap': column.wrap }]"
             >
               <slot :name="column.key" :row="row" :index="index">{{ row[column.key] }}</slot>
             </td>
@@ -157,11 +168,17 @@ function sortIcon(column: Column): string {
 }
 
 .xf-table td {
+  white-space: nowrap;
   height: 44px;
   padding: 0 var(--space-3);
   border-top: 1px solid var(--c-border);
   color: var(--text);
   line-height: var(--leading-compact);
+}
+
+/* 长文本主列允许换行（如企业名称），其余列保持单行避免相互挤压 */
+.xf-table td.is-wrap {
+  white-space: normal;
 }
 
 .xf-table tbody tr:hover td {

@@ -105,6 +105,7 @@ function logout() {
       <XfDemoBadge :show="demoMode" />
       <span class="xfo-topbar__time">{{ timeText }}</span>
     </template>
+    <router-view />
   </XfAppShell>
 </template>
 

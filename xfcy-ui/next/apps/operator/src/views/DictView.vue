@@ -23,6 +23,7 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 type DictStatus = '启用' | '停用'
@@ -37,12 +38,12 @@ type DictRow = {
 }
 
 const columns: Column[] = [
-  { key: 'type', label: '字典类型' },
-  { key: 'code', label: '编码' },
-  { key: 'value', label: '值' },
-  { key: 'sort', label: '排序', align: 'center', sortable: true },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作', width: '160px' },
+  { key: 'type', label: '字典类型', width: '150px' },
+  { key: 'code', label: '编码', width: '160px' },
+  { key: 'value', label: '值', width: '120px' },
+  { key: 'sort', label: '排序', align: 'center', sortable: true, width: '90px' },
+  { key: 'status', label: '状态', width: '100px' },
+  { key: 'action', label: '操作', width: '170px' },
 ]
 
 const store = system

@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { auth, getToken, isMockMode, setToken } from '@xfcy/api'
+import { auth, getToken, isMockMode } from '@xfcy/api'
 
 /** 登录身份类型：决定调用哪套登录契约 */
 export type UserKind = 'manager' | 'operator' | 'cashier'
@@ -31,11 +31,8 @@ export function createUserStore(kind: UserKind, defaults: UserProfile) {
     const avatarText = computed(() => profile.value.name.slice(0, 1))
 
     async function login(username: string, password: string, shopId?: string) {
-      if (isMockMode()) {
-        token.value = `xfcy-demo-${Date.now()}`
-        setToken(token.value)
-        return
-      }
+      // mock / real 均由 @xfcy/api 内部按模式分流；token 统一由 api 层签发并落存储，
+      // 前端不再自行拼接演示 token（避免多处明文凭据生成逻辑）。
       if (kind === 'manager') {
         const result = await auth.loginManager({
           shopId: shopId ?? '',
@@ -44,22 +41,22 @@ export function createUserStore(kind: UserKind, defaults: UserProfile) {
         })
         token.value = result.token
         profile.value = {
-          name: result.user.storeManagerName,
+          name: result.user.storeManagerName || defaults.name,
           role: '门店经理',
-          shopCount: result.user.stores?.length ?? 0,
+          shopCount: result.user.stores?.length ?? defaults.shopCount ?? 0,
         }
         return
       }
       if (kind === 'operator') {
         const result = await auth.loginOperator(username, password)
         token.value = result.token
-        profile.value = { name: result.user.loginname, role: '运营人员' }
+        profile.value = { name: isMockMode() ? defaults.name : result.user.loginname, role: '运营人员' }
         return
       }
       const result = await auth.loginStaff(shopId ?? '', username, password)
       token.value = result.token
       profile.value = {
-        name: result.user.staffName,
+        name: isMockMode() ? defaults.name : result.user.staffName,
         role: '收银员',
         shop: shopId ? `门店 ${shopId}` : '心飞餐饮',
       }

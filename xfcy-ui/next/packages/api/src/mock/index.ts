@@ -61,7 +61,11 @@ export class MockNotFoundError extends Error {
   }
 }
 
-const MOCK_TOKEN = 'xfcy-mock-token'
+/**
+ * 演示 token：模块加载时随机生成，避免固定明文凭据入库/硬编码；
+ * 同一会话内保持稳定，刷新后重新签发。
+ */
+const MOCK_TOKEN = `xfcy-mock-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
 
 function ok<T>(data: T, token?: string): ProviderResult<T> {
   return { status: 200, desc: 'ok', data, token }
@@ -99,14 +103,15 @@ const bEndRoutes: MockRoute[] = [
     method: 'POST',
     pattern: /^\/enterprise\/account\/login$/,
     handler: ({ params }) => {
-      if (!params.shopId || !params.phone || !params.loginPass) {
+      // mock 演示模式：登录页隐藏商户号，此处回退演示值，不阻塞登录
+      if (!params.phone || !params.loginPass) {
         return { status: 500, desc: '登录参数不完整' }
       }
       return ok(
         {
           enterpriseId: 'ent-demo',
           enterpriseName: '心飞餐饮（示意）',
-          shopId: String(params.shopId),
+          shopId: String(params.shopId ?? 'demo-shop'),
           phone: String(params.phone),
           status: 1,
         },
@@ -118,7 +123,7 @@ const bEndRoutes: MockRoute[] = [
     method: 'POST',
     pattern: /^\/store\/manager\/login$/,
     handler: ({ params }) => {
-      if (!params.shopId || !params.phone || !params.loginPass) {
+      if (!params.phone || !params.loginPass) {
         return { status: 500, desc: '登录参数不完整' }
       }
       return ok(
@@ -146,7 +151,7 @@ const bEndRoutes: MockRoute[] = [
     method: 'POST',
     pattern: /^\/staff\/login$/,
     handler: ({ params }) => {
-      if (!params.shopId || !params.loginName || !params.password) {
+      if (!params.loginName || !params.password) {
         return { status: 500, desc: '登录参数不完整' }
       }
       return ok(

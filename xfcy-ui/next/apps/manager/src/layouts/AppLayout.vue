@@ -120,6 +120,7 @@ function logout() {
       />
       <span class="xfm-topbar__time">{{ timeText }}</span>
     </template>
+    <router-view />
   </XfAppShell>
 </template>
 

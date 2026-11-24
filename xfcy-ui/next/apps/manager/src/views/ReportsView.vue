@@ -155,15 +155,15 @@ function exportCsv() {
         <XfInput :id="id" v-model="start" type="date" />
       </template>
     </XfField>
-    <XfField label="结束日期">
-      <template #default="{ id }">
-        <XfInput :id="id" v-model="end" type="date" />
-      </template>
-    </XfField>
-    <div class="xf-toolbar__grow"></div>
-    <span v-if="loading" class="xf-muted">加载中…</span>
-    <XfButton @click="load">查询</XfButton>
-  </div>
+<XfField label="结束日期">
+<template #default="{ id }">
+<XfInput :id="id" v-model="end" type="date" />
+</template>
+</XfField>
+<XfButton @click="load">查询</XfButton>
+<div class="xf-toolbar__grow"></div>
+<span v-if="loading" class="xf-muted">加载中…</span>
+</div>
 
   <p v-if="error" class="xfm-report__error" role="alert">{{ error }}</p>
 

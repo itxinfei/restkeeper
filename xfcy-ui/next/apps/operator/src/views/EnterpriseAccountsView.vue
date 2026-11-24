@@ -29,16 +29,17 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 const columns: Column[] = [
-  { key: 'code', label: '企业编码', sortable: true },
-  { key: 'name', label: '企业名称' },
-  { key: 'contact', label: '联系人' },
-  { key: 'shopCount', label: '门店数', align: 'center', sortable: true },
-  { key: 'status', label: '状态' },
-  { key: 'expireDate', label: '有效期', align: 'center', sortable: true },
-  { key: 'createdAt', label: '创建时间', align: 'center', sortable: true },
+  { key: 'code', label: '企业编码', sortable: true, width: '100px' },
+  { key: 'name', label: '企业名称', width: '220px', wrap: true },
+  { key: 'contact', label: '联系人', width: '90px' },
+  { key: 'shopCount', label: '门店数', align: 'center', sortable: true, width: '80px' },
+  { key: 'status', label: '状态', width: '90px' },
+  { key: 'expireDate', label: '有效期', align: 'center', sortable: true, width: '100px' },
+  { key: 'createdAt', label: '创建时间', align: 'center', sortable: true, width: '100px' },
   { key: 'action', label: '操作', width: '150px' },
 ]
 

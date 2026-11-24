@@ -9,15 +9,16 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 const columns: Column[] = [
-  { key: 'name', label: '服务名' },
-  { key: 'group', label: '分组' },
-  { key: 'status', label: '状态' },
-  { key: 'instances', label: '实例数', align: 'center' },
-  { key: 'version', label: '版本', align: 'center' },
-  { key: 'heartbeat', label: '心跳', align: 'center' },
+  { key: 'name', label: '服务名', width: '180px' },
+  { key: 'group', label: '分组', width: '110px' },
+  { key: 'status', label: '状态', width: '100px' },
+  { key: 'instances', label: '实例数', align: 'center', width: '90px' },
+  { key: 'version', label: '版本', align: 'center', width: '100px' },
+  { key: 'heartbeat', label: '心跳', align: 'center', width: '110px' },
 ]
 
 const kpiTrend: Record<string, 'up' | 'down' | 'flat'> = {

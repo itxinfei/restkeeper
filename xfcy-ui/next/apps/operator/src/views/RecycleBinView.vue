@@ -19,14 +19,15 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 const columns: Column[] = [
-  { key: 'code', label: '企业编码', sortable: true },
-  { key: 'name', label: '企业名称' },
-  { key: 'contact', label: '联系人' },
-  { key: 'shopCount', label: '门店数', align: 'center' },
-  { key: 'deletedAt', label: '删除时间', align: 'center', sortable: true },
+  { key: 'code', label: '企业编码', sortable: true, width: '110px' },
+  { key: 'name', label: '企业名称', width: '220px', wrap: true },
+  { key: 'contact', label: '联系人', width: '100px' },
+  { key: 'shopCount', label: '门店数', align: 'center', width: '90px' },
+  { key: 'deletedAt', label: '删除时间', align: 'center', sortable: true, width: '170px' },
   { key: 'action', label: '操作', width: '180px' },
 ]
 

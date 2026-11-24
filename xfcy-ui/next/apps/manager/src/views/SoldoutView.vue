@@ -51,11 +51,11 @@ const typeOptions = [
 ]
 
 const columns = [
-  { key: 'name', label: '菜品名称' },
-  { key: 'type', label: '类型' },
-  { key: 'limit', label: '沽清总量', align: 'right' as const },
-  { key: 'remainder', label: '剩余', align: 'right' as const },
-  { key: 'actions', label: '操作', align: 'right' as const },
+  { key: 'name', label: '菜品名称', width: '220px', wrap: true },
+  { key: 'type', label: '类型', width: '100px' },
+  { key: 'limit', label: '沽清总量', align: 'right' as const, width: '120px' },
+  { key: 'remainder', label: '剩余', align: 'right' as const, width: '110px' },
+  { key: 'actions', label: '操作', align: 'right' as const, width: '190px' },
 ]
 
 function toRow(item: SellCalculation): SoldoutRow {

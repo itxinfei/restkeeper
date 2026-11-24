@@ -41,11 +41,11 @@ const nameKeyword = ref('')
 const phoneKeyword = ref('')
 
 const columns = [
-  { key: 'name', label: '姓名' },
-  { key: 'phone', label: '手机号' },
-  { key: 'sex', label: '性别' },
-  { key: 'status', label: '状态' },
-  { key: 'actions', label: '操作', align: 'right' as const },
+  { key: 'name', label: '姓名', width: '120px' },
+  { key: 'phone', label: '手机号', width: '150px' },
+  { key: 'sex', label: '性别', align: 'center' as const, width: '80px' },
+  { key: 'status', label: '状态', width: '100px' },
+  { key: 'actions', label: '操作', align: 'right' as const, width: '190px' },
 ]
 
 function toRow(item: Staff): StaffRow {

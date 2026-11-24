@@ -94,7 +94,8 @@ export const mockMicroappPayMethods: MockPayMethod[] = [
 /** 已提交订单（mock 状态，供订单详情/支付回查） */
 export const mockMicroappOrders = new Map<string, OrderEntity>()
 
-const MOCK_TOKEN = 'xfcy-microapp-mock-token'
+/** 演示 token：随机生成，不使用固定明文凭据（同会话内稳定） */
+const MOCK_TOKEN = `xfcy-microapp-mock-${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`
 const SET_MEAL_CATEGORY_ID = 'c6'
 
 function makeOrderNumber(date = new Date()): string {

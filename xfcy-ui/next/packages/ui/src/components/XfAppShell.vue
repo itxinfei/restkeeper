@@ -323,6 +323,8 @@ function toggleCollapsed() {
   font-weight: var(--weight-title);
   line-height: var(--leading-title);
   color: var(--c-text);
+  /* 标题不换行，避免 4 字标题被挤成两行 */
+  white-space: nowrap;
 }
 
 .xf-topbar__crumb {
@@ -347,6 +349,11 @@ function toggleCollapsed() {
   .xf-topbar__collapse {
     display: grid;
     place-items: center;
+  }
+
+  /* 窄屏隐藏面包屑：页面头已含标题，避免与标题争抢宽度 */
+  .xf-topbar__crumb {
+    display: none;
   }
 
   .xf-shell.is-collapsed .xf-rail {

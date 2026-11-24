@@ -333,18 +333,22 @@
   font-weight: var(--weight-emphasis);
 }
 
-/* ---------- 点餐收银 ---------- */
+/* ---------- 点餐收银 ----------
+ * 使用 flex 而非 grid：右侧面板 height:100% 在 grid 未显式设行高时会退化为
+ * 内容高度并被顶到底部，导致「订单明细」列表被压缩到不可见。
+ */
 .xfc-pos {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  height: 100%;
+display: flex;
+height: 100%;
 }
 
 .xfc-pos__left {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  border-right: 1px solid var(--c-border);
+display: flex;
+flex-direction: column;
+flex: 1 1 auto;
+min-width: 0;
+min-height: 0;
+border-right: 1px solid var(--c-border);
 }
 
 .xfc-search {
@@ -500,11 +504,14 @@
 
 /* ---------- 订单面板 ---------- */
 .xfc-order {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  min-width: 0;
-  background: var(--c-surface);
+display: flex;
+flex-direction: column;
+flex: none;
+width: 380px;
+height: 100%;
+min-height: 0;
+min-width: 0;
+background: var(--c-surface);
 }
 
 .xfc-order__head {
@@ -535,6 +542,7 @@
 
 .xfc-order__lines {
   flex: 1 1 auto;
+  min-height: 64px;
   overflow-y: auto;
   padding: 8px 16px;
 }
@@ -852,8 +860,8 @@
  * 断点与 @xfcy/ui 的 XfAppShell 保持一致：1280 / 1024 / 768 / 560。
  */
 @media (max-width: 1279px) {
-  .xfc-pos {
-    grid-template-columns: minmax(0, 1fr) 340px;
+  .xfc-order {
+    width: 340px;
   }
 }
 
@@ -864,12 +872,36 @@
   }
 
   .xfc-pos {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 45%);
+    flex-direction: column;
   }
 
   .xfc-pos__left {
+    flex: 1 1 auto;
     border-right: none;
     border-bottom: 1px solid var(--c-border);
+  }
+
+  /* 堆叠态面板加高并压缩固定区块，保证明细列表始终可见（触屏命中区不变） */
+  .xfc-order {
+    width: auto;
+    height: 56%;
+  }
+
+  .xfc-order__head {
+    padding: 10px 14px;
+  }
+
+  /* 顶栏已展示当前桌台，面板内不再重复 */
+  .xfc-order__table {
+    display: none;
+  }
+
+  .xfc-order__total {
+    padding: 10px 14px;
+  }
+
+  .xfc-order__ops {
+    gap: 8px;
+    padding: 10px 14px 12px;
   }
 }

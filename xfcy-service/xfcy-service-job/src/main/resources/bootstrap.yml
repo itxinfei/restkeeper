@@ -16,13 +16,13 @@ spring:
     store:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://192.168.200.128:3306/restkeeper_store?serverTimezone=Asia/Shanghai
-      username: root
-      password: root
+      username: ${MYSQL_USERNAME:root}
+      password: ${MYSQL_PASSWORD:root}
     order:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://192.168.200.128:3306/restkeeper_order?serverTimezone=Asia/Shanghai
-      username: root
-      password: root
+      username: ${MYSQL_USERNAME:root}
+      password: ${MYSQL_PASSWORD:root}
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

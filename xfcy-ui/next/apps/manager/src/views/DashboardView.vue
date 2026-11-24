@@ -27,16 +27,17 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 const columns: Column[] = [
-  { key: 'orderNo', label: '单号', sortable: true },
-  { key: 'table', label: '桌台' },
-  { key: 'guests', label: '人数', align: 'center' },
-  { key: 'amount', label: '金额', align: 'right', sortable: true },
-  { key: 'pay', label: '支付' },
-  { key: 'status', label: '状态' },
-  { key: 'time', label: '时间' },
+  { key: 'orderNo', label: '单号', sortable: true, width: '150px' },
+  { key: 'table', label: '桌台', width: '90px' },
+  { key: 'guests', label: '人数', align: 'center', width: '76px' },
+  { key: 'amount', label: '金额', align: 'right', sortable: true, width: '120px' },
+  { key: 'pay', label: '支付', width: '100px' },
+  { key: 'status', label: '状态', width: '100px' },
+  { key: 'time', label: '时间', width: '140px' },
 ]
 
 /* mock 模式用迁移自 api 的演示数据；real 模式按契约拉取，失败显式报错 */

@@ -38,6 +38,7 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 type DishStatus = '起售' | '停售'
@@ -235,15 +236,15 @@ const dishStat = computed(() => ({
 }))
 
 const dishColumns: Column[] = [
-  { key: 'select', label: '', width: '44px' },
-  { key: 'thumb', label: '', width: '56px' },
-  { key: 'name', label: '菜品' },
-  { key: 'category', label: '分类' },
-  { key: 'code', label: '编码', align: 'center' },
-  { key: 'price', label: '价格', align: 'right', sortable: true },
-  { key: 'remain', label: '沽清余量', align: 'right' },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作' },
+{ key: 'select', label: '', width: '44px' },
+{ key: 'thumb', label: '', width: '56px' },
+{ key: 'name', label: '菜品', width: '190px', wrap: true },
+{ key: 'category', label: '分类', width: '100px' },
+{ key: 'code', label: '编码', align: 'center', width: '90px' },
+{ key: 'price', label: '价格', align: 'right', sortable: true, width: '110px' },
+{ key: 'remain', label: '沽清余量', align: 'right', width: '110px' },
+{ key: 'status', label: '状态', width: '90px' },
+{ key: 'action', label: '操作', width: '165px' },
 ]
 
 async function toggleDish(row: DishRow) {
@@ -406,12 +407,12 @@ const selectedCombo = computed(
 )
 
 const comboColumns: Column[] = [
-  { key: 'name', label: '套餐' },
-  { key: 'code', label: '编码', align: 'center' },
-  { key: 'price', label: '售价', align: 'right', sortable: true },
-  { key: 'dishCount', label: '内含菜品数', align: 'center' },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作' },
+{ key: 'name', label: '套餐', width: '200px', wrap: true },
+{ key: 'code', label: '编码', align: 'center', width: '100px' },
+{ key: 'price', label: '售价', align: 'right', sortable: true, width: '120px' },
+{ key: 'dishCount', label: '内含菜品数', align: 'center', width: '120px' },
+{ key: 'status', label: '状态', width: '100px' },
+{ key: 'action', label: '操作', width: '180px' },
 ]
 
 /* ---------------- 菜品分类 ---------------- */
@@ -430,11 +431,11 @@ const pagedCategories = computed(() => {
 })
 
 const categoryColumns: Column[] = [
-  { key: 'name', label: '分类名称' },
-  { key: 'sort', label: '排序', align: 'center', sortable: true },
-  { key: 'dishCount', label: '菜品数', align: 'center' },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作' },
+{ key: 'name', label: '分类名称', width: '180px', wrap: true },
+{ key: 'sort', label: '排序', align: 'center', sortable: true, width: '100px' },
+{ key: 'dishCount', label: '菜品数', align: 'center', width: '110px' },
+{ key: 'status', label: '状态', width: '100px' },
+{ key: 'action', label: '操作', width: '180px' },
 ]
 
 function toggleCategory(row: CategoryRow) {
@@ -515,11 +516,11 @@ const pagedFlavors = computed(() => {
 })
 
 const flavorColumns: Column[] = [
-  { key: 'name', label: '口味名称' },
-  { key: 'type', label: '类型' },
-  { key: 'dishCount', label: '关联菜品数', align: 'center' },
-  { key: 'status', label: '状态' },
-  { key: 'action', label: '操作' },
+{ key: 'name', label: '口味名称', width: '160px', wrap: true },
+{ key: 'type', label: '类型', width: '120px' },
+{ key: 'dishCount', label: '关联菜品数', align: 'center', width: '130px' },
+{ key: 'status', label: '状态', width: '100px' },
+{ key: 'action', label: '操作', width: '180px' },
 ]
 
 function toggleFlavor(row: FlavorRow) {

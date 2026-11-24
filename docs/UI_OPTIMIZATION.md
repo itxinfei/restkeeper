@@ -30,6 +30,7 @@
 | 响应式 | 三端断点统一 1280 / 1024 / 768 / 560 | ✅ 已统一（B4） |
 | 路由守卫 | `@xfcy/auth` `createAuthGuard({loginName, homeName, isLoggedIn})` | ✅ 已统一（B7） |
 | 登录页 | `XfLoginPage`（props 注入品牌/副标题/尺寸），三端薄封装 | ✅ 已统一（B7） |
+| 凭据治理 | 部署配置的 MySQL/RabbitMQ 账号口令、mock 演示 token | ✅ 已治理（B12）：配置占位符化 + 演示 token 运行时随机签发 |
 
 ### 2.2 管家端（manager）
 
@@ -85,6 +86,7 @@
 ```
 - 每页结构固定：**页面头（标题 + 说明 + 主操作）→ 工具栏（筛选左 / 操作右）→ 内容**。
 - 表格页统一：工具栏在上、表格在中、分页在下右。
+- 表格列宽即最小宽度：`XfTable` 按声明宽度设 `min-width`，容器不足时横向滚动而非挤压换行；长文本主列用 `Column.wrap` 允许换行（B12）。
 
 ### G2 统一轻提示 Toast（P0）
 新增 `XfToast`（`packages/ui`）：
@@ -159,6 +161,7 @@
 | **B9（页面头落地）** ✅ | G1 真正落地（`XfPageHead` 全端接入）、`XfEmpty` 空态操作（`actionText`/`@action`） | manager/operator |
 | **B10（死入口/静默失败清零）** ✅ | Dashboard 死按钮治理、combos 占位路由重定向、cashier 加载/检索失败显式报错 | manager/cashier |
 | **B11（去重与 C 端错误态）** ✅ | G5 工具类抽到 `@xfcy/ui`（manager/operator 去重）、microapp 菜单加载/检索失败显式报错 + 重试 | manager/operator/microapp |
+| **B12（凭据治理 + 表格/顶栏规范化）** ✅ | 明文凭据占位符化、mock token 随机化；修复 manager/operator 主内容空白（缺 `router-view`）与 cashier 订单面板塌陷；`XfTable` 列宽/换行规范落地，顶栏标题不换行、窄屏隐藏面包屑 | 全部页面 / 部署配置 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -200,3 +203,9 @@
 > B11 已落地：
 > - **G5 去重收口**：toolbar / muted / num / panel-gap 等应用级重复类统一到 `@xfcy/ui`（`.xf-toolbar*` / `.xf-muted` / `.xf-num` / `.xf-panel-gap`），manager 7 页与 operator 5 页模板迁移，两个 app 的 layout.css 删除对应重复定义。
 > - **C 端错误态**：microapp 菜单加载失败不再只弹 Toast，改为内联错误块 + 「重新加载」（≥48px 触屏区）；检索失败区分网络错误与空结果，不再误报「没有找到相关菜品」。
+>
+> B12 已落地：
+> - **凭据治理**：`deploy/nacos/*.yml`（common + 5 个 provider）与 `xfcy-service-job/bootstrap.yml` 中 MySQL / RabbitMQ 明文账号口令改为 `${MYSQL_USERNAME:root}`、`${MYSQL_PASSWORD:root}`、`${RABBITMQ_USERNAME:guest}`、`${RABBITMQ_PASSWORD:guest}` 占位符；`deploy/.env.example` 补对应变量（本地默认值，生产用密钥管理注入，勿写回配置文件）。`@xfcy/api` mock 的固定 `xfcy-mock-token` 改为运行时随机签发（同会话稳定）；`@xfcy/auth` user-store 不再自行拼接演示 token，统一由 api 层签发；mock 登录放宽 `shopId`（登录页已隐藏商户号）。
+> - **布局缺陷修复**：manager / operator `AppLayout` 补 `<router-view />`（此前登录后主内容整体空白）；cashier `layout.css` 点餐区改 flex，右侧订单面板 `height:100%` 不再被压缩，堆叠态（<1024）面板加高并隐藏与顶栏重复的桌台信息，订单明细列表恒可见。
+> - **组件规范**：`XfTable` 新增 `Column.wrap`（长文本主列换行，其余列保持单行）与按声明列宽计算的最小宽度（容器不足时横向滚动而非挤压成逐字换行）；manager / operator 10 个视图列定义补齐并收窄至桌面可用宽度（dishes 955 / credit 主体 920 / enterprise 930）。`XfAppShell` 顶栏标题 `white-space: nowrap`，<1280 隐藏面包屑。
+> - **工具条顺序**：ReportsView「查询」移至日期字段之后（`.xf-toolbar__grow` 仅推右侧「加载中…」），避免按钮单独换行。

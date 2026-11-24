@@ -23,6 +23,7 @@ type Column = {
   align?: 'left' | 'center' | 'right'
   sortable?: boolean
   width?: string
+  wrap?: boolean
 }
 
 type DictStatus = '启用' | '停用'
@@ -37,11 +38,11 @@ type OperatorRow = {
 }
 
 const columns: Column[] = [
-  { key: 'account', label: '账号', sortable: true },
-  { key: 'name', label: '姓名' },
-  { key: 'role', label: '角色' },
-  { key: 'status', label: '状态' },
-  { key: 'lastLogin', label: '最后登录', align: 'center', sortable: true },
+  { key: 'account', label: '账号', sortable: true, width: '130px' },
+  { key: 'name', label: '姓名', width: '110px' },
+  { key: 'role', label: '角色', width: '110px' },
+  { key: 'status', label: '状态', width: '100px' },
+  { key: 'lastLogin', label: '最后登录', align: 'center', sortable: true, width: '170px' },
   { key: 'action', label: '操作', width: '160px' },
 ]
 
