@@ -196,6 +196,12 @@ public class OrderController {
         return orderService.queryPage(pageNum, pageSize, start, end, payStatus, payType, orderNumber);
     }
 
+    @Operation(summary = "按主键查询订单")
+    @GetMapping("/order/{id}")
+    public OrderEntity getById(@PathVariable("id") String id) {
+        return orderService.getById(id);
+    }
+
     @Operation(summary = "按流水号查已付订单（反结账入口）")
     @GetMapping("/order/number/{orderNumber}")
     public OrderEntity getByOrderNumber(@PathVariable("orderNumber") String orderNumber) {

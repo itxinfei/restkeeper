@@ -3,7 +3,9 @@ package com.restkeeper.controller.store;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.Table;
 import com.restkeeper.store.entity.TableArea;
+import com.restkeeper.store.entity.TableLog;
 import com.restkeeper.store.service.ITableAreaService;
+import com.restkeeper.store.service.ITableLogService;
 import com.restkeeper.store.service.ITableService;
 import com.restkeeper.vo.store.TableVO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -13,6 +15,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -32,10 +35,14 @@ public class TableController {
 
     private final ITableAreaService tableAreaService;
     private final ITableService tableService;
+    private final ITableLogService tableLogService;
 
-    public TableController(ITableAreaService tableAreaService, ITableService tableService) {
+    public TableController(ITableAreaService tableAreaService,
+                           ITableService tableService,
+                           ITableLogService tableLogService) {
         this.tableAreaService = tableAreaService;
         this.tableService = tableService;
+        this.tableLogService = tableLogService;
     }
 
     @Operation(summary = "添加区域")
@@ -66,5 +73,30 @@ public class TableController {
                                          @PathVariable("pageNum") int pageNum,
                                          @PathVariable("pageSize") int pageSize) {
         return tableService.queryPageByAreaId(areaId, pageNum, pageSize);
+    }
+
+    @Operation(summary = "按区域与状态统计桌台数量")
+    @GetMapping("/count/{areaId}/{status}")
+    public Integer countTableByStatus(@PathVariable("areaId") String areaId,
+                                      @PathVariable("status") Integer status) {
+        return tableService.countTableByStatus(areaId, status);
+    }
+
+    @Operation(summary = "按主键查询桌台")
+    @GetMapping("/{id}")
+    public Table getById(@PathVariable("id") String id) {
+        return tableService.getById(id);
+    }
+
+    @Operation(summary = "按主键更新桌台")
+    @PutMapping
+    public boolean updateById(@RequestBody Table table) {
+        return tableService.updateById(table);
+    }
+
+    @Operation(summary = "按桌台查当前开台记录")
+    @GetMapping("/log/open/{tableId}")
+    public TableLog getOpenTableLog(@PathVariable("tableId") String tableId) {
+        return tableLogService.getOpenTableLog(tableId);
     }
 }

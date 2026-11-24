@@ -17,6 +17,7 @@ import com.restkeeper.store.service.IRemarkService;
 import com.restkeeper.store.service.ISetMealService;
 import com.restkeeper.store.service.IStaffService;
 import com.restkeeper.store.service.ITableAreaService;
+import com.restkeeper.store.service.ITableLogService;
 import com.restkeeper.store.service.ITableService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -102,6 +103,11 @@ public class EnterpriseWebClientConfig {
     @Bean
     ITableService tableService(RestClient.Builder builder) {
         return HttpClientFactory.createClient(builder, STORE, ITableService.class);
+    }
+
+    @Bean
+    ITableLogService tableLogService(RestClient.Builder builder) {
+        return HttpClientFactory.createClient(builder, STORE, ITableLogService.class);
     }
 
     @Bean

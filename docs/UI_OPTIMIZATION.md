@@ -36,39 +36,39 @@
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 工作台 Dashboard | mock 演示数据 + real 仅拉 `currentAmount` | ⚠️ real 模式已接 `currentAmount` + 桌台盘 + 沽清余量 + 最新订单；死按钮已治理（B10） | P1 |
-| 菜品管理 Dishes | 4 Tab（菜品/套餐/分类/口味），功能完整 | ⚠️ 提示用模态；口味库为占位；批量操作缺反馈（B8 已补勾选批量 + Toast 反馈） | P1 |
-| 套餐管理 combos | 旧入口已改为重定向 `/dishes?tab=combo`，导航项已移除（B10） | ✅ 已收口 | — |
-| 桌台管理 Tables | 区域 + 桌台网格 | ⚠️ 无空状态统一；状态色语义需复核 | P1 |
-| 员工管理 Staff | 列表/新增/编辑/停用 | ⚠️ 新增后**初始密码无展示/重置入口**（后端不发短信，见 BUSINESS §9）→ 员工无法登录 | **P0** |
-| 挂账管理 Credit | 列表/新增/编辑/还款/停用 | ⚠️ 无「挂账流水」入口（`/credit/log/*` 未接入）；还款超额无前置校验提示 | P1 |
-| 沽清管理 Soldout | 列表/新增/加减/删除 | ⚠️ 与 Dishes 的「余量」列口径需一致 | P2 |
-| 经营报表 Reports | 纯 CSS 柱状图，无导出 | ⚠️ 无图表库（DESIGN 提到 ECharts 6）；无导出；口径说明用模态 | P1 |
+| 工作台 Dashboard | real 模式已接 `currentAmount` + 桌台盘 + 沽清余量 + 最新订单（B2/B10），死按钮已治理 | 翻台率无契约，已显式「暂无口径」而非造数 | P2 |
+| 菜品管理 Dishes | 4 Tab（含套餐）、批量停售 + Toast、编码/名称检索；提示已改 Toast（B1/B8） | 口味库占位（P2 后置）；余量已接沽清真实值（B6） | P2 |
+| 套餐管理 combos | 旧入口重定向 `/dishes?tab=combo`，导航项已移除（B10） | ✅ 已收口 | — |
+| 桌台管理 Tables | 区域 + 桌台网格 + 空态；real 计数走 `table.countByStatus`（B14 补 BFF） | 状态色已统一 `toneOf`（B8） | — |
+| 员工管理 Staff | 列表/新增/编辑/停用；初始密码展示 + 停用二次确认（B3/B5） | ✅ 已闭环 | — |
+| 挂账管理 Credit | 双 Tab（主体/流水）+ 流水导出 + 还款超额前置校验（B5） | ✅ 已闭环 | — |
+| 沽清管理 Soldout | 与 Dishes 余量同口径（`-1`/未设置 → 「不限」）（B6） | ✅ 已闭环 | — |
+| 经营报表 Reports | CSS 分时柱状 + 悬浮数值 + 空态 + CSV 导出 + 口径提示（B5/B8） | 无重型图表库（按 DESIGN 采用轻量方案） | — |
 
 ### 2.3 运营中心（operator）
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 企业账号 | 完整（开通/编辑/停用/删除/还原/重置密码） | ⚠️ 筛选/分页为**前端本地过滤**，数据量大时不可扩展 | P1 |
-| 回收站 | 列表/还原 | ⚠️ 未提示「还原后仍需启用」（BUSINESS §5.7） | **P0** |
-| 字典管理 | 只读列表 | ✅ 符合 P2 后置定位 | P2 |
-| 运营人员 | 只读 | ✅ 符合 P2 后置定位 | P2 |
-| 服务监控 | 只读面板 | ⚠️ 无真实数据源，需标注示意 | P2 |
+| 企业账号 | 服务端分页（`enterpriseName` 模糊）+ 开通密码提示（B6） | 状态/套餐为演示字段，开启时退化为本地过滤，数据量大不可扩展 | P1 |
+| 回收站 | 列表/还原 + 「仍需启用」提示（B3/B5） | ✅ 已闭环 | — |
+| 字典管理 | 只读列表（后端未提供写接口，前端写操作为 mock 专用） | P2 后置 | P2 |
+| 运营人员 | 只读（同上，后端只读） | P2 后置 | P2 |
+| 服务监控 | 示意面板，明确标注「非真实探测结果」 | 无真实数据源 | P2 |
 
 ### 2.4 收银端（cashier）
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 桌台总览 | 区域 + 桌台卡 | ✅ 空态已统一；⚠️ 状态色/计数口径需与 `table/count` 对齐 | P1 |
-| 点餐页 | 分类锚点 + 菜品网格 + 订单面板 + 结账弹窗 | ✅ 结构符合 DESIGN §5.2；⚠️ 换台/退菜/反结账入口未确认完整 | P1 |
+| 桌台总览 | 区域 + 桌台卡；空态统一；real 计数走 `table/count`（B14） | 状态色需与 provider `SystemCode` 常量复核 | P1 |
+| 点餐页 | 分类锚点 + 菜品网格 + 订单面板 + 结账弹窗；换台/退菜/反结账/挂账主体校验齐备（B3/B5）；空单禁用无效操作（B13） | 换台/后厨打印为「示意」交互（real 模式生效） | P2 |
 | 登录 | 员工登录 | ✅ | — |
 
 ### 2.5 C 端（microapp）
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 门店菜单 | 门店头 + 搜索 + 分类锚点 + 2 列大图 | ✅ 结构符合 DESIGN §5.3 | — |
-| 购物车 / 下单确认 / 支付结果 | 已有 | ⚠️ 支付为 dev 打桩，需显著标注 | P1 |
+| 门店菜单 | 门店头 + 搜索 + 分类锚点 + 2 列大图；加载/检索失败显式报错 + 重试（B11） | ✅ | — |
+| 购物车 / 下单确认 / 支付结果 | 已有；金额等宽数字；底部安全区（B8） | 支付为 dev 打桩，已显著标注（B6） | P1 |
 
 ## 3. 全局优化设计
 
@@ -167,6 +167,7 @@
 | **B11（去重与 C 端错误态）** ✅ | G5 工具类抽到 `@xfcy/ui`（manager/operator 去重）、microapp 菜单加载/检索失败显式报错 + 重试 | manager/operator/microapp |
 | **B12（凭据治理 + 表格/顶栏规范化）** ✅ | 明文凭据占位符化、mock token 随机化；修复 manager/operator 主内容空白（缺 `router-view`）与 cashier 订单面板塌陷；`XfTable` 列宽/换行规范落地，顶栏标题不换行、窄屏隐藏面包屑 | 全部页面 / 部署配置 |
 | **B13（cashier 堆叠态收尾 + 无效操作禁用）** ✅ | 堆叠态订单明细空态撑满居中不再被裁剪；空单禁用挂账/退菜/打印；左区菜品网格保持可滚动 | cashier |
+| **B14（BFF 端点补齐）** ✅ | enterprise-web 透出 `table/count/{areaId}/{status}`、`table/{id}`、`PUT /table`、`table/log/open/{tableId}`，并注册 `ITableLogService` 契约代理；cash-web 透出 `GET /order/{id}` | manager Dashboard/Tables、cashier 订单 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -218,3 +219,9 @@
 > B13 已落地：
 > - **堆叠态空态裁剪修复**：`xfc-order__lines` 改 flex 列并让 `XfEmpty` 撑满居中（此前空单文案被 `min-height:64px` 裁掉）；堆叠态（<1024）订单面板加高至 65%，压缩 head/合计区、操作区改 3 列，明细区恒可见（实测空态 185px 完整落在 201px 容器内）。左区 `.xfc-dishes` 保持 `overflow-y:auto`，堆叠态首屏偏矮但可滚动浏览全部菜品（scrollH 1571 / clientH 150，属窄屏取舍）。
 > - **无效操作前置禁用**：空单时「挂账 / 退菜 / 打印」`disabled`（`OrderPanel.vue`），与点餐无关的「换台 / 反结账」保持可用；对应 G8 规范。
+>
+> B14 已落地（后端 BFF）：
+> - `xfcy-enterprise-web` 的 `store/TableController` 补齐 `GET /table/count/{areaId}/{status}`、`GET /table/{id}`、`PUT /table`、`GET /table/log/open/{tableId}`（对齐 `ITableService` / `ITableLogService` 契约）；`EnterpriseWebClientConfig` 补注册 `ITableLogService` 的 RestClient 代理 bean（否则启动无该 bean）。
+> - `xfcy-cash-web` 的 `OrderController` 补 `GET /order/{id}`（cashier real 模式订单加载所需，此前只能走 mock）。
+> - 验证：`mvn -pl xfcy-web/xfcy-enterprise-web,xfcy-web/xfcy-cash-web -am compile` 通过。**未做运行时联调**（需 Nacos + MySQL + provider 起栈）；`/table/**` 在网关同时挂 enterprise-web 与 cash-web 两条 predicate，实际路由次序待运行环境验证。
+> - 前端 `setMealDishList` 经排查无页面调用（套餐详情已由 `setMealGetById` 带出 dishList），不新增 BFF 端点。
