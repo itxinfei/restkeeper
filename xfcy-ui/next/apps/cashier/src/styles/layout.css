@@ -545,6 +545,17 @@ background: var(--c-surface);
   min-height: 64px;
   overflow-y: auto;
   padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 空单时空态撑满明细区并居中，避免被 min-height 裁掉文字 */
+.xfc-order__lines > .xf-empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .xfc-line {
@@ -884,11 +895,11 @@ background: var(--c-surface);
   /* 堆叠态面板加高并压缩固定区块，保证明细列表始终可见（触屏命中区不变） */
   .xfc-order {
     width: auto;
-    height: 56%;
+    height: 65%;
   }
 
   .xfc-order__head {
-    padding: 10px 14px;
+    padding: 8px 14px;
   }
 
   /* 顶栏已展示当前桌台，面板内不再重复 */
@@ -896,12 +907,34 @@ background: var(--c-surface);
     display: none;
   }
 
+  /* 合计区紧凑化：应收金额仍保持最大字号 */
   .xfc-order__total {
-    padding: 10px 14px;
+    padding: 8px 14px;
+  }
+
+  .xfc-order__total .xfc-row {
+    margin-bottom: 4px;
+  }
+
+  .xfc-order__total .xfc-row--big .xfc-num {
+    font-size: 24px;
+  }
+
+  /* 操作区改 3 列，6 个操作 + 结账由 3 行降为 2 行 */
+  .xfc-order__ops {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    padding: 10px 14px 12px;
+  }
+}
+
+/* 超窄屏（<560）按钮回退 2 列，避免文字挤压 */
+@media (max-width: 559px) {
+  .xfc-order {
+    height: 60%;
   }
 
   .xfc-order__ops {
-    gap: 8px;
-    padding: 10px 14px 12px;
+    grid-template-columns: 1fr 1fr;
   }
 }

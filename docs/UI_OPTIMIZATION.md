@@ -123,6 +123,10 @@
 - **反结账入口**：仅对已付订单显示，附原因输入与「不恢复桌台/不回冲沽清」提示（BUSINESS §5.4）。
 - **退菜差额**：已付后退菜提示「差额需人工处理」（BUSINESS §5.2）。
 
+### G8 无效操作前置禁用（P1）
+- 面板/工具栏中当前状态无意义的操作直接 `disabled`，而非点击后才报错：如空单禁用「挂账 / 退菜 / 打印」；与是否点餐无关的操作（换台、反结账）保持可用（B13）。
+- 批量类操作未勾选时按钮禁用（B8 已落地，口径一致）。
+
 ## 4. 逐页优化设计（摘要）
 
 ### 管家端
@@ -162,6 +166,7 @@
 | **B10（死入口/静默失败清零）** ✅ | Dashboard 死按钮治理、combos 占位路由重定向、cashier 加载/检索失败显式报错 | manager/cashier |
 | **B11（去重与 C 端错误态）** ✅ | G5 工具类抽到 `@xfcy/ui`（manager/operator 去重）、microapp 菜单加载/检索失败显式报错 + 重试 | manager/operator/microapp |
 | **B12（凭据治理 + 表格/顶栏规范化）** ✅ | 明文凭据占位符化、mock token 随机化；修复 manager/operator 主内容空白（缺 `router-view`）与 cashier 订单面板塌陷；`XfTable` 列宽/换行规范落地，顶栏标题不换行、窄屏隐藏面包屑 | 全部页面 / 部署配置 |
+| **B13（cashier 堆叠态收尾 + 无效操作禁用）** ✅ | 堆叠态订单明细空态撑满居中不再被裁剪；空单禁用挂账/退菜/打印；左区菜品网格保持可滚动 | cashier |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -209,3 +214,7 @@
 > - **布局缺陷修复**：manager / operator `AppLayout` 补 `<router-view />`（此前登录后主内容整体空白）；cashier `layout.css` 点餐区改 flex，右侧订单面板 `height:100%` 不再被压缩，堆叠态（<1024）面板加高并隐藏与顶栏重复的桌台信息，订单明细列表恒可见。
 > - **组件规范**：`XfTable` 新增 `Column.wrap`（长文本主列换行，其余列保持单行）与按声明列宽计算的最小宽度（容器不足时横向滚动而非挤压成逐字换行）；manager / operator 10 个视图列定义补齐并收窄至桌面可用宽度（dishes 955 / credit 主体 920 / enterprise 930）。`XfAppShell` 顶栏标题 `white-space: nowrap`，<1280 隐藏面包屑。
 > - **工具条顺序**：ReportsView「查询」移至日期字段之后（`.xf-toolbar__grow` 仅推右侧「加载中…」），避免按钮单独换行。
+>
+> B13 已落地：
+> - **堆叠态空态裁剪修复**：`xfc-order__lines` 改 flex 列并让 `XfEmpty` 撑满居中（此前空单文案被 `min-height:64px` 裁掉）；堆叠态（<1024）订单面板加高至 65%，压缩 head/合计区、操作区改 3 列，明细区恒可见（实测空态 185px 完整落在 201px 容器内）。左区 `.xfc-dishes` 保持 `overflow-y:auto`，堆叠态首屏偏矮但可滚动浏览全部菜品（scrollH 1571 / clientH 150，属窄屏取舍）。
+> - **无效操作前置禁用**：空单时「挂账 / 退菜 / 打印」`disabled`（`OrderPanel.vue`），与点餐无关的「换台 / 反结账」保持可用；对应 G8 规范。

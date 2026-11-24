@@ -182,10 +182,17 @@ async function onConfirmReverse() {
     </div>
 
     <div class="xfc-order__ops">
-      <XfButton variant="secondary" size="lg" @click="onHang">挂账</XfButton>
+      <!-- 空单时挂账/退菜/打印无意义，直接禁用；换台/反结账与是否点餐无关，保持可用 -->
+      <XfButton variant="secondary" size="lg" :disabled="order.isEmpty" @click="onHang">
+        挂账
+      </XfButton>
       <XfButton variant="secondary" size="lg" @click="moveOpen = true">换台</XfButton>
-      <XfButton variant="secondary" size="lg" @click="onRemoveLast">退菜</XfButton>
-      <XfButton variant="secondary" size="lg" @click="onPrint">打印</XfButton>
+      <XfButton variant="secondary" size="lg" :disabled="order.isEmpty" @click="onRemoveLast">
+        退菜
+      </XfButton>
+      <XfButton variant="secondary" size="lg" :disabled="order.isEmpty" @click="onPrint">
+        打印
+      </XfButton>
       <XfButton variant="secondary" size="lg" @click="openReverse">反结账</XfButton>
       <XfButton
         size="xl"
