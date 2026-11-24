@@ -61,3 +61,14 @@ $env:SPRING_CLOUD_NACOS_CONFIG_SERVERADDR    = "127.0.0.1:8848"
 
 全仓无 `.sql`，DDL 由 Flyway V1 产出（见 `docs/requirements.md` 6.2 库表清单，共 29 表 + 1 视图）。
 本地冒烟前需先执行 V1；`t_staff.status` 含在内。
+
+## 6. 虚拟机部署（192.168.20.88）
+
+中间件与数据在 VM 上的部署方案、配置对齐与验证清单见 [docs/MIDDLEWARE_DEPLOYMENT.md](../docs/MIDDLEWARE_DEPLOYMENT.md)。
+VM 专用 Nacos 配置在 `deploy/nacos-vm/`（地址 192.168.20.88、复用 mw-mysql/mw-redis，密码 123456）：
+
+```bash
+NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh
+```
+
+应用启动时把 Nacos 地址覆盖为 `192.168.20.88:8848`（discovery + config）。

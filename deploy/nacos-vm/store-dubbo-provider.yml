@@ -1,0 +1,17 @@
+# [VM 192.168.20.88] 由 deploy/nacos 派生，密码已对齐 mw 中间件（MySQL root/123456、Redis 123456）。
+# dataId: store-dubbo-provider.yml（store provider）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.20.88:3306/restkeeper_store?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
+seata:
+  enabled: true
+  application-id: store-dubbo-provider
+  tx-service-group: store-dubbo-provider-seata-tx-service-group
+  service:
+    vgroup-mapping:
+      store-dubbo-provider-seata-tx-service-group: default
+    grouplist:
+      default: 192.168.20.88:8091

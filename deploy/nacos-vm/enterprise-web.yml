@@ -1,0 +1,9 @@
+# [VM 192.168.20.88] 由 deploy/nacos 派生，密码已对齐 mw 中间件（MySQL root/123456、Redis 123456）。
+# dataId: enterprise-web.yml（enterprise-web BFF，OSS/文件上传）
+oss:
+  endpoint: oss-cn-hangzhou.aliyuncs.com
+  accessKeyId: your-access-key-id
+  accessKeySecret: your-access-key-secret
+  bucketName: your-bucket
+  local:
+    dir: ./upload

@@ -1,0 +1,24 @@
+# [VM 192.168.20.88] 由 deploy/nacos 派生，密码已对齐 mw 中间件（MySQL root/123456、Redis 123456）。
+# Nacos 共享配置 dataId: common.yml（group: DEFAULT_GROUP）— VM 版（192.168.20.88）
+# 所有服务经 sharedDataids 引入。中间件复用 VM 上现有 mw-mysql / mw-redis。
+spring:
+  redis:
+    host: 192.168.20.88
+    port: 6379
+    password: ${REDIS_PASSWORD:123456}
+  rabbitmq:
+    host: 192.168.20.88
+    port: 5672
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    listener:
+      simple:
+        acknowledge-mode: auto
+        retry:
+          enabled: true
+          max-attempts: 3
+# 短信通道（dev 打桩：未配置真实模板时发送会失败，不阻塞主流程）
+sms:
+  operator:
+    signName: 心飞餐饮
+    templateCode: SMS_000000000
