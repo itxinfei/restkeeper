@@ -171,6 +171,7 @@
 | **B15（VM 部署准备）** ✅ | 清理自建 xfcy-* 容器与命名卷让出端口；新增 `deploy/nacos-vm/*.yml`（地址 192.168.20.88、MySQL/Redis 密码 123456）与导入脚本；更新 `docs/MIDDLEWARE_DEPLOYMENT.md` | 部署环境 |
 | **B16（企业账号状态筛选服务端化）** ✅ | provider 契约/实现/operator-web 透传 `@RequestParam status`；`@xfcy/api` 与 mock 支持 status；store 移除状态本地过滤（仅套餐保留本地） | operator 企业管理 |
 | **B17（V1 DDL 逆向产出）** ✅ | 按实体 + Mapper XML 逆向产出 `deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql`（29 表 + `v_order_detail_all` 视图）；sqlglot 解析校验通过 | 数据库初始化 |
+| **B18（按部署手册定版适配）** ✅ | compose/Nacos/bootstrap 对齐《部署手册-中间件与数据》：Boot 4.1.3、MySQL 8.4.13、Redis 8.10.3、Nacos 3.3.0(含 8080)、RabbitMQ 4.4.0、ES/Kibana 9.5.7、MinIO；凭据 xf/root 123456；xxl-job-core 升 3.3.2 并适配 API | 全栈部署 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -247,3 +248,9 @@
 > - 逆向不确定项已在文件头标注：金额 Java Integer→int（单位语义待业务确认）、`t_store.category/password` 为 XML 遗留列（保留以兼容 resultMap）、`t_sell_calculation.id`/`t_reverse_order.id` 实体无 `@TableId` 但 DDL 补 PK、视图列取两实体并集确定部分。
 > - **验证**：sqlglot（MySQL 方言）解析 4 个文件均通过；**未导入实库**（VM 中间件当前未运行，待用户装完后导入并核对表数 3/3/15/8+视图）。
 > - 未接入 Flyway（仓库无 flyway 依赖），按手工导入设计，导入命令见 `deploy/README.md` §5。
+>
+> B18 已落地（版本适配，以《部署手册-中间件与数据》为唯一权威）：
+> - `deploy/docker-compose.yml`：Nacos v3.3.0（+8080 控制台）、MySQL 8.4.13(root/123456)、Redis 8.10.3(requirepass 123456)、RabbitMQ 4.4.0-management(xf/123456)、ES 9.5.7、新增 Kibana 9.5.7 与 MinIO(RELEASE tag)；optional：XXL-Job 3.3.2(8086)、Seata 2.6.0。
+> - Nacos 配置（`deploy/nacos/` 与 `-vm/` 已同内容）：MySQL `${MYSQL_USERNAME:xf}`/`${MYSQL_PASSWORD:123456}`、Redis password 123456、RabbitMQ xf/123456、Seata grouplist 192.168.20.88:8091；bootstrap.yml 指向 192.168.20.88:8848；`.env.example` 同步；`init.sql` 新增业务账号 xf/123456。
+> - 代码：根 pom Spring Boot 4.1.1→4.1.3；job 模块 MySQL 驱动迁 `com.mysql:mysql-connector-j`（BOM 解析 26.10.0）；xxl-job-core 2.1.2→3.3.2（handler 改 void + XxlJobHelper，executor setter 改 `setAppname`），job bootstrap 调度中心地址改 8086。
+> - **验证**：`mvn -DskipTests compile` 全仓通过；未做中间件运行时验证（等安装/升级完成）。

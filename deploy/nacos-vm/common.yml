@@ -1,6 +1,6 @@
-# [VM 192.168.20.88] 由 deploy/nacos 派生，密码已对齐 mw 中间件（MySQL root/123456、Redis 123456）。
-# Nacos 共享配置 dataId: common.yml（group: DEFAULT_GROUP）— VM 版（192.168.20.88）
-# 所有服务经 sharedDataids 引入。中间件复用 VM 上现有 mw-mysql / mw-redis。
+# [VM 192.168.20.88] 与 deploy/nacos 同内容；地址/凭据以《部署手册-中间件与数据》§3 为准。
+# Nacos 共享配置 dataId: common.yml（group: DEFAULT_GROUP）— VM 版
+# 所有服务经 sharedDataids 引入。地址/凭据以《部署手册-中间件与数据》§3 为准。
 spring:
   redis:
     host: 192.168.20.88
@@ -9,8 +9,8 @@ spring:
   rabbitmq:
     host: 192.168.20.88
     port: 5672
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USERNAME:xf}
+    password: ${RABBITMQ_PASSWORD:123456}
     listener:
       simple:
         acknowledge-mode: auto

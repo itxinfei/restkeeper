@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # 将 deploy/nacos/*.yml 导入本地 Nacos（先启动 deploy/docker-compose.yml）
 set -euo pipefail
-NACOS="${NACOS_SERVER:-127.0.0.1:8848}"
+NACOS="${NACOS_SERVER:-192.168.20.88:8848}"
 GROUP="${NACOS_GROUP:-DEFAULT_GROUP}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 for f in "$DIR"/nacos/*.yml; do

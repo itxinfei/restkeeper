@@ -1,14 +1,15 @@
 # Nacos 共享配置 dataId: common.yml（group: DEFAULT_GROUP）
-# 所有服务经 sharedDataids 引入。连接地址为本地 docker 的宿主机地址。
+# 所有服务经 sharedDataids 引入。地址/凭据以《部署手册-中间件与数据》§3 为准。
 spring:
   redis:
     host: 192.168.20.88
     port: 6379
+    password: ${REDIS_PASSWORD:123456}
   rabbitmq:
     host: 192.168.20.88
     port: 5672
-    username: ${RABBITMQ_USERNAME:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
+    username: ${RABBITMQ_USERNAME:xf}
+    password: ${RABBITMQ_PASSWORD:123456}
     listener:
       simple:
         acknowledge-mode: auto

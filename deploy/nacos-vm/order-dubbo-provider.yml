@@ -1,10 +1,10 @@
-# [VM 192.168.20.88] 由 deploy/nacos 派生，密码已对齐 mw 中间件（MySQL root/123456、Redis 123456）。
+# [VM 192.168.20.88] 与 deploy/nacos 同内容；地址/凭据以《部署手册-中间件与数据》§3 为准。
 # dataId: order-dubbo-provider.yml（order provider）
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://192.168.20.88:3306/restkeeper_order?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
-    username: ${MYSQL_USERNAME:root}
+    username: ${MYSQL_USERNAME:xf}
     password: ${MYSQL_PASSWORD:123456}
 seata:
   enabled: true

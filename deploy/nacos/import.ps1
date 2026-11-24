@@ -1,9 +1,9 @@
 # 将 deploy/nacos/*.yml 导入本地 Nacos（PowerShell 版）
 $ErrorActionPreference = 'Stop'
-$Nacos = if ($env:NACOS_SERVER) { $env:NACOS_SERVER } else { '127.0.0.1:8848' }
+$Nacos = if ($env:NACOS_SERVER) { $env:NACOS_SERVER } else { '192.168.20.88:8848' }
 $Group = if ($env:NACOS_GROUP) { $env:NACOS_GROUP } else { 'DEFAULT_GROUP' }
 $Dir = Split-Path -Parent $MyInvocation.MyCommand.Path
-Get-ChildItem -Path (Join-Path $Dir 'nacos') -Filter *.yml | ForEach-Object {
+Get-ChildItem -Path $Dir -Filter *.yml | ForEach-Object {
     $dataId = $_.Name
     $content = Get-Content -Raw -Encoding UTF8 $_.FullName
     $body = @{

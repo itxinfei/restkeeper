@@ -1,6 +1,8 @@
 # xfcy 中间件与数据部署方案（虚拟机 192.168.20.88）
 
-> 状态：准备中。中间件安装由用户执行；本轮已完成环境准备（自建 xfcy-* 容器已清理让出端口、VM 版 Nacos 配置已备好在 `deploy/nacos-vm/`），待安装完成后做健康检查与配置导入。目标：使 manager/operator/cashier/microapp 五端可从 mock 切到 real。
+> 状态：按手册适配中。中间件安装由用户执行（已在装）；仓库侧已完成版本/端口/凭据对齐（compose、Nacos 配置、pom、bootstrap）。目标：使 manager/operator/cashier/microapp 五端可从 mock 切到 real。
+>
+> **唯一权威**：`D:\MyCode\部署手册-中间件与数据.md`（版本、端口、账号）；本文只做 xfcy 落地与差异说明。
 
 ## 1. 环境现状（只读盘点结论）
 
@@ -10,22 +12,24 @@
 | Docker | 29.8.2 + Compose v5.6.0（插件式，命令 `docker compose`） |
 | sudo | itxinfei / 123456 可用 |
 | 镜像加速 | daemon.json 已配 docker.1ms.run / daocloud / xuanyuan / 1panel |
-| 已有容器 | **mw-mysql**（3306，root/123456，库 `xf_dev` + 多个其它项目库）、**mw-redis**（6379，密码 123456）、xfhj-mysql（3307，smartaster 项目）、xfhj-redis（6380）、mw-nginx（80，当前未运行） |
+| 已有容器 | mysql 8.4.13(3306, root/123456，库 `xf_dev` + 多个其它项目库)、redis 7.4(6379，密码 123456)、nacos 2.4.3(8848)、minio(9000)、rabbitmq 3.13(5672)（据手册 §4） |
 
-本轮曾新建 `xfcy-nacos`(8848/9848)、`xfcy-redis`(16379)、`xfcy-rabbitmq`(5672/15672)、`xfcy-mysql`(13306) 用于验证镜像与连通性，**已全部删除（含命名卷）**，端口已释放；`xfcy-es` 拉取被中断未建成。等待用户在 VM 上安装中间件。
+本轮曾新建 `xfcy-nacos`/`xfcy-redis`/`xfcy-rabbitmq`/`xfcy-mysql` 用于验证镜像与连通性，**已全部删除（含命名卷）**，端口已释放；`xfcy-es` 拉取被中断未建成。等待用户按手册完成安装/升级。
 
 ## 2. 部署决策总表
 
-原则：**数据库复用现有实例**；Nacos/RabbitMQ/ES 新建（机器上没有）。
+原则：**MySQL 复用现有实例**（已是手册定版 8.4.13）；Redis/Nacos/RabbitMQ 按手册升级到定版；ES/Kibana/MinIO 新增。
 
-| 组件 | 决策 | 地址 | 版本/镜像 | 凭据 | 数据持久化 |
+| 组件 | 决策 | 地址 | 版本/镜像（手册 §2） | 凭据（手册 §3） | 数据持久化 |
 |---|---|---|---|---|---|
-| MySQL | **复用 mw-mysql** | 127.0.0.1:3306 | 8.4 | root / **123456** | 已有数据卷（他项目共用，禁止删库） |
-| Redis | **复用 mw-redis** | 127.0.0.1:6379 | 7.4-alpine | 密码 **123456** | 共用实例（无其它应用在线，风险低） |
-| RabbitMQ | 新建 xfcy-rabbitmq | 127.0.0.1:5672、15672 | rabbitmq:3.13-management-alpine | guest/guest | 命名卷 rabbitmq-data |
-| Nacos | 新建 xfcy-nacos | 127.0.0.1:8848、9848 | nacos/nacos-server:v3.1.1（standalone） | 3.x 强制鉴权：需 `NACOS_AUTH_TOKEN`(Base64≥32B) + `IDENTITY_KEY`/`IDENTITY_VALUE` | 命名卷 nacos-data |
-| Elasticsearch | 新建 xfcy-es | 127.0.0.1:9200、9300 | elasticsearch:8.17.0（单节点、安全关） | 无 | 命名卷 es-data |
-| Seata / XXL-Job | 可选，后置 | 8091 / 8080 | 见 `deploy/docker-compose.optional.yml` | — | 需额外建表与注册配置，非冒烟必需 |
+| MySQL | **复用现有实例** | 192.168.20.88:3306 | mysql:8.4.13（不可跨补丁降级） | root / **123456**，业务账号 xf / 123456 | 已有数据目录（他项目共用，禁止删库） |
+| Redis | 升级现有实例 | 192.168.20.88:6379 | redis:8.10.3 | 密码 **123456** | 现有数据目录 |
+| RabbitMQ | 升级现有实例 | 192.168.20.88:5672、15672 | rabbitmq:4.4.0-management | **xf / 123456** | 现有数据目录 |
+| Nacos | 升级现有实例 | 192.168.20.88:8848、9848、**8080(控制台)** | nacos/nacos-server:v3.3.0（standalone） | admin / 123456；首波 `NACOS_AUTH_ENABLE=false`，镜像仍需 token/identity 才能启动 | nacos 数据目录 |
+| Elasticsearch | 新增 | 192.168.20.88:9200、9300 | elasticsearch:9.5.7（单节点、安全关） | 无 | es-data |
+| Kibana | 新增 | 192.168.20.88:5601 | kibana:9.5.7（必须与 ES 同版） | 无 | — |
+| MinIO | 新增 | 192.168.20.88:9000、9001 | minio/minio:RELEASE.2026-06-06T02-44-06Z | minioadmin / **itxinfei123**（≥8 位） | minio-data |
+| Seata / XXL-Job | 可选，后置 | 8091、7091 / **8086** | seataio/seata-server:2.6.0 / xuxueli/xxl-job-admin:3.3.2 | root/123456（xxl_job 库） | 需额外建表与注册配置，非冒烟必需 |
 
 **已清理**：`xfcy-mysql`(13306)、`xfcy-redis`(16379) 等本轮自建容器与命名卷均已删除，3306/6379/8848/9848/5672/15672/9200 端口空闲，未触碰 mw-* / xfhj-*。
 
@@ -39,25 +43,29 @@
 
 ### 3.2 其它存储
 
-- Redis：sa-token 会话 key 与其它项目共用实例；当前无并发应用，接受 db0 默认前缀，出现互相踢会话时再按 database 隔离。
+- Redis：sa-token 会话 key 与其它项目共用实例（手册定版 8.10.3）；出现互相踢会话时再按 database 隔离。
 - ES：按 `es-dubbo-provider.yml` 的 `xfcy-*` 索引集初始化（如需预建索引/映射，随 DDL 任务一并给出）。
-- RabbitMQ：guest/guest，应用按需声明 exchange/queue（`xf-order-status`、`xf-soldout`、`xf-credit`）。
+- RabbitMQ：**xf / 123456**，应用按需声明 exchange/queue（`xf-order-status`、`xf-soldout`、`xf-credit`）。
+- MinIO：作为通用对象存储（minioadmin/itxinfei123）；当前 OSS 上传仍走阿里云占位实现，切换需引入 S3 客户端（见 §8 待办）。
 
 ## 4. 配置对齐清单（关键）
 
-复用 mw-mysql/mw-redis 后，端口保持 3306/6379，但**凭据从 root/root 变为 123456**。仓库已提供改好的 VM 专用版：`deploy/nacos-vm/*.yml`（地址 192.168.20.88、MySQL root/123456、Redis 密码 123456），无需手工改值：
+已按手册统一口径改造完毕：仓库内 `deploy/nacos/` 与 `deploy/nacos-vm/` **内容一致**（地址 192.168.20.88，MySQL xf/123456，Redis 密码 123456，RabbitMQ xf/123456），bootstrap.yml 也已指向 192.168.20.88:8848。可用任一目录导入：
 
-| 位置 | 原值（本地版） | VM 版 |
-|---|---|---|
-| `deploy/nacos/common.yml` | redis host 127.0.0.1:6379（无密码） | `deploy/nacos-vm/common.yml`：host 192.168.20.88 + password 123456 |
-| `deploy/nacos/*-dubbo-provider.yml` | jdbc url …127.0.0.1:3306…，`${MYSQL_PASSWORD:root}` | `deploy/nacos-vm/*-dubbo-provider.yml`：url 指向 192.168.20.88，`${MYSQL_PASSWORD:123456}` |
-| `xfcy-service/*/src/main/resources/bootstrap.yml` | nacos server-addr 192.168.200.128:8848 | 启动覆盖为 **192.168.20.88:8848**（discovery + config） |
-| `deploy/.env.example` | MYSQL/REDIS 占位符（本地默认 root） | 保持不变；VM 场景用环境变量覆盖为 123456，勿写回文件 |
+| 位置 | 现值（与手册一致） |
+|---|---|
+| `deploy/nacos/common.yml` | redis host 192.168.20.88:6379 + password `${REDIS_PASSWORD:123456}`；rabbitmq username/password `${RABBITMQ_USERNAME:xf}` / `${RABBITMQ_PASSWORD:123456}` |
+| `deploy/nacos/*-dubbo-provider.yml` | jdbc url → `jdbc:mysql://192.168.20.88:3306/restkeeper_*`，username `${MYSQL_USERNAME:xf}`，password `${MYSQL_PASSWORD:123456}`；seata grouplist → 192.168.20.88:8091 |
+| `xfcy-service/*/bootstrap.yml`、`xfcy-web/*/bootstrap.yml`、`xfcy-gateway/bootstrap.yml` | nacos discovery/config server-addr = 192.168.20.88:8848（已回写，无需启动覆盖） |
+| `deploy/.env.example` | 同步 192.168.20.88 + xf/123456 + REDIS/RABBITMQ/NACOS token/MinIO 口径 |
+| `deploy/sql/init.sql` | 新增业务账号 `xf/123456`（仅本 4 库授权） |
 
 Nacos 配置导入（VM 上或本机指向 VM 均可）：
 
 ```bash
 NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy/nacos-vm/*.yml POST 到 /nacos/v1/cs/configs
+# 若 VM 上的 Nacos 已升 3.3.0，也可用本地同内容版本：
+NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos/import.sh
 ```
 
 > 若 VM 上已存在同名 dataId（此前导入过本地版），再次导入为覆盖更新，安全。
@@ -65,10 +73,10 @@ NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy
 ## 5. 执行步骤（按序）
 
 1. （已完成）清理自建冗余实例与命名卷，释放 3306/6379/8848/9848/5672/15672/9200。
-2. 复用库初始化：对复用 MySQL（root/123456）执行 `deploy/sql/init.sql`（幂等 CREATE DATABASE IF NOT EXISTS）。
-3. 完成 ES 部署：`docker compose up -d elasticsearch`（拉取约 800MB，需 `vm.max_map_count=262144`，已设置并持久化到 `/etc/sysctl.d/99-es.conf`）。
-4. 校验中间件：MySQL/Redis/RabbitMQ/Nacos/ES 端口与健康（见 §6）。
-5. 导入 Nacos 配置：`NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh`，确认 dataId 齐备。
+2. （进行中，用户执行）按手册完成安装/升级：Redis 8.10.3、Nacos 3.3.0、RabbitMQ 4.4.0；新增 ES 9.5.7 + Kibana 9.5.7（需 `vm.max_map_count=262144`）。
+3. 复用库初始化：对 MySQL（root/123456）执行 `deploy/sql/init.sql`（幂等建 4 库 + 业务账号 xf/123456）。
+4. 校验中间件：MySQL/Redis/RabbitMQ/Nacos/ES/Kibana 端口与健康（见 §6）。
+5. 导入 Nacos 配置：`NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos/import.sh`，确认 dataId 齐备。
 6. （表结构）导入 V1 DDL（文件已产出在 `deploy/sql/`）：
 
    ```bash
@@ -79,21 +87,31 @@ NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy
    ```
 
    导入后核对表数：operator 3 / shop 3 / store 15 / order 8（含 2 张历史表）+ 视图 1。
-7. 启动应用（bootstrap 覆盖 nacos 地址），按 README 冒烟顺序验证。
+7. 启动应用（bootstrap 已指向 192.168.20.88:8848），按 README 冒烟顺序验证。
 
 ## 6. 验证清单
 
 - MySQL：`docker exec <mysql容器> mysql -h127.0.0.1 -uroot -p123456 -e "show databases"` → 含 4 个 `restkeeper_*`；各库表数 3/3/15/8，且 `SELECT COUNT(*) FROM restkeeper_order.v_order_detail_all` 可执行（列名以实际容器名为准，当前 VM 上为 `mysql`/`redis`）。
 - Redis：`docker exec <redis容器> redis-cli -a 123456 ping` → PONG。
-- RabbitMQ：管理台 `http://192.168.20.88:15672`（guest/guest）。
-- Nacos：`http://192.168.20.88:8848/nacos` 可登录；配置列表含 common.yml、gateway.yml、各 provider yml、enterprise-web.yml（VM 版来自 `deploy/nacos-vm/`）。
-  - 注：仓库 compose 的 healthcheck 用 `/nacos/v1/console/health/readiness`，Nacos 3.1.1 该端点返回 410，容器会显示 unhealthy（功能不受影响）；建议改为控制台首页或 v3 健康端点。
-- ES：`curl http://127.0.0.1:9200/_cluster/health?pretty`。
+- RabbitMQ：管理台 `http://192.168.20.88:15672`（xf / 123456）；登录失败先确认升级后未回退到 guest。
+- Nacos：控制台 `http://192.168.20.88:8080/nacos`（3.x 控制台端口，admin/123456）；配置列表含 common.yml、gateway.yml、各 provider yml、enterprise-web.yml。
+  - 注：仓库 compose 的 healthcheck 优先探测 `/nacos/v1/console/health/readiness`，3.x 该端点可能 410，会回退到控制台首页探测（已加回退）。
+- ES：`curl http://192.168.20.88:9200/_cluster/health?pretty`（9.x 默认安全开启，开发环境用 `xpack.security.enabled=false`）；Kibana `http://192.168.20.88:5601` 需与 ES 同版本。
+- MinIO：`http://192.168.20.88:9001`（minioadmin / itxinfei123）。
 - 应用：provider 日志出现 Nacos 注册成功；网关 401/200 口径验证。
 
 ## 7. 风险与回滚
 
-- **共址风险**：mw-mysql/mw-redis 为其它项目共用，只做加法（建库、加密码配置），不做任何 DROP/重启；删除操作仅限本轮自建的 xfcy-* 容器与其命名卷。
+- **共址风险**：MySQL/Redis 为其它项目共用，只做加法（建库、加账号、加配置），不做任何 DROP/重启；删除操作仅限本轮自建的 xfcy-* 容器与其命名卷。
 - **DDL 缺失**：未导入 V1 前不要启动 provider，避免大量 SQL 异常日志。
-- **Nacos 资源**：standalone + 512m 堆，曾出现 Xmn=Xmx 的 JVM 参数（compose 触发），启动偏慢（约 3–5 分钟）；如不稳定可显式设 `JVM_XMN: 256m`。
-- **回滚**：`docker rm -f xfcy-es xfcy-nacos xfcy-rabbitmq` 并 `docker volume rm xfcy_es-data xfcy_nacos-data xfcy_rabbitmq-data`；mw-* 不做变更即无回滚成本。
+- **端口撞车**：xfcy 网关 `server.port=8080` 与 Nacos 3.x 控制台 8080 同机时会冲突；需错开时改网关端口（不要动 Nacos）。XXL-Job 已按手册用 8086。
+- **Nacos 资源**：standalone + 512m 堆，启动偏慢（约 3–5 分钟）；如不稳定可显式设 `JVM_XMN: 256m`。
+- **升级不可逆**：MySQL 8.4.13 数据目录不可降级（手册 §5-1）；Redis/Nacos/RabbitMQ 升级前建议先备份持久化目录。
+- **回滚**：移除本轮新增的 xfcy-es/kibana/minio 容器与其命名卷即可；MySQL 复用实例不做变更即无回滚成本。
+
+## 8. 待办（不属本轮范围）
+
+- **OSS 切 MinIO**：当前 enterprise-web 使用 aliyun-sdk-oss（OSSClient）；MinIO 是 S3 协议，需引入 `aws-java-sdk-s3`/MinIO Java SDK 与配置项后再切换，否则仅部署了 MinIO 也不会被使用。
+- **ES 9.x 索引与分词**：确认是否安装与 ES 9.5.7 匹配的分词插件（IK 需对应版本）；现有代码用 wildcard 检索，不依赖 IK。
+- **Seata 建表**：store/order provider 已配 `seata.enabled=true`，启用前需在 store/order 库建 `undo_log` 等表并在 Nacos 注册事务组。
+- **XXL-Job 元数据**：`xxl_job` 库与执行器注册（job bootstrap 指向 192.168.20.88:8086）。
