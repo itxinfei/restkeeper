@@ -2,10 +2,10 @@
 # 所有服务经 sharedDataids 引入。连接地址为本地 docker 的宿主机地址。
 spring:
   redis:
-    host: 127.0.0.1
+    host: 192.168.20.88
     port: 6379
   rabbitmq:
-    host: 127.0.0.1
+    host: 192.168.20.88
     port: 5672
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
