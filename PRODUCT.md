@@ -49,7 +49,7 @@ web
 
 ## Brand Commitments
 
-- 品牌名「心飞餐饮」；既有资产见 `docs/心飞餐饮.png`、`docs/心飞餐饮后台.jpg`、`docs/心飞餐饮小程序.png`、`docs/心飞为你飞.jpg`、`docs/心飞餐饮安卓.png`、`docs/login.png`、`docs/index.png`。
+- 品牌名「心飞餐饮」；现状界面以 `docs/ui/` 高保真原型与 `DESIGN.md` 为准。旧课程时期的品牌与界面截图（含原「餐掌柜」logo）已从仓库清理，归档于 git 历史，需要比对旧貌时按提交记录取回；公众号二维码仍见 `docs/心飞为你飞.jpg`。
 - 既有前端 `xfcy-ui/`（guanjia / yunyin / weixin / diancan）为视觉与交互参考，本轮为重写（redesign），旧貌是证据而非权威。
 - 用户已确认本轮交付：**设计规范 + 高保真 HTML 原型**（未指定具体风格，由设计决策给出）。
 - 2026-11-22 设计决策：视觉方向采用**品类标准（canon）**——干净、工整、任务优先的 SaaS 后台与移动点餐，执行到满分工整，不夹带怪癖。
@@ -57,8 +57,8 @@ web
 
 ## Evidence on Hand
 
-- 真实资产：`docs/` 下品牌 logo 与三端既有界面截图（可作重写参照）。
-- 真实业务事实：`docs/requirements.md`（v2.4，28 契约 / 29 表 / 状态机 / 已知缺口）。
+- 现状界面证据：`docs/ui/` 高保真静态原型（8 页）与 `DESIGN.md`；旧课程界面截图已归档 git 历史（见 Brand Commitments）。
+- 真实业务事实：`docs/requirements.md`（v2.4，28 契约 / 29 表 / 状态机 / 已知缺口）、`docs/BUSINESS.md`（业务规则基准）。
 - 缺失：无真实菜品图、无真实门店照片、无客户案例与 benchmark——原型中不得编造商业声明，示例数据须标注为示意。
 
 ## Product Principles

@@ -1,30 +1,31 @@
-> 本仓库在「餐掌柜」公开课程项目基础上二次开发。原始代码著作权归原课程机构所有，本仓库作者只对改造与新增部分以 Apache-2.0 授权，原始代码不在授权范围内。归属说明见 [NOTICE](NOTICE)。
+> 本目录是 [xfcy](https://gitee.com/itxinfei/xfcy) 主仓库的前端部分（原独立仓库 xfcy-ui 已并入主仓库）。原始课程代码著作权归原课程机构所有，改造与新增部分以 Apache-2.0 授权，归属说明见 [NOTICE](NOTICE)。
 
 <h1 align="center">心飞餐饮前端 · xfcy-ui</h1>
 
-<h4 align="center">餐饮 SaaS 的四端前端 —— 管理端、运营端、点餐平板、微信小程序，收在一个仓库里</h4>
+<h4 align="center">现行前端在 next/ —— pnpm monorepo：管家端 / 运营中心 / 触屏收银 / C 端点餐，外加组件库与接口层</h4>
 
 <p align="center">
-  <a href="https://gitee.com/itxinfei/xfcy-ui/stargazers"><img src="https://gitee.com/itxinfei/xfcy-ui/badge/star.svg?theme=gvp" alt="star"></a>
-  <a href="https://gitee.com/itxinfei/xfcy-ui/members"><img src="https://gitee.com/itxinfei/xfcy-ui/badge/fork.svg?theme=gvp" alt="fork"></a>
-  <img src="https://img.shields.io/badge/status-%E5%AD%A6%E4%B9%A0%E5%BD%92%E6%A1%A3-lightgrey.svg" alt="status">
-  <img src="https://img.shields.io/badge/type-%E8%AF%BE%E7%A8%8B%E9%A1%B9%E7%9B%AE-lightgrey.svg" alt="type">
+  <a href="https://gitee.com/itxinfei/xfcy/stargazers"><img src="https://gitee.com/itxinfei/xfcy/badge/star.svg?theme=gvp" alt="star"></a>
+  <a href="https://gitee.com/itxinfei/xfcy/members"><img src="https://gitee.com/itxinfei/xfcy/badge/fork.svg?theme=gvp" alt="fork"></a>
+  <img src="https://img.shields.io/badge/status-%E4%BA%8C%E6%AC%A1%E5%BC%80%E5%8F%91%E4%B8%AD-brightgreen.svg" alt="status">
+  <img src="https://img.shields.io/badge/type-%E8%AF%BE%E7%A8%8B%E4%BA%8C%E5%BC%80-lightgrey.svg" alt="type">
   <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="license">
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Vue-2%20%2F%203-42b883.svg?logo=vue.js&logoColor=white" alt="vue">
-  <img src="https://img.shields.io/badge/TypeScript-4-3178C6.svg?logo=typescript&logoColor=white" alt="ts">
-  <img src="https://img.shields.io/badge/Flutter-3-02569B.svg?logo=flutter&logoColor=white" alt="flutter">
-  <img src="https://img.shields.io/badge/Taro-3-07C160.svg" alt="taro">
-  <img src="https://img.shields.io/badge/WeChat-小程序-07C160.svg?logo=wechat&logoColor=white" alt="wechat">
+  <img src="https://img.shields.io/badge/Vue-3-42b883.svg?logo=vue.js&logoColor=white" alt="Vue">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6.svg?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/Vite-6-646CFF.svg?logo=vite&logoColor=white" alt="Vite">
+  <img src="https://img.shields.io/badge/Taro-4-07C160.svg" alt="Taro">
+  <img src="https://img.shields.io/badge/pnpm-monorepo-F6922B.svg?logo=pnpm&logoColor=white" alt="pnpm">
 </p>
 
 <p align="center">
   <a href="#一这是什么">这是什么</a> ·
-  <a href="#二四个端">四个端</a> ·
-  <a href="#三环境要求">环境</a> ·
-  <a href="#四快速开始">快速开始</a> ·
+  <a href="#二现行前端">现行前端</a> ·
+  <a href="#三旧工程">旧工程</a> ·
+  <a href="#四环境要求">环境</a> ·
+  <a href="#五快速开始">快速开始</a> ·
   <a href="#六来源与版权">版权</a> ·
   <a href="https://gitee.com/itxinfei/xfcy">后端仓库</a>
 </p>
@@ -33,59 +34,55 @@
 
 ## 一、这是什么
 
-「心飞餐饮」餐饮 SaaS 的四端前端，一个仓库装四个独立工程。后端在 [xfcy](https://gitee.com/itxinfei/xfcy)。
+「心飞餐饮」的前端代码，现已并入后端主仓库 [xfcy](https://gitee.com/itxinfei/xfcy)——前后端同仓演进，改一次字段不用跨库对。目录下有两代工程：
 
-为什么装在一起：这四个端的接口是同一套，改一次后端字段经常要四个端一起对，分仓反而天天跨库找代码。
+- **`next/`** —— 现行前端。pnpm monorepo，五个应用 + 三个共享包，本次二次开发的成果，按主仓库 [DESIGN.md](../DESIGN.md) 的设计规范落地。
+- **`xfcy-guanjia` / `xfcy-yunyin` / `xfcy-weixin` / `xfcy-diancan`** —— 课程原样保留的学习副本，仅作视觉与交互参考，不参与现行构建。
 
-## 二、四个端
+## 二、现行前端
 
-| 目录 | 端 | 技术栈 | 跑法 |
-|---|---|---|---|
-| `xfcy-guanjia/` | 门店管理端 | Vue | `npm install && npm run dev` |
-| `xfcy-yunyin/` | 总部运营端 | Vue + TypeScript | `npm install && npm run dev` |
-| `xfcy-diancan/` | 顾客点餐（平板/手机） | Flutter | `flutter pub get && flutter run` |
-| `xfcy-weixin/` | 微信小程序 | Taro | `npm install && npm run dev:weapp` |
+`next/` 采用 pnpm workspace（`packages/*` + `apps/*`）：
 
-四个端的分工基本是餐饮 SaaS 的标准切法：
+| 类型 | 目录 | 说明 |
+|---|---|---|
+| 应用 | `apps/manager` | 商家管家端（Vue 3 + Vite） |
+| 应用 | `apps/operator` | 平台运营中心（Vue 3 + Vite） |
+| 应用 | `apps/cashier` | 触屏收银端（Vue 3 + Vite，触屏交互） |
+| 应用 | `apps/microapp` | C 端点餐（Taro 4 → 微信小程序 / H5） |
+| 应用 | `apps/playground` | 组件预览页（@xfcy/ui 调试用） |
+| 包 | `packages/ui` | @xfcy/ui 组件库（tokens、状态语义、toast 等） |
+| 包 | `packages/api` | @xfcy/api 接口层（传输抽象：B 端 axios / C 端 Taro.request，可注入） |
+| 包 | `packages/auth` | @xfcy/auth 登录与会话 |
 
-- **管理端**给单店店长用，管本店的菜品、订单、员工、桌台
-- **运营端**给总部用，管多店、营销、结算这些跨店的事
-- **点餐端**装在门店平板上，顾客自助下单
-- **小程序**走微信生态，扫码点餐、查看订单
+设计规范在主仓库 [DESIGN.md](../DESIGN.md)，高保真静态原型在 [docs/ui/](../docs/ui/)。
 
-目录名按业务端命名：`xfcy-guanjia` 门店管理、`xfcy-yunyin` 总部运营、`xfcy-diancan` 平板点餐、`xfcy-weixin` 微信小程序。四个工程各自独立，构建与依赖互不相干，要单独拎一个出来用也不会互相拖累。
+## 三、旧工程
 
-## 三、环境要求
+| 目录 | 端 | 技术栈 |
+|---|---|---|
+| `xfcy-guanjia/` | 门店管理端 | Vue 2 + vue-cli |
+| `xfcy-yunyin/` | 总部运营端 | Vue 2 + TypeScript |
+| `xfcy-diancan/` | 顾客点餐（平板/手机） | Flutter |
+| `xfcy-weixin/` | 微信小程序 | Taro 2 |
 
-- Node 16+（两个 Vue 工程和小程序）
-- Flutter SDK 3.x（点餐端）
-- 微信开发者工具（预览小程序时需要）
+四个工程各自独立、年份不一，构建工具、包管理器、目录约定都不统一——它们记录的是课程原貌，不是现状。要在此基础上做二次开发，直接用 `next/`。
 
-小程序端跑起来后要把产出的 `dist` 目录用开发者工具打开，不能直接当 H5 预览——Taro 的微信端有专门的编译目标。
+## 四、环境要求
 
-## 四、快速开始
+- `next/`：Node ≥ 18 + pnpm
+- 旧工程：Node 16+；Flutter SDK 3.x（diancan）；微信开发者工具（预览 weixin 产出）
 
-1. 进对应端的目录
-2. 装依赖
-3. 起本地服务
-
-```bash
-# 门店管理端
-cd xfcy-guanjia
-npm install
-npm run dev
-```
+## 五、快速开始
 
 ```bash
-# 微信小程序
-cd xfcy-weixin
-npm install
-npm run dev:weapp
+cd xfcy-ui/next
+pnpm install
+pnpm dev                              # 同时启动全部应用
+pnpm --filter @xfcy/manager dev       # 单独起管家端
+pnpm --filter @xfcy/microapp dev:h5   # C 端 H5；dev:weapp 出微信小程序产物
 ```
 
-## 五、改造提示
-
-代码是课程原样保留的学习副本，没做重构。要拿来改造成自己的项目，先看清楚每个端的技术栈版本差异——这是四个不同年份的工程，构建工具、包管理器、目录约定都不统一。硬要拉齐，工作量比重新写一版小不了多少。
+旧工程进各自目录 `npm install && npm run dev` 即可（weixin 为 `npm run dev:weapp`，diancan 为 `flutter pub get && flutter run`）——注意它们是学习副本，仅用于对照旧貌。
 
 ## 六、来源与版权
 
@@ -93,4 +90,4 @@ npm run dev:weapp
 
 作者改造与新增的部分以 **Apache-2.0** 授权，全文见 [LICENSE](LICENSE)。该授权不覆盖原始课程代码，也不构成对原始代码的再许可；完整归属说明见 [NOTICE](NOTICE)。
 
-关于子目录里的 LICENSE：`xfcy-guanjia/` 和 `xfcy-yunyin/` 下各有一个 MIT LICENSE（`Copyright (c) 2018 Chong Guo`），那是随前端脚手架模板附带的文件，授权来自模板原作者，不是本仓库给出的。本仓库不撤销它，也不代表它扩展到课程业务代码——课程代码的权利状态和这几个脚手架 LICENSE 并不是一回事。真要商用，得分别找前端模板作者和课程机构确认。
+关于子目录里的 LICENSE：`xfcy-guanjia/` 和 `xfcy-yunyin/` 下各有一个 MIT LICENSE（`Copyright (c) 2018 Chong Guo`），那是随前端脚手架模板附带的文件，授权来自模板原作者，不是本目录给出的。本目录不撤销它，也不代表它扩展到课程业务代码——课程代码的权利状态和这几个脚手架 LICENSE 并不是一回事。真要商用，得分别找前端模板作者和课程机构确认。
