@@ -17,11 +17,12 @@ import org.springframework.web.service.annotation.PutExchange;
 @HttpExchange("/enterprise/account")
 public interface IEnterpriseAccountService {
 
-    //分页查询（按企业名称模糊，仅未删除账号）
+    //分页查询（按企业名称模糊 + 可选状态精确，仅未删除账号）
     @GetExchange("/page/{pageNum}/{pageSize}")
     PageResult<EnterpriseAccount> queryPageByName(@PathVariable("pageNum") int pageNum,
                                                   @PathVariable("pageSize") int pageSize,
-                                                  @RequestParam(value = "enterpriseName", required = false) String enterpriseName);
+                                                  @RequestParam(value = "enterpriseName", required = false) String enterpriseName,
+                                                  @RequestParam(value = "status", required = false) Integer status);
 
     //回收站分页（仅已逻辑删除账号，按企业名称模糊）
     @GetExchange("/removed/page/{pageNum}/{pageSize}")

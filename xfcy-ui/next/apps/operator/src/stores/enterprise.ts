@@ -42,9 +42,17 @@ export type RecycleRow = {
 
 /** 一次拉取的页大小：回收站仍一次拉取（数据量小） */
 const RECYCLE_PAGE_SIZE = 1000
-/** 列表页大小：仅关键词走服务端分页，状态/套餐筛选时本地过滤（演示字段） */
+/** 列表页大小：关键词与状态走服务端分页；套餐为演示字段仅本地过滤 */
 const PAGE_SIZE = 10
 const CLIENT_FILTER_PAGE_SIZE = 500
+
+/** 状态筛选值 → t_enterprise_account.status（0 试用 / 1 正式 / -1 停用） */
+export function statusValueOf(filter: 'all' | EnterpriseStatus): number | null {
+  if (filter === '试用') return 0
+  if (filter === '正式') return 1
+  if (filter === '禁用') return -1
+  return null
+}
 
 export function statusText(status?: number): EnterpriseStatus {
   if (status === 0) return '试用'
@@ -105,12 +113,11 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
   const enterpriseRows = computed<EnterpriseRow[]>(() => accounts.value.map(toEnterpriseRow))
   const recycleRows = computed<RecycleRow[]>(() => removedAccounts.value.map(toRecycleRow))
 
-  /** 真实后端仅支持 enterpriseName 模糊；状态/套餐为演示字段，开启时退化为本地过滤 */
-  const clientSide = computed(() => statusFilter.value !== 'all' || planFilter.value !== 'all')
+  /** 状态已由后端支持；套餐为演示字段（契约无 plan），开启时退化为本地过滤 */
+  const clientSide = computed(() => planFilter.value !== 'all')
 
   function matchClientFilters(account: EnterpriseAccount): boolean {
     const row = toEnterpriseRow(account)
-    if (statusFilter.value !== 'all' && row.status !== statusFilter.value) return false
     if (planFilter.value !== 'all' && row.plan !== planFilter.value) return false
     return true
   }
@@ -121,9 +128,10 @@ export const useEnterpriseStore = defineStore('enterprise', () => {
     error.value = ''
     try {
       const name = keyword.value.trim() || undefined
+      const status = statusValueOf(statusFilter.value)
       const listRequest = clientSide.value
-        ? enterprise.page(1, CLIENT_FILTER_PAGE_SIZE, name)
-        : enterprise.page(page.value, PAGE_SIZE, name)
+        ? enterprise.page(1, CLIENT_FILTER_PAGE_SIZE, name, status)
+        : enterprise.page(page.value, PAGE_SIZE, name, status)
       const [pageResult, removed] = await Promise.all([
         listRequest,
         enterprise.removedPage(1, RECYCLE_PAGE_SIZE),

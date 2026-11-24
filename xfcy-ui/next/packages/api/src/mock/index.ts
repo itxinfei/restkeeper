@@ -202,8 +202,12 @@ const bEndRoutes: MockRoute[] = [
       const page = Number(segments[4])
       const size = Number(segments[5])
       const name = params.enterpriseName ? String(params.enterpriseName).toLowerCase() : ''
+      const status = params.status === undefined || params.status === null || params.status === '' ? null : Number(params.status)
       const filtered = mockEnterpriseAccounts.filter(
-        (item) => item.isDeleted !== 1 && (!name || item.enterpriseName.toLowerCase().includes(name)),
+        (item) =>
+          item.isDeleted !== 1 &&
+          (!name || item.enterpriseName.toLowerCase().includes(name)) &&
+          (status === null || item.status === status),
       )
       return paginate(filtered, page, size)
     },

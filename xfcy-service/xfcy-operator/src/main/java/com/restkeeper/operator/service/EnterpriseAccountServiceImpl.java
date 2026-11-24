@@ -60,15 +60,23 @@ public class EnterpriseAccountServiceImpl extends ServiceImpl<EnterpriseAccountM
     }
 
     /**
-     * 按企业名称模糊分页查询
+     * 按企业名称模糊 + 可选状态精确分页查询
      */
-    public PageResult<EnterpriseAccount> queryPageByName(int pageNum, int pageSize, String enterpriseName) {
+    public PageResult<EnterpriseAccount> queryPageByName(int pageNum, int pageSize, String enterpriseName, Integer status) {
         Page<EnterpriseAccount> page = new Page<>(pageNum, pageSize);
         QueryWrapper<EnterpriseAccount> queryWrapper = new QueryWrapper<>();
         if (StringUtils.hasText(enterpriseName)) {
             queryWrapper.like("enterprise_name", enterpriseName);
         }
+        if (status != null) {
+            queryWrapper.eq("status", status);
+        }
         return PageResult.of(this.page(page, queryWrapper));
+    }
+
+    /** 兼容旧调用：不带状态筛选 */
+    public PageResult<EnterpriseAccount> queryPageByName(int pageNum, int pageSize, String enterpriseName) {
+        return queryPageByName(pageNum, pageSize, enterpriseName, null);
     }
 
     /**

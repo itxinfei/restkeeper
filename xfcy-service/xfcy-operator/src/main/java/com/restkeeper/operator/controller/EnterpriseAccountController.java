@@ -18,8 +18,8 @@ public class EnterpriseAccountController implements IEnterpriseAccountService {
     private EnterpriseAccountServiceImpl enterpriseAccountService;
 
     @Override
-    public PageResult<EnterpriseAccount> queryPageByName(int pageNum, int pageSize, String enterpriseName) {
-        return enterpriseAccountService.queryPageByName(pageNum, pageSize, enterpriseName);
+    public PageResult<EnterpriseAccount> queryPageByName(int pageNum, int pageSize, String enterpriseName, Integer status) {
+        return enterpriseAccountService.queryPageByName(pageNum, pageSize, enterpriseName, status);
     }
 
     @Override

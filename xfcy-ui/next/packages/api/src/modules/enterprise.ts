@@ -6,14 +6,15 @@
 import { http, unwrap } from '../http'
 import type { EnterpriseAccount, PageResult } from '../types'
 
-/** 分页查询（仅未删除）：GET /enterprise/account/page/{pageNum}/{pageSize}?enterpriseName= */
+/** 分页查询（仅未删除）：GET /enterprise/account/page/{pageNum}/{pageSize}?enterpriseName=&status= */
 export async function page(
   pageNum: number,
   pageSize: number,
   enterpriseName?: string,
+  status?: number | null,
 ): Promise<PageResult<EnterpriseAccount>> {
   const { data } = await http.get(`/enterprise/account/page/${pageNum}/${pageSize}`, {
-    params: { enterpriseName },
+    params: { enterpriseName, status },
   })
   return unwrap<PageResult<EnterpriseAccount>>(data)
 }

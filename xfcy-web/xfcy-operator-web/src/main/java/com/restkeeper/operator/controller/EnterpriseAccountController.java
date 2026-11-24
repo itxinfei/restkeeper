@@ -40,8 +40,9 @@ public class EnterpriseAccountController {
     @GetMapping("/enterprise/account/page/{pageNum}/{pageSize}")
     public PageResult<EnterpriseAccount> queryPageByName(@PathVariable("pageNum") int pageNum,
                                                          @PathVariable("pageSize") int pageSize,
-                                                         @RequestParam(value = "enterpriseName", required = false) String enterpriseName) {
-        return enterpriseAccountService.queryPageByName(pageNum, pageSize, enterpriseName);
+                                                         @RequestParam(value = "enterpriseName", required = false) String enterpriseName,
+                                                         @RequestParam(value = "status", required = false) Integer status) {
+        return enterpriseAccountService.queryPageByName(pageNum, pageSize, enterpriseName, status);
     }
 
     @Operation(summary = "回收站分页")

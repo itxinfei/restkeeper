@@ -49,7 +49,7 @@
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 企业账号 | 服务端分页（`enterpriseName` 模糊）+ 开通密码提示（B6） | 状态/套餐为演示字段，开启时退化为本地过滤，数据量大不可扩展 | P1 |
+| 企业账号 | 服务端分页（`enterpriseName` 模糊）+ **状态筛选已服务端化**（B16）；开通密码提示（B6） | 套餐为纯演示字段（契约无 `plan` 列），无法服务端过滤，开启时仍本地过滤 | P2 |
 | 回收站 | 列表/还原 + 「仍需启用」提示（B3/B5） | ✅ 已闭环 | — |
 | 字典管理 | 只读列表（后端未提供写接口，前端写操作为 mock 专用） | P2 后置 | P2 |
 | 运营人员 | 只读（同上，后端只读） | P2 后置 | P2 |
@@ -168,6 +168,8 @@
 | **B12（凭据治理 + 表格/顶栏规范化）** ✅ | 明文凭据占位符化、mock token 随机化；修复 manager/operator 主内容空白（缺 `router-view`）与 cashier 订单面板塌陷；`XfTable` 列宽/换行规范落地，顶栏标题不换行、窄屏隐藏面包屑 | 全部页面 / 部署配置 |
 | **B13（cashier 堆叠态收尾 + 无效操作禁用）** ✅ | 堆叠态订单明细空态撑满居中不再被裁剪；空单禁用挂账/退菜/打印；左区菜品网格保持可滚动 | cashier |
 | **B14（BFF 端点补齐）** ✅ | enterprise-web 透出 `table/count/{areaId}/{status}`、`table/{id}`、`PUT /table`、`table/log/open/{tableId}`、`store/manager/login`，并注册 `ITableLogService` 契约代理；cash-web 透出 `GET /order/{id}` | manager Dashboard/Tables/登录、cashier 订单 |
+| **B15（VM 部署准备）** ✅ | 清理自建 xfcy-* 容器与命名卷让出端口；新增 `deploy/nacos-vm/*.yml`（地址 192.168.20.88、MySQL/Redis 密码 123456）与导入脚本；更新 `docs/MIDDLEWARE_DEPLOYMENT.md` | 部署环境 |
+| **B16（企业账号状态筛选服务端化）** ✅ | provider 契约/实现/operator-web 透传 `@RequestParam status`；`@xfcy/api` 与 mock 支持 status；store 移除状态本地过滤（仅套餐保留本地） | operator 企业管理 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -227,3 +229,13 @@
 > - 前端 `setMealDishList` 经排查无页面调用（套餐详情已由 `setMealGetById` 带出 dishList），不新增 BFF 端点。
 > - **登录路径对齐**：provider `IStoreManagerService` 契约为 `POST /store/manager/login`（query：shopId/phone/loginPass），与前端 `loginManager` 一致；enterprise-web 原只有统一分流入口 `POST /login`（无该端点，real 模式会 404）。已补直连端点 `@PostMapping("/store/manager/login")`，网关 predicate `/store/manager/**` 与 excludedUrls 均已覆盖。
 > - **待验证隐患**：网关 enterprise-web 与 cash-web 的 predicate 均含 `/table/**`、`/dish/**`，按声明顺序 enterprise-web 会先命中，cashier 相关请求需在真实环境确认是否被错投。
+>
+> B15 已落地（环境准备）：
+> - VM 上此前用于验证镜像的自建 `xfcy-nacos`/`xfcy-redis`/`xfcy-rabbitmq`/`xfcy-mysql` 及命名卷已全部删除，3306/6379/8848/9848/5672/15672/9200 端口空闲，未触碰 mw-* / xfhj-*。
+> - 新增 `deploy/nacos-vm/`（8 个 yml + `import.sh`）：由 `deploy/nacos` 派生，地址改 192.168.20.88、MySQL 密码默认值 123456、common.yml 增加 Redis password；一键导入 `NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh`。
+> - `docs/MIDDLEWARE_DEPLOYMENT.md` 同步更新为「准备中」，含配置对齐表与执行步骤。
+>
+> B16 已落地（功能开发）：
+> - **后端**：`IEnterpriseAccountService.queryPageByName` 增加可选 `@RequestParam("status") Integer status`；provider 实现按 `status` 精确条件（`QueryWrapper.eq`）并保留旧签名重载；provider 内 `EnterpriseAccountController` 与 `xfcy-operator-web` 控制器同步透传。
+> - **前端**：`@xfcy/api` 的 `enterprise.page` 增加 `status` 参数；mock 路由同步过滤；operator store 将状态筛选映射为 `0/1/-1` 传给后端，`clientSide` 仅剩套餐（演示字段，契约无 `plan`，无法下沉）。
+> - **验证**：`pnpm --filter @xfcy/api typecheck`、`pnpm --filter @xfcy/operator typecheck` 通过；`mvn -pl xfcy-service/xfcy-operator,xfcy-web/xfcy-operator-web -am compile` 通过；未做运行时联调（等 VM 中间件就绪）。
