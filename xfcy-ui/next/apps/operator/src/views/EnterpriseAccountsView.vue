@@ -217,14 +217,14 @@ onMounted(() => {
     </template>
   </XfPageHead>
 
-  <div class="xfo-toolbar">
-    <div class="xfo-toolbar__search">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__search">
       <XfInput v-model="store.keyword" placeholder="搜索企业名称（服务端模糊）" />
     </div>
-    <div class="xfo-toolbar__select">
+    <div class="xf-toolbar__select">
       <XfSelect v-model="store.statusFilter" :options="statusOptions" />
     </div>
-    <div class="xfo-toolbar__select">
+    <div class="xf-toolbar__select">
       <XfSelect v-model="store.planFilter" :options="planFilterOptions" />
     </div>
     <XfButton variant="secondary" @click="store.search()">查询</XfButton>
@@ -232,8 +232,8 @@ onMounted(() => {
     <XfButton variant="secondary" :disabled="store.loading" @click="store.refresh()">
       {{ store.loading ? '刷新中…' : '刷新' }}
     </XfButton>
-    <div class="xfo-toolbar__grow"></div>
-    <span class="xfo-muted">{{ isMockMode() ? '数据源：@xfcy/api mock' : '数据源：真实后端' }}</span>
+    <div class="xf-toolbar__grow"></div>
+    <span class="xf-muted">{{ isMockMode() ? '数据源：@xfcy/api mock' : '数据源：真实后端' }}</span>
   </div>
 
   <XfPanel>
@@ -252,14 +252,14 @@ onMounted(() => {
       empty-description="调整筛选条件，或点击右上角「开通企业」"
     >
       <template #code="{ row }">
-        <span class="xfo-num">{{ (row as EnterpriseRow).code }}</span>
+        <span class="xf-num">{{ (row as EnterpriseRow).code }}</span>
       </template>
       <template #name="{ row }">
         <div class="xfo-cell-name">{{ (row as EnterpriseRow).name }}</div>
         <div class="xfo-cell-sub">{{ (row as EnterpriseRow).plan }}</div>
       </template>
       <template #shopCount="{ row }">
-        <span class="xfo-num">{{ (row as EnterpriseRow).shopCount }}</span>
+        <span class="xf-num">{{ (row as EnterpriseRow).shopCount }}</span>
       </template>
       <template #status="{ row }">
         <XfTag :tone="toneOf('account', (row as EnterpriseRow).status)">
@@ -267,10 +267,10 @@ onMounted(() => {
         </XfTag>
       </template>
       <template #expireDate="{ row }">
-        <span class="xfo-num">{{ (row as EnterpriseRow).expireDate }}</span>
+        <span class="xf-num">{{ (row as EnterpriseRow).expireDate }}</span>
       </template>
       <template #createdAt="{ row }">
-        <span class="xfo-num">{{ (row as EnterpriseRow).createdAt }}</span>
+        <span class="xf-num">{{ (row as EnterpriseRow).createdAt }}</span>
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">

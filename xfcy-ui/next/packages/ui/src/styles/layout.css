@@ -54,6 +54,7 @@
   align-items: center;
   gap: var(--space-3);
   flex-wrap: wrap;
+  margin-bottom: 14px;
 }
 
 .xf-toolbar__grow {
@@ -71,6 +72,23 @@
   font-size: var(--text-caption);
   color: var(--c-text-2);
   white-space: nowrap;
+}
+
+.xf-toolbar__search {
+  width: 220px;
+}
+
+.xf-toolbar__select {
+  width: 140px;
+}
+
+.xf-toolbar__select--wide {
+  width: 240px;
+}
+
+/* 面板间距（与页面 gap 一致） */
+.xf-panel-gap {
+  margin-bottom: 16px;
 }
 
 /* 内容分栏：主区 + 侧栏（≥1024 两栏，窄屏堆叠） */

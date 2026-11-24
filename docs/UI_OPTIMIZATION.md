@@ -158,6 +158,7 @@
 | **B8（清零收口）** ✅ | G6 真正落地（页面统一 toneOf/labelOf）、K16 检索空态、K19 报表口径、安全区与批量反馈收口 | 全部页面 |
 | **B9（页面头落地）** ✅ | G1 真正落地（`XfPageHead` 全端接入）、`XfEmpty` 空态操作（`actionText`/`@action`） | manager/operator |
 | **B10（死入口/静默失败清零）** ✅ | Dashboard 死按钮治理、combos 占位路由重定向、cashier 加载/检索失败显式报错 | manager/cashier |
+| **B11（去重与 C 端错误态）** ✅ | G5 工具类抽到 `@xfcy/ui`（manager/operator 去重）、microapp 菜单加载/检索失败显式报错 + 重试 | manager/operator/microapp |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -195,3 +196,7 @@
 > B10 已落地：
 > - **死入口清零**：Dashboard「登记」改为跳转 `/soldout`；移除无订单页可去的「全部订单」死按钮；`combos` 占位路由改为重定向 `/dishes?tab=combo`（Dishes 支持 `?tab=` 激活对应 Tab），删除 `PlaceholderView.vue`。
 > - **静默失败清零**：cashier `order.load()` 增加 `error` 状态与 catch，`TablesView` 加载失败时显示 `XfErrorState` + 重试；检索接口失败时显示内联错误（不再误报「未找到菜品」）。
+>
+> B11 已落地：
+> - **G5 去重收口**：toolbar / muted / num / panel-gap 等应用级重复类统一到 `@xfcy/ui`（`.xf-toolbar*` / `.xf-muted` / `.xf-num` / `.xf-panel-gap`），manager 7 页与 operator 5 页模板迁移，两个 app 的 layout.css 删除对应重复定义。
+> - **C 端错误态**：microapp 菜单加载失败不再只弹 Toast，改为内联错误块 + 「重新加载」（≥48px 触屏区）；检索失败区分网络错误与空结果，不再误报「没有找到相关菜品」。

@@ -230,9 +230,9 @@ onMounted(load)
     </template>
   </XfPageHead>
 
-  <div class="xfo-toolbar">
-    <span class="xfo-muted">共 {{ rows.length }} 名运营人员 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}</span>
-    <div class="xfo-toolbar__grow"></div>
+  <div class="xf-toolbar">
+    <span class="xf-muted">共 {{ rows.length }} 名运营人员 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}</span>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfPanel>
@@ -248,19 +248,19 @@ onMounted(load)
       empty-description="点击右上角「新增运营人员」创建"
     >
       <template #account="{ row }">
-        <span class="xfo-num">{{ (row as OperatorRow).account }}</span>
+        <span class="xf-num">{{ (row as OperatorRow).account }}</span>
       </template>
       <template #name="{ row }">
         <span class="xfo-cell-name">{{ (row as OperatorRow).name }}</span>
       </template>
       <template #role="{ row }">
-        <span class="xfo-muted">{{ (row as OperatorRow).role }}</span>
+        <span class="xf-muted">{{ (row as OperatorRow).role }}</span>
       </template>
       <template #status="{ row }">
         <XfTag :tone="toneOf('enable', (row as OperatorRow).status)">{{ labelOf('enable', (row as OperatorRow).status) }}</XfTag>
       </template>
       <template #lastLogin="{ row }">
-        <span class="xfo-num">{{ (row as OperatorRow).lastLogin }}</span>
+        <span class="xf-num">{{ (row as OperatorRow).lastLogin }}</span>
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">

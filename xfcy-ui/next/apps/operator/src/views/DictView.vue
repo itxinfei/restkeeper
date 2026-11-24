@@ -219,12 +219,12 @@ onMounted(load)
     </template>
   </XfPageHead>
 
-  <div class="xfo-toolbar">
-    <div class="xfo-toolbar__search">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__search">
       <XfInput v-model="keyword" placeholder="搜索类型 / 编码 / 值" />
     </div>
-    <div class="xfo-toolbar__grow"></div>
-    <span class="xfo-muted">
+    <div class="xf-toolbar__grow"></div>
+    <span class="xf-muted">
       共 {{ rows.length }} 项 · 数据源：{{ writable ? '@xfcy/api mock' : '真实后端' }}
     </span>
   </div>
@@ -245,10 +245,10 @@ onMounted(load)
         <span class="xfo-cell-name">{{ (row as DictRow).type }}</span>
       </template>
       <template #code="{ row }">
-        <span class="xfo-num">{{ (row as DictRow).code }}</span>
+        <span class="xf-num">{{ (row as DictRow).code }}</span>
       </template>
       <template #sort="{ row }">
-        <span class="xfo-num">{{ (row as DictRow).sort }}</span>
+        <span class="xf-num">{{ (row as DictRow).sort }}</span>
       </template>
       <template #status="{ row }">
         <XfTag :tone="toneOf('enable', (row as DictRow).status)">{{ labelOf('enable', (row as DictRow).status) }}</XfTag>

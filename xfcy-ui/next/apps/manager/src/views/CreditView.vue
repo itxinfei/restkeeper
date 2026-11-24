@@ -418,15 +418,15 @@ async function confirmToggleStatus() {
   </div>
 
   <template v-if="activeTab === 'subject'">
-  <div class="xfm-toolbar">
-    <div class="xfm-toolbar__search">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__search">
       <XfInput v-model="keyword" placeholder="公司 / 姓名" />
     </div>
-    <div class="xfm-toolbar__select">
+    <div class="xf-toolbar__select">
       <XfSelect v-model="typeFilter" :options="typeOptions" />
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
-    <div class="xfm-toolbar__grow"></div>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfPanel>
@@ -438,13 +438,13 @@ async function confirmToggleStatus() {
         </XfTag>
       </template>
       <template #contact="{ row }">
-        <span class="xfm-muted">{{ row.contact }}</span>
+        <span class="xf-muted">{{ row.contact }}</span>
       </template>
       <template #creditAmount="{ row }">
-        <span class="xfm-num">{{ formatYuan(Number(row.creditAmount)) }}</span>
+        <span class="xf-num">{{ formatYuan(Number(row.creditAmount)) }}</span>
       </template>
       <template #totalRepayment="{ row }">
-        <span class="xfm-num">{{ formatYuan(Number(row.totalRepayment)) }}</span>
+        <span class="xf-num">{{ formatYuan(Number(row.totalRepayment)) }}</span>
       </template>
       <template #status="{ row }">
         <XfTag :tone="toneOf('credit', row.status as string | number | undefined)">
@@ -471,8 +471,8 @@ async function confirmToggleStatus() {
 
   <!-- ============ 挂账流水 ============ -->
   <template v-else>
-    <div class="xfm-toolbar">
-      <div class="xfm-toolbar__select xfm-toolbar__select--wide">
+    <div class="xf-toolbar">
+      <div class="xf-toolbar__select xf-toolbar__select--wide">
         <XfSelect v-model="logCreditId" :options="logSubjects" placeholder="选择挂账主体" />
       </div>
       <XfField label="开始日期">
@@ -486,7 +486,7 @@ async function confirmToggleStatus() {
         </template>
       </XfField>
       <XfButton variant="secondary" @click="searchLogs">查询</XfButton>
-      <div class="xfm-toolbar__grow"></div>
+      <div class="xf-toolbar__grow"></div>
     </div>
 
     <XfPanel>
@@ -504,13 +504,13 @@ async function confirmToggleStatus() {
           </XfTag>
         </template>
         <template #orderAmount="{ row }">
-          <span class="xfm-num">{{ formatYuan(Number(row.orderAmount)) }}</span>
+          <span class="xf-num">{{ formatYuan(Number(row.orderAmount)) }}</span>
         </template>
         <template #receivedAmount="{ row }">
-          <span class="xfm-num">{{ formatYuan(Number(row.receivedAmount)) }}</span>
+          <span class="xf-num">{{ formatYuan(Number(row.receivedAmount)) }}</span>
         </template>
         <template #creditAmount="{ row }">
-          <span class="xfm-num">{{ formatYuan(Number(row.creditAmount)) }}</span>
+          <span class="xf-num">{{ formatYuan(Number(row.creditAmount)) }}</span>
         </template>
       </XfTable>
 
@@ -608,11 +608,11 @@ async function confirmToggleStatus() {
       </div>
       <div class="xfm-detail__line">
         <span>剩余欠款额度</span>
-        <b class="xfm-num">{{ formatYuan(repayRow.creditAmount) }}</b>
+        <b class="xf-num">{{ formatYuan(repayRow.creditAmount) }}</b>
       </div>
       <div class="xfm-detail__line">
         <span>已还</span>
-        <b class="xfm-num">{{ formatYuan(repayRow.totalRepayment) }}</b>
+        <b class="xf-num">{{ formatYuan(repayRow.totalRepayment) }}</b>
       </div>
       <XfField label="还款人">
         <template #default="{ id }">

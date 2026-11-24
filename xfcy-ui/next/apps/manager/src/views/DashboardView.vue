@@ -177,16 +177,16 @@ function goSoldout() {
           row-key="id"
         >
           <template #guests="{ row }">
-            <span class="xfm-num">{{ row.guests }}</span>
+            <span class="xf-num">{{ row.guests }}</span>
           </template>
           <template #amount="{ row }">
-            <span class="xfm-num">{{ row.amount }}</span>
+            <span class="xf-num">{{ row.amount }}</span>
           </template>
           <template #status="{ row }">
             <XfTag :tone="toneOf('pay', row.status as DemoOrderStatus)">{{ labelOf('pay', row.status as DemoOrderStatus) }}</XfTag>
           </template>
           <template #time="{ row }">
-            <span class="xfm-num">{{ row.time }}</span>
+            <span class="xf-num">{{ row.time }}</span>
           </template>
         </XfTable>
         <XfEmpty
@@ -205,7 +205,7 @@ function goSoldout() {
               class="xfm-tcell"
               :class="{ 'is-warn': stat.tone === 'warn' }"
             >
-              <b class="xfm-num">{{ stat.value }}</b>
+              <b class="xf-num">{{ stat.value }}</b>
               {{ stat.label }}
             </div>
           </div>
@@ -217,7 +217,7 @@ function goSoldout() {
           </template>
           <div v-for="row in soldoutRows" :key="row.id" class="xfm-rowline">
             <span>{{ row.name }}</span>
-            <b class="xfm-num" :style="row.danger ? { color: 'var(--c-danger)' } : undefined">
+            <b class="xf-num" :style="row.danger ? { color: 'var(--c-danger)' } : undefined">
               {{ row.remain }}
             </b>
           </div>

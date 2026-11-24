@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
 import { Input, ScrollView, Text, View } from '@tarojs/components'
-import Taro from '@tarojs/taro'
 import { mockMicroappCategories, mockMicroappDishes, mockMicroappStore } from '@xfcy/api'
 import CartBar from '../../components/CartBar'
 import DishCard from '../../components/DishCard'
@@ -24,14 +23,20 @@ export default function Menu() {
   )
   const [dishes, setDishes] = useState<Dish[]>(mockMode ? mockMicroappDishes : [])
   const [searchResults, setSearchResults] = useState<Dish[] | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [searchError, setSearchError] = useState('')
   const seqRef = useRef(0)
+  const aliveRef = useRef(true)
 
   /* 菜单加载：mock 模式立即以本地数据渲染，真实模式拉取后替换 */
-  useEffect(() => {
-    let alive = true
+  const loadMenu = () => {
+    aliveRef.current = true
+    setLoading(true)
+    setLoadError('')
     fetchMenu()
       .then((menu) => {
-        if (!alive) return
+        if (!aliveRef.current) return
         setStore(menu.store)
         setCategories(menu.categories)
         setDishes(menu.dishes)
@@ -41,13 +46,22 @@ export default function Menu() {
             : (menu.categories[0]?.id ?? ''),
         )
       })
-      .catch((err) => {
+      .catch((err: unknown) => {
         console.error('[microapp] 菜单加载失败', err)
-        if (alive) Taro.showToast({ title: '菜单加载失败，请重试', icon: 'none' })
+        if (!aliveRef.current) return
+        setLoadError(err instanceof Error ? err.message : '菜单加载失败，请重试')
       })
+      .finally(() => {
+        if (aliveRef.current) setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    loadMenu()
     return () => {
-      alive = false
+      aliveRef.current = false
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* 关键词检索（ES 索引：菜品 + 套餐） */
@@ -56,15 +70,21 @@ export default function Menu() {
     if (!kw) {
       seqRef.current += 1
       setSearchResults(null)
+      setSearchError('')
       return
     }
     const seq = ++seqRef.current
     searchMenu(kw)
       .then((rows) => {
-        if (seqRef.current === seq) setSearchResults(rows)
+        if (seqRef.current === seq) {
+          setSearchResults(rows)
+          setSearchError('')
+        }
       })
-      .catch(() => {
-        if (seqRef.current === seq) setSearchResults([])
+      .catch((err: unknown) => {
+        if (seqRef.current !== seq) return
+        setSearchResults([])
+        setSearchError(err instanceof Error ? err.message : '检索失败，请重试')
       })
   }, [kw])
 
@@ -101,8 +121,20 @@ export default function Menu() {
         />
       </View>
 
+      {/* 加载失败：显式报错 + 重试（不再静默空白） */}
+      {loadError ? (
+        <View className="menu__error">
+          <Text className="xf-empty__icon">⚠️</Text>
+          <Text className="xf-empty__title">菜单加载失败</Text>
+          <Text className="xf-empty__desc">{loadError}</Text>
+          <View className="menu__retry" onClick={loadMenu}>
+            {loading ? '加载中…' : '重新加载'}
+          </View>
+        </View>
+      ) : null}
+
       {/* 分类锚点 */}
-      {!searchResult && (
+      {!searchResult && !loadError && (
         <ScrollView scrollX className="menu__cats">
           <View className="menu__cats-inner">
             {categories.map((cat) => (
@@ -129,11 +161,19 @@ export default function Menu() {
           <View>
             <Text className="menu__sec">搜索「{kw}」 · {searchResult.length} 道</Text>
             {searchResult.length === 0 ? (
-              <View className="xf-empty">
-                <View className="xf-empty__icon">🍽️</View>
-                <Text className="xf-empty__title">没有找到相关菜品</Text>
-                <Text className="xf-empty__desc">换个关键词试试</Text>
-              </View>
+              searchError ? (
+                <View className="xf-empty">
+                  <View className="xf-empty__icon">⚠️</View>
+                  <Text className="xf-empty__title">检索失败</Text>
+                  <Text className="xf-empty__desc">{searchError}</Text>
+                </View>
+              ) : (
+                <View className="xf-empty">
+                  <View className="xf-empty__icon">🍽️</View>
+                  <Text className="xf-empty__title">没有找到相关菜品</Text>
+                  <Text className="xf-empty__desc">换个关键词试试</Text>
+                </View>
+              )
             ) : (
               <View className="menu__grid">
                 {searchResult.map((d) => (

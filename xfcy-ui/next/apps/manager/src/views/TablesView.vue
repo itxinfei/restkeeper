@@ -254,21 +254,21 @@ async function saveArea() {
     </template>
   </XfPageHead>
 
-  <div class="xfm-toolbar">
-    <div class="xfm-toolbar__select">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__select">
       <XfSelect v-model="statusFilter" :options="statusOptions" />
     </div>
-    <span class="xfm-muted">
+    <span class="xf-muted">
       共 {{ stat.total }} 桌 · 空闲 {{ stat.free }} · 开台 {{ stat.open }} · 锁定 {{ stat.locked }}
     </span>
-    <div class="xfm-toolbar__grow"></div>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfTabs v-model="activeAreaId" :tabs="areaTabs" />
 
   <XfPanel>
     <XfErrorState v-if="error && !tables.length" :message="error" @retry="load" />
-    <div v-else-if="loading && !loaded" class="xfm-muted">加载中…</div>
+    <div v-else-if="loading && !loaded" class="xf-muted">加载中…</div>
     <div v-else-if="filteredTables.length === 0" class="xfm-tableempty">
       <XfEmpty title="暂无桌台" description="点击右上角「新增桌台」创建，或「新增区域」先建分区" />
     </div>
@@ -293,7 +293,7 @@ async function saveArea() {
     <div v-if="detailRow" class="xfm-detail">
       <div class="xfm-detail__name">{{ detailRow.name }}</div>
       <div class="xfm-detail__line"><span>区域</span><b>{{ detailRow.areaName }}</b></div>
-      <div class="xfm-detail__line"><span>座位数</span><b class="xfm-num">{{ detailRow.seats }}</b></div>
+      <div class="xfm-detail__line"><span>座位数</span><b class="xf-num">{{ detailRow.seats }}</b></div>
       <div class="xfm-detail__line">
         <span>状态</span>
         <XfTag :tone="toneOf('table', detailRow.status)">{{ labelOf('table', detailRow.status) }}</XfTag>

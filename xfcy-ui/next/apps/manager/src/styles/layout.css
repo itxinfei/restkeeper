@@ -6,17 +6,6 @@
  */
 
 /* ---------- 通用 ---------- */
-.xfm-muted {
-  color: var(--c-text-2);
-}
-
-.xfm-num {
-  font-variant-numeric: tabular-nums;
-}
-
-.xfm-panel-gap {
-  margin-bottom: 16px;
-}
 
 /* ---------- 工作台 ---------- */
 .xfm-kpis {
@@ -89,26 +78,6 @@
   margin-bottom: 16px;
 }
 
-.xfm-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.xfm-toolbar__search {
-  width: 220px;
-}
-
-.xfm-toolbar__select {
-  width: 140px;
-}
-
-.xfm-toolbar__select--wide {
-  width: 240px;
-}
-
 .xfm-date {
   height: 34px;
   padding: 0 10px;
@@ -123,10 +92,6 @@
   margin: 0;
   line-height: 1.7;
   color: var(--c-text-2);
-}
-
-.xfm-toolbar__grow {
-  margin-left: auto;
 }
 
 .xfm-check {

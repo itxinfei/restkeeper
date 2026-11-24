@@ -553,17 +553,17 @@ function toggleFlavor(row: FlavorRow) {
 
   <!-- ============ 菜品 ============ -->
   <template v-if="activeTab === 'dish'">
-    <div class="xfm-toolbar">
-      <div class="xfm-toolbar__search">
+    <div class="xf-toolbar">
+      <div class="xf-toolbar__search">
         <XfInput v-model="keyword" placeholder="搜索菜名 / 编码" />
       </div>
-      <div class="xfm-toolbar__select">
+      <div class="xf-toolbar__select">
         <XfSelect v-model="categoryFilter" :options="categoryOptions" />
       </div>
-      <div class="xfm-toolbar__select">
+      <div class="xf-toolbar__select">
         <XfSelect v-model="statusFilter" :options="statusOptions" />
       </div>
-      <div class="xfm-toolbar__grow"></div>
+      <div class="xf-toolbar__grow"></div>
     </div>
 
     <XfPanel>
@@ -592,13 +592,13 @@ function toggleFlavor(row: FlavorRow) {
           <div v-if="row.flavor" class="xfm-dish-desc">口味：{{ row.flavor }}</div>
         </template>
         <template #code="{ row }">
-          <span class="xfm-num">{{ row.code }}</span>
+          <span class="xf-num">{{ row.code }}</span>
         </template>
         <template #price="{ row }">
-          <span class="xfm-num">{{ row.price }}</span>
+          <span class="xf-num">{{ row.price }}</span>
         </template>
         <template #remain="{ row }">
-          <span class="xfm-num" :style="row.remainDanger ? { color: 'var(--c-danger)' } : undefined">
+          <span class="xf-num" :style="row.remainDanger ? { color: 'var(--c-danger)' } : undefined">
             {{ row.remain }}
           </span>
         </template>
@@ -630,15 +630,15 @@ function toggleFlavor(row: FlavorRow) {
 
   <!-- ============ 套餐 ============ -->
   <template v-else-if="activeTab === 'combo'">
-    <div class="xfm-toolbar">
-      <div class="xfm-toolbar__search">
+    <div class="xf-toolbar">
+      <div class="xf-toolbar__search">
         <XfInput v-model="comboKeyword" placeholder="搜索套餐名 / 编码" />
       </div>
-      <div class="xfm-toolbar__select">
+      <div class="xf-toolbar__select">
         <XfSelect v-model="comboStatus" :options="comboStatusOptions" />
       </div>
-      <div class="xfm-toolbar__grow"></div>
-      <span class="xfm-muted">点击「明细」查看内含菜品</span>
+      <div class="xf-toolbar__grow"></div>
+      <span class="xf-muted">点击「明细」查看内含菜品</span>
     </div>
 
     <div class="xfm-combo">
@@ -654,13 +654,13 @@ function toggleFlavor(row: FlavorRow) {
             <div class="xfm-dish-name">{{ row.name }}</div>
           </template>
           <template #code="{ row }">
-            <span class="xfm-num">{{ row.code }}</span>
+            <span class="xf-num">{{ row.code }}</span>
           </template>
           <template #price="{ row }">
-            <span class="xfm-num">{{ row.price }}</span>
+            <span class="xf-num">{{ row.price }}</span>
           </template>
           <template #dishCount="{ row }">
-            <span class="xfm-num">{{ row.dishCount }}</span>
+            <span class="xf-num">{{ row.dishCount }}</span>
           </template>
           <template #status="{ row }">
             <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>
@@ -689,8 +689,8 @@ function toggleFlavor(row: FlavorRow) {
           <div class="xfm-combo__head">
             <div class="xfm-combo__name">{{ selectedCombo.name }}</div>
             <div class="xfm-combo__meta">
-              <span class="xfm-num">{{ selectedCombo.code }}</span>
-              <span class="xfm-num">{{ selectedCombo.price }}</span>
+              <span class="xf-num">{{ selectedCombo.code }}</span>
+              <span class="xf-num">{{ selectedCombo.price }}</span>
               <XfTag :tone="toneOf('enable', selectedCombo.status)">{{ selectedCombo.status }}</XfTag>
             </div>
           </div>
@@ -707,9 +707,9 @@ function toggleFlavor(row: FlavorRow) {
 
   <!-- ============ 菜品分类 ============ -->
   <template v-else-if="activeTab === 'category'">
-    <div class="xfm-toolbar">
-      <span class="xfm-muted">共 {{ categories.length }} 个分类</span>
-      <div class="xfm-toolbar__grow"></div>
+    <div class="xf-toolbar">
+      <span class="xf-muted">共 {{ categories.length }} 个分类</span>
+      <div class="xf-toolbar__grow"></div>
       <XfButton @click="openCategoryModal">＋ 新增分类</XfButton>
     </div>
 
@@ -725,10 +725,10 @@ function toggleFlavor(row: FlavorRow) {
           <div class="xfm-dish-name">{{ row.name }}</div>
         </template>
         <template #sort="{ row }">
-          <span class="xfm-num">{{ row.sort }}</span>
+          <span class="xf-num">{{ row.sort }}</span>
         </template>
         <template #dishCount="{ row }">
-          <span class="xfm-num">{{ row.dishCount }}</span>
+          <span class="xf-num">{{ row.dishCount }}</span>
         </template>
         <template #status="{ row }">
           <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>
@@ -760,12 +760,12 @@ function toggleFlavor(row: FlavorRow) {
 
   <!-- ============ 口味库 ============ -->
   <template v-else-if="activeTab === 'flavor'">
-    <div class="xfm-toolbar">
-      <div class="xfm-toolbar__search">
+    <div class="xf-toolbar">
+      <div class="xf-toolbar__search">
         <XfInput v-model="flavorKeyword" placeholder="搜索口味名称 / 类型" />
       </div>
-      <div class="xfm-toolbar__grow"></div>
-      <span class="xfm-muted">共 {{ flavors.length }} 个口味</span>
+      <div class="xf-toolbar__grow"></div>
+      <span class="xf-muted">共 {{ flavors.length }} 个口味</span>
     </div>
 
     <XfPanel>
@@ -783,7 +783,7 @@ function toggleFlavor(row: FlavorRow) {
           <span class="xfm-tag-text">{{ row.type }}</span>
         </template>
         <template #dishCount="{ row }">
-          <span class="xfm-num">{{ row.dishCount }}</span>
+          <span class="xf-num">{{ row.dishCount }}</span>
         </template>
         <template #status="{ row }">
           <XfTag :tone="toneOf('enable', row.status as string)">{{ row.status }}</XfTag>

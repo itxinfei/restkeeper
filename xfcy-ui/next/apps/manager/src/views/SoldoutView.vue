@@ -184,15 +184,15 @@ async function remove(row: SoldoutRow) {
     </template>
   </XfPageHead>
 
-  <div class="xfm-toolbar">
-    <div class="xfm-toolbar__search">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__search">
       <XfInput v-model="keyword" placeholder="菜品名称" />
     </div>
-    <div class="xfm-toolbar__select">
+    <div class="xf-toolbar__select">
       <XfSelect v-model="typeFilter" :options="typeOptions" />
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
-    <div class="xfm-toolbar__grow"></div>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfPanel>
@@ -204,10 +204,10 @@ async function remove(row: SoldoutRow) {
         </XfTag>
       </template>
       <template #limit="{ row }">
-        <span class="xfm-num">{{ row.limit }}</span>
+        <span class="xf-num">{{ row.limit }}</span>
       </template>
       <template #remainder="{ row }">
-        <span class="xfm-num" :class="{ 'xfm-tag-text': row.remainder === null }">
+        <span class="xf-num" :class="{ 'xfm-tag-text': row.remainder === null }">
           {{ remainLabel(row.remainder as number | null | undefined) }}
         </span>
       </template>

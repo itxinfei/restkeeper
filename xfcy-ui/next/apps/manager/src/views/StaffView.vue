@@ -205,15 +205,15 @@ async function confirmToggleStatus() {
     </template>
   </XfPageHead>
 
-  <div class="xfm-toolbar">
-    <div class="xfm-toolbar__search">
+  <div class="xf-toolbar">
+    <div class="xf-toolbar__search">
       <XfInput v-model="nameKeyword" placeholder="姓名" />
     </div>
-    <div class="xfm-toolbar__search">
+    <div class="xf-toolbar__search">
       <XfInput v-model="phoneKeyword" placeholder="手机号" />
     </div>
     <XfButton variant="secondary" @click="search">查询</XfButton>
-    <div class="xfm-toolbar__grow"></div>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfPanel>
@@ -299,7 +299,7 @@ async function confirmToggleStatus() {
 
   <!-- 初始密码告知（新增成功后必须展示，否则员工无法登录） -->
   <XfModal v-model:open="passwordOpen" title="员工初始密码">
-    <p class="xfm-muted">请将该密码告知员工，员工登录使用姓名 + 此密码。</p>
+    <p class="xf-muted">请将该密码告知员工，员工登录使用姓名 + 此密码。</p>
     <div class="xfm-pwd">
       <code class="xfm-pwd__code xf-num">{{ initialPassword || '—' }}</code>
       <XfButton size="sm" variant="secondary" @click="copyPassword">

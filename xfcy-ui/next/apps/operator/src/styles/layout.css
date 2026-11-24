@@ -6,17 +6,6 @@
  */
 
 /* ---------- 通用 ---------- */
-.xfo-muted {
-  color: var(--c-text-2);
-}
-
-.xfo-num {
-  font-variant-numeric: tabular-nums;
-}
-
-.xfo-panel-gap {
-  margin-bottom: 16px;
-}
 
 .xfo-cell-name {
   font-weight: var(--weight-title);
@@ -30,26 +19,6 @@
 }
 
 /* ---------- 工具栏 / 表格 / 分页 ---------- */
-.xfo-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-
-.xfo-toolbar__search {
-  width: 240px;
-}
-
-.xfo-toolbar__select {
-  width: 150px;
-}
-
-.xfo-toolbar__grow {
-  margin-left: auto;
-}
-
 .xfo-pager {
   display: flex;
   align-items: center;

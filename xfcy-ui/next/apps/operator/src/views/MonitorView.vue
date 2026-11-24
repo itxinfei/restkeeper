@@ -55,19 +55,19 @@ const kpiTrend: Record<string, 'up' | 'down' | 'flat'> = {
         <span class="xfo-cell-name">{{ (row as ServiceRow).name }}</span>
       </template>
       <template #group="{ row }">
-        <span class="xfo-muted">{{ (row as ServiceRow).group }}</span>
+        <span class="xf-muted">{{ (row as ServiceRow).group }}</span>
       </template>
       <template #status="{ row }">
         <XfTag :tone="toneOf('service', (row as ServiceRow).status)">{{ labelOf('service', (row as ServiceRow).status) }}</XfTag>
       </template>
       <template #instances="{ row }">
-        <span class="xfo-num">{{ (row as ServiceRow).instances }}</span>
+        <span class="xf-num">{{ (row as ServiceRow).instances }}</span>
       </template>
       <template #version="{ row }">
-        <span class="xfo-num">{{ (row as ServiceRow).version }}</span>
+        <span class="xf-num">{{ (row as ServiceRow).version }}</span>
       </template>
       <template #heartbeat="{ row }">
-        <span class="xfo-num">{{ (row as ServiceRow).heartbeat }}</span>
+        <span class="xf-num">{{ (row as ServiceRow).heartbeat }}</span>
       </template>
     </XfTable>
     <p class="xfo-note">以上为演示「示意」数据，非真实 Nacos 探测结果。</p>

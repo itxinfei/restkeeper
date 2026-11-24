@@ -88,9 +88,9 @@ onMounted(() => {
     </template>
   </XfPageHead>
 
-  <div class="xfo-toolbar">
-    <span class="xfo-muted">{{ summary }} · 数据源：{{ isMockMode() ? '@xfcy/api mock' : '真实后端' }}</span>
-    <div class="xfo-toolbar__grow"></div>
+  <div class="xf-toolbar">
+    <span class="xf-muted">{{ summary }} · 数据源：{{ isMockMode() ? '@xfcy/api mock' : '真实后端' }}</span>
+    <div class="xf-toolbar__grow"></div>
   </div>
 
   <XfPanel>
@@ -108,17 +108,17 @@ onMounted(() => {
       empty-description="企业被删除后将进入回收站，可恢复或彻底删除"
     >
       <template #code="{ row }">
-        <span class="xfo-num">{{ (row as RecycleRow).code }}</span>
+        <span class="xf-num">{{ (row as RecycleRow).code }}</span>
       </template>
       <template #name="{ row }">
         <div class="xfo-cell-name">{{ (row as RecycleRow).name }}</div>
         <div class="xfo-cell-sub">删除人：{{ (row as RecycleRow).deletedBy }}</div>
       </template>
       <template #shopCount="{ row }">
-        <span class="xfo-num">{{ (row as RecycleRow).shopCount }}</span>
+        <span class="xf-num">{{ (row as RecycleRow).shopCount }}</span>
       </template>
       <template #deletedAt="{ row }">
-        <span class="xfo-num">{{ (row as RecycleRow).deletedAt }}</span>
+        <span class="xf-num">{{ (row as RecycleRow).deletedAt }}</span>
       </template>
       <template #action="{ row }">
         <div class="xfo-actions">
@@ -134,7 +134,7 @@ onMounted(() => {
   </XfPanel>
 
   <XfModal v-model:open="confirmOpen" title="彻底删除">
-    <p class="xfo-muted">
+    <p class="xf-muted">
       彻底删除后不可恢复，确定删除「{{ pendingRow?.name ?? '' }}」？真实后端无物理删除接口，仅 mock 模式可用。
     </p>
     <template #footer>

@@ -149,7 +149,7 @@ function exportCsv() {
     </template>
   </XfPageHead>
 
-  <div class="xfm-toolbar">
+  <div class="xf-toolbar">
     <XfField label="开始日期">
       <template #default="{ id }">
         <XfInput :id="id" v-model="start" type="date" />
@@ -160,8 +160,8 @@ function exportCsv() {
         <XfInput :id="id" v-model="end" type="date" />
       </template>
     </XfField>
-    <div class="xfm-toolbar__grow"></div>
-    <span v-if="loading" class="xfm-muted">加载中…</span>
+    <div class="xf-toolbar__grow"></div>
+    <span v-if="loading" class="xf-muted">加载中…</span>
     <XfButton @click="load">查询</XfButton>
   </div>
 
@@ -199,21 +199,21 @@ function exportCsv() {
         <div v-for="row in payRows" :key="row.payType" class="xfm-rowline">
           <span>{{ row.payName }}</span>
           <span>
-            <b class="xfm-num">{{ row.count }}</b> 笔 ·
-            <span class="xfm-num">{{ row.ratio }}</span>
+            <b class="xf-num">{{ row.count }}</b> 笔 ·
+            <span class="xf-num">{{ row.ratio }}</span>
           </span>
         </div>
-        <div v-if="payRows.length === 0" class="xfm-muted">该区间暂无收款数据</div>
+        <div v-if="payRows.length === 0" class="xf-muted">该区间暂无收款数据</div>
         <div class="xfm-rowline" style="border-top: 1px solid var(--c-border); margin-top: 8px; padding-top: 8px">
           <span>合计</span>
-          <b class="xfm-num">{{ totalCount }}</b>
+          <b class="xf-num">{{ totalCount }}</b>
         </div>
       </XfPanel>
 
       <XfPanel title="优惠统计">
-        <div class="xfm-rowline"><span>赠菜金额</span><b class="xfm-num">{{ formatYuan(privilege.presentAmount) }}</b></div>
-        <div class="xfm-rowline"><span>免单金额</span><b class="xfm-num">{{ formatYuan(privilege.freeAmount) }}</b></div>
-        <div class="xfm-rowline"><span>抹零金额</span><b class="xfm-num">{{ formatYuan(privilege.smallAmount) }}</b></div>
+        <div class="xfm-rowline"><span>赠菜金额</span><b class="xf-num">{{ formatYuan(privilege.presentAmount) }}</b></div>
+        <div class="xfm-rowline"><span>免单金额</span><b class="xf-num">{{ formatYuan(privilege.freeAmount) }}</b></div>
+        <div class="xfm-rowline"><span>抹零金额</span><b class="xf-num">{{ formatYuan(privilege.smallAmount) }}</b></div>
       </XfPanel>
     </div>
   </div>
