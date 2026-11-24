@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -48,5 +49,18 @@ public class LoginController {
         result.setStatus(ResultCode.error);
         result.setDesc("不支持当前用户类型登录");
         return result;
+    }
+
+    /**
+     * 门店经理登录直连入口：与 {@code IStoreManagerService} 契约
+     * （{@code POST /store/manager/login}，query: shopId/phone/loginPass）一致，
+     * 供管家端前端直接调用（网关 excludedUrls 已放行该路径）。
+     */
+    @Operation(summary = "门店经理登录（直连契约入口）")
+    @PostMapping("/store/manager/login")
+    public Result loginStoreManager(@RequestParam("shopId") String shopId,
+                                    @RequestParam("phone") String phone,
+                                    @RequestParam("loginPass") String loginPass) {
+        return storeManagerService.login(shopId, phone, loginPass);
     }
 }

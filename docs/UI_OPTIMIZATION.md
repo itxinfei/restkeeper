@@ -167,7 +167,7 @@
 | **B11（去重与 C 端错误态）** ✅ | G5 工具类抽到 `@xfcy/ui`（manager/operator 去重）、microapp 菜单加载/检索失败显式报错 + 重试 | manager/operator/microapp |
 | **B12（凭据治理 + 表格/顶栏规范化）** ✅ | 明文凭据占位符化、mock token 随机化；修复 manager/operator 主内容空白（缺 `router-view`）与 cashier 订单面板塌陷；`XfTable` 列宽/换行规范落地，顶栏标题不换行、窄屏隐藏面包屑 | 全部页面 / 部署配置 |
 | **B13（cashier 堆叠态收尾 + 无效操作禁用）** ✅ | 堆叠态订单明细空态撑满居中不再被裁剪；空单禁用挂账/退菜/打印；左区菜品网格保持可滚动 | cashier |
-| **B14（BFF 端点补齐）** ✅ | enterprise-web 透出 `table/count/{areaId}/{status}`、`table/{id}`、`PUT /table`、`table/log/open/{tableId}`，并注册 `ITableLogService` 契约代理；cash-web 透出 `GET /order/{id}` | manager Dashboard/Tables、cashier 订单 |
+| **B14（BFF 端点补齐）** ✅ | enterprise-web 透出 `table/count/{areaId}/{status}`、`table/{id}`、`PUT /table`、`table/log/open/{tableId}`、`store/manager/login`，并注册 `ITableLogService` 契约代理；cash-web 透出 `GET /order/{id}` | manager Dashboard/Tables/登录、cashier 订单 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -225,3 +225,5 @@
 > - `xfcy-cash-web` 的 `OrderController` 补 `GET /order/{id}`（cashier real 模式订单加载所需，此前只能走 mock）。
 > - 验证：`mvn -pl xfcy-web/xfcy-enterprise-web,xfcy-web/xfcy-cash-web -am compile` 通过。**未做运行时联调**（需 Nacos + MySQL + provider 起栈）；`/table/**` 在网关同时挂 enterprise-web 与 cash-web 两条 predicate，实际路由次序待运行环境验证。
 > - 前端 `setMealDishList` 经排查无页面调用（套餐详情已由 `setMealGetById` 带出 dishList），不新增 BFF 端点。
+> - **登录路径对齐**：provider `IStoreManagerService` 契约为 `POST /store/manager/login`（query：shopId/phone/loginPass），与前端 `loginManager` 一致；enterprise-web 原只有统一分流入口 `POST /login`（无该端点，real 模式会 404）。已补直连端点 `@PostMapping("/store/manager/login")`，网关 predicate `/store/manager/**` 与 excludedUrls 均已覆盖。
+> - **待验证隐患**：网关 enterprise-web 与 cash-web 的 predicate 均含 `/table/**`、`/dish/**`，按声明顺序 enterprise-web 会先命中，cashier 相关请求需在真实环境确认是否被错投。
