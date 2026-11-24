@@ -1,6 +1,6 @@
 # xfcy 中间件与数据部署方案（虚拟机 192.168.20.88）
 
-> 状态：按手册适配中。中间件安装由用户执行（已在装）；仓库侧已完成版本/端口/凭据对齐（compose、Nacos 配置、pom、bootstrap）。目标：使 manager/operator/cashier/microapp 五端可从 mock 切到 real。
+> 状态：**中间件与数据已就绪**（2026-11-24 实测）：VM 上 mysql/redis/nacos/rabbitmq/es/kibana/minio/xxl-job/seata 均已运行；`restkeeper_*` 4 库 + xf 授权 + V1 DDL（3/3/15/8 + 视图）已导入；Nacos 8 个配置已发布（v3 Admin API）。剩余：启动应用做登录与主链路冒烟。
 >
 > **唯一权威**：`D:\MyCode\部署手册-中间件与数据.md`（版本、端口、账号）；本文只做 xfcy 落地与差异说明。
 
@@ -72,22 +72,13 @@ NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos/import.sh
 
 ## 5. 执行步骤（按序）
 
-1. （已完成）清理自建冗余实例与命名卷，释放 3306/6379/8848/9848/5672/15672/9200。
-2. （进行中，用户执行）按手册完成安装/升级：Redis 8.10.3、Nacos 3.3.0、RabbitMQ 4.4.0；新增 ES 9.5.7 + Kibana 9.5.7（需 `vm.max_map_count=262144`）。
-3. 复用库初始化：对 MySQL（root/123456）执行 `deploy/sql/init.sql`（幂等建 4 库 + 业务账号 xf/123456）。
-4. 校验中间件：MySQL/Redis/RabbitMQ/Nacos/ES/Kibana 端口与健康（见 §6）。
-5. 导入 Nacos 配置：`NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos/import.sh`，确认 dataId 齐备。
-6. （表结构）导入 V1 DDL（文件已产出在 `deploy/sql/`）：
-
-   ```bash
-   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_operator < deploy/sql/V1__restkeeper_operator.sql
-   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_shop     < deploy/sql/V1__restkeeper_shop.sql
-   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_store    < deploy/sql/V1__restkeeper_store.sql
-   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_order    < deploy/sql/V1__restkeeper_order.sql
-   ```
-
-   导入后核对表数：operator 3 / shop 3 / store 15 / order 8（含 2 张历史表）+ 视图 1。
-7. 启动应用（bootstrap 已指向 192.168.20.88:8848），按 README 冒烟顺序验证。
+1. ✅（已完成）清理自建冗余实例与命名卷，释放端口。
+2. ✅（用户完成）按手册安装/升级：Redis 8.10.3、Nacos 3.3.0、RabbitMQ 4.4.0、ES 9.5.7、Kibana 9.5.7、MinIO；xxl-job 3.3.2 元数据表已建（8 表）。
+3. ✅ `deploy/sql/init.sql` 已执行：4 库建成，`xf@%` 获 4 库 DML+DDL 授权。
+4. ✅ 中间件健康检查通过（见 §6）。
+5. ✅ Nacos 配置已导入：8 个 dataId 均返回 `code:0`（v3 Admin API）。
+6. ✅ V1 DDL 已导入：operator 3 / shop 3 / store 15 / order 8 + `v_order_detail_all` 视图；视图可查（count=0），`t_staff.status` 为 int default 1，字符集 utf8mb4。
+7. ⏳ 启动应用（bootstrap 已指向 192.168.20.88:8848），按 README 冒烟顺序验证。
 
 ## 6. 验证清单
 

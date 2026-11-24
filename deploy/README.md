@@ -42,6 +42,8 @@ docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.optional.ym
 pwsh deploy/nacos/import.ps1          # 或 bash deploy/nacos/import.sh
 ```
 
+> Nacos 3.x 已下线 `/nacos/v1/cs/configs`（返回 404），导入脚本改用 `/nacos/v3/admin/cs/config`（表单提交，参数名 `groupName`）；v3 不可用时自动回退 v1。
+
 导入清单（dataId → 作用）：
 
 | dataId | 作用 |

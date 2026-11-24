@@ -4,7 +4,7 @@
 #   JDK 25 / Spring Boot 4.1.3 / MySQL 8.4.13 / Redis 8.10.3 / ES 9.5.7 / Kibana 9.5.7 /
 #   Nacos 3.3.0 / RabbitMQ 4.4.0 / MinIO RELEASE.2026-06-06T02-44-06Z
 # 账号口径：root/admin/minioadmin 或 itxinfei，密码 123456（MinIO 根密码 ≥8 位用 itxinfei123）。
-# 说明：连接地址统一走宿主机 127.0.0.1；应用侧用环境变量覆盖 Nacos server-addr（见 README）。
+# 说明：端口映射到宿主机；应用/服务连接中间件的地址以《部署手册-中间件与数据》§3 的 192.168.20.88 为准（容器内 healthcheck 用 127.0.0.1 属容器内探测，不受此限）。
 name: xfcy
 
 services:

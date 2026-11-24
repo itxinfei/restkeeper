@@ -1,19 +1,30 @@
-# 将 deploy/nacos/*.yml 导入本地 Nacos（PowerShell 版）
+# 将 deploy/nacos/*.yml 导入 Nacos（PowerShell 版）
+# 地址/凭据以《部署手册-中间件与数据》§3 为准：默认 http://192.168.20.88:8848。
+# Nacos 3.x 已下线 /nacos/v1/cs/configs（404），改用 v3 Admin API；失败回退 v1。
 $ErrorActionPreference = 'Stop'
 $Nacos = if ($env:NACOS_SERVER) { $env:NACOS_SERVER } else { '192.168.20.88:8848' }
 $Group = if ($env:NACOS_GROUP) { $env:NACOS_GROUP } else { 'DEFAULT_GROUP' }
 $Dir = Split-Path -Parent $MyInvocation.MyCommand.Path
+
+function Publish-Config([string]$api, [string]$groupParam, [string]$dataId, [string]$group, [string]$content) {
+    $body = @{
+        dataId  = $dataId
+        $groupParam = $group
+        type    = 'yaml'
+        content = $content
+    }
+    Invoke-RestMethod -Method Post -Uri $api -ContentType 'application/x-www-form-urlencoded; charset=UTF-8' -Body $body
+}
+
 Get-ChildItem -Path $Dir -Filter *.yml | ForEach-Object {
     $dataId = $_.Name
     $content = Get-Content -Raw -Encoding UTF8 $_.FullName
-    $body = @{
-        dataId      = $dataId
-        group       = $Group
-        type        = 'yaml'
-        content     = $content
-        namespaceId = 'public'
+    try {
+        Write-Host "导入 $dataId -> $Nacos ($Group)"
+        Publish-Config "http://$Nacos/nacos/v3/admin/cs/config" 'groupName' $dataId $Group $content | Out-Null
+    } catch {
+        Write-Host "  v3 失败，回退 v1：$($_.Exception.Message)"
+        Publish-Config "http://$Nacos/nacos/v1/cs/configs" 'group' $dataId $Group $content | Out-Null
     }
-    Write-Host "导入 $dataId -> $Nacos ($Group)"
-    Invoke-RestMethod -Method Post -Uri "http://$Nacos/nacos/v1/cs/configs" -Body $body | Out-Null
 }
-Write-Host "完成。可在控制台 http://$Nacos/nacos 查看。"
+Write-Host "完成。可在控制台查看（Nacos 3.x 控制台端口 8080：http://$Nacos/nacos → 或 :8080/nacos）。"
