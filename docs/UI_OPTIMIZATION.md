@@ -59,7 +59,7 @@
 
 | 页面 | 现状 | 主要问题 | 优先级 |
 |---|---|---|---|
-| 桌台总览 | 区域 + 桌台卡；空态统一；real 计数走 `table/count`（B14） | 状态色需与 provider `SystemCode` 常量复核 | P1 |
+| 桌台总览 | 区域 + 桌台卡；空态统一；real 计数走 `table/count`（B14） | 状态色已与 `SystemCode.TABLE_STATUS_*`(0/1/2) 逐一对齐（B8 复核） | P2 |
 | 点餐页 | 分类锚点 + 菜品网格 + 订单面板 + 结账弹窗；换台/退菜/反结账/挂账主体校验齐备（B3/B5）；空单禁用无效操作（B13） | 换台/后厨打印为「示意」交互（real 模式生效） | P2 |
 | 登录 | 员工登录 | ✅ | — |
 
@@ -170,6 +170,7 @@
 | **B14（BFF 端点补齐）** ✅ | enterprise-web 透出 `table/count/{areaId}/{status}`、`table/{id}`、`PUT /table`、`table/log/open/{tableId}`、`store/manager/login`，并注册 `ITableLogService` 契约代理；cash-web 透出 `GET /order/{id}` | manager Dashboard/Tables/登录、cashier 订单 |
 | **B15（VM 部署准备）** ✅ | 清理自建 xfcy-* 容器与命名卷让出端口；新增 `deploy/nacos-vm/*.yml`（地址 192.168.20.88、MySQL/Redis 密码 123456）与导入脚本；更新 `docs/MIDDLEWARE_DEPLOYMENT.md` | 部署环境 |
 | **B16（企业账号状态筛选服务端化）** ✅ | provider 契约/实现/operator-web 透传 `@RequestParam status`；`@xfcy/api` 与 mock 支持 status；store 移除状态本地过滤（仅套餐保留本地） | operator 企业管理 |
+| **B17（V1 DDL 逆向产出）** ✅ | 按实体 + Mapper XML 逆向产出 `deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql`（29 表 + `v_order_detail_all` 视图）；sqlglot 解析校验通过 | 数据库初始化 |
 
 > B1/B2 已落地：`XfDemoBadge` / `XfErrorState` / `XfToastHost` / `tone.ts` / `layout.css`；Dashboard real 模式已接 `currentAmount` + `table.countByStatus` + `soldout.page` + `order.page`，无契约的翻台率显式「暂无口径」；manager 5 页与 operator 2 页具备错误态 + 重试。配套后端：新增 `GET /order/page/{n}/{s}` 只读契约、`POST /staff/add` 返回初始密码。
 >
@@ -239,3 +240,10 @@
 > - **后端**：`IEnterpriseAccountService.queryPageByName` 增加可选 `@RequestParam("status") Integer status`；provider 实现按 `status` 精确条件（`QueryWrapper.eq`）并保留旧签名重载；provider 内 `EnterpriseAccountController` 与 `xfcy-operator-web` 控制器同步透传。
 > - **前端**：`@xfcy/api` 的 `enterprise.page` 增加 `status` 参数；mock 路由同步过滤；operator store 将状态筛选映射为 `0/1/-1` 传给后端，`clientSide` 仅剩套餐（演示字段，契约无 `plan`，无法下沉）。
 > - **验证**：`pnpm --filter @xfcy/api typecheck`、`pnpm --filter @xfcy/operator typecheck` 通过；`mvn -pl xfcy-service/xfcy-operator,xfcy-web/xfcy-operator-web -am compile` 通过；未做运行时联调（等 VM 中间件就绪）。
+>
+> B17 已落地（数据层）：
+> - `deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql`：按 `@TableName` 实体 + Mapper XML 逆向产出，共 29 表 + `v_order_detail_all`（两明细表 UNION ALL，含 shop_id/store_id/is_deleted/last_update_time）；utf8mb4 / InnoDB。
+> - 关键约束对齐：多租户拦截器要求 store/order 表（含视图）必须有 `shop_id`/`store_id`；`@TableLogic` 对应 `is_deleted tinyint default 0`；ASSIGN_ID 主键 `varchar(32)`、UUID 员工 `varchar(64)`、报表 Long 主键 `bigint`。
+> - 逆向不确定项已在文件头标注：金额 Java Integer→int（单位语义待业务确认）、`t_store.category/password` 为 XML 遗留列（保留以兼容 resultMap）、`t_sell_calculation.id`/`t_reverse_order.id` 实体无 `@TableId` 但 DDL 补 PK、视图列取两实体并集确定部分。
+> - **验证**：sqlglot（MySQL 方言）解析 4 个文件均通过；**未导入实库**（VM 中间件当前未运行，待用户装完后导入并核对表数 3/3/15/8+视图）。
+> - 未接入 Flyway（仓库无 flyway 依赖），按手工导入设计，导入命令见 `deploy/README.md` §5。

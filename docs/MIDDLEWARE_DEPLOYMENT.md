@@ -35,7 +35,7 @@
 
 - 复用 mw-mysql，新建 4 个库（`deploy/sql/init.sql` 已定义）：`restkeeper_operator` / `restkeeper_shop` / `restkeeper_store` / `restkeeper_order`。
 - 库名与 Nacos 中 provider 数据源一致；字符集 utf8mb4 / utf8mb4_general_ci。
-- **表结构缺口（阻塞项）**：全仓无任何 `.sql`，`docs/requirements.md` §6.2 的 29 张表 + 1 视图为 Flyway V1 待产出输入，DDL 尚未编写。**中间件起来后若直接启动服务，会因缺表报错**。因此端到端联调的前置条件是先产出并导入 V1 DDL（可作为独立任务：按实体 + Mapper XML 逆向生成 4 库 DDL 与视图）。
+- **表结构（已就绪）**：`deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql` 已按实体 + Mapper XML 逆向产出 29 表 + `v_order_detail_all` 视图（utf8mb4 / InnoDB，含 shop_id/store_id 与 is_deleted）。语法已用 sqlglot 解析校验，待中间件起来后导入并做建表核对。
 
 ### 3.2 其它存储
 
@@ -65,17 +65,26 @@ NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy
 ## 5. 执行步骤（按序）
 
 1. （已完成）清理自建冗余实例与命名卷，释放 3306/6379/8848/9848/5672/15672/9200。
-2. 复用库初始化：对 mw-mysql 执行 `deploy/sql/init.sql`（幂等 CREATE DATABASE IF NOT EXISTS）。
+2. 复用库初始化：对复用 MySQL（root/123456）执行 `deploy/sql/init.sql`（幂等 CREATE DATABASE IF NOT EXISTS）。
 3. 完成 ES 部署：`docker compose up -d elasticsearch`（拉取约 800MB，需 `vm.max_map_count=262144`，已设置并持久化到 `/etc/sysctl.d/99-es.conf`）。
 4. 校验中间件：MySQL/Redis/RabbitMQ/Nacos/ES 端口与健康（见 §6）。
 5. 导入 Nacos 配置：`NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh`，确认 dataId 齐备。
-6. （阻塞）产出并导入 4 库 V1 DDL 与 `v_order_detail_all` 视图。
+6. （表结构）导入 V1 DDL（文件已产出在 `deploy/sql/`）：
+
+   ```bash
+   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_operator < deploy/sql/V1__restkeeper_operator.sql
+   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_shop     < deploy/sql/V1__restkeeper_shop.sql
+   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_store    < deploy/sql/V1__restkeeper_store.sql
+   docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_order    < deploy/sql/V1__restkeeper_order.sql
+   ```
+
+   导入后核对表数：operator 3 / shop 3 / store 15 / order 8（含 2 张历史表）+ 视图 1。
 7. 启动应用（bootstrap 覆盖 nacos 地址），按 README 冒烟顺序验证。
 
 ## 6. 验证清单
 
-- MySQL：`docker exec mw-mysql mysql -h127.0.0.1 -uroot -p123456 -e "show databases"` → 含 4 个 `restkeeper_*`。
-- Redis：`docker exec mw-redis redis-cli -a 123456 ping` → PONG。
+- MySQL：`docker exec <mysql容器> mysql -h127.0.0.1 -uroot -p123456 -e "show databases"` → 含 4 个 `restkeeper_*`；各库表数 3/3/15/8，且 `SELECT COUNT(*) FROM restkeeper_order.v_order_detail_all` 可执行（列名以实际容器名为准，当前 VM 上为 `mysql`/`redis`）。
+- Redis：`docker exec <redis容器> redis-cli -a 123456 ping` → PONG。
 - RabbitMQ：管理台 `http://192.168.20.88:15672`（guest/guest）。
 - Nacos：`http://192.168.20.88:8848/nacos` 可登录；配置列表含 common.yml、gateway.yml、各 provider yml、enterprise-web.yml（VM 版来自 `deploy/nacos-vm/`）。
   - 注：仓库 compose 的 healthcheck 用 `/nacos/v1/console/health/readiness`，Nacos 3.1.1 该端点返回 410，容器会显示 unhealthy（功能不受影响）；建议改为控制台首页或 v3 健康端点。

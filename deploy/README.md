@@ -59,13 +59,23 @@ $env:SPRING_CLOUD_NACOS_CONFIG_SERVERADDR    = "127.0.0.1:8848"
 
 ## 5. 表结构
 
-全仓无 `.sql`，DDL 由 Flyway V1 产出（见 `docs/requirements.md` 6.2 库表清单，共 29 表 + 1 视图）。
-本地冒烟前需先执行 V1；`t_staff.status` 含在内。
+全仓无任何历史 `.sql`；29 张表 + `v_order_detail_all` 视图的 DDL 已由实体 + Mapper XML 逆向产出为 `deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql`（未接入 Flyway 自动迁移，需手工导入）：
+
+```bash
+docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_operator < deploy/sql/V1__restkeeper_operator.sql
+docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_shop     < deploy/sql/V1__restkeeper_shop.sql
+docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_store    < deploy/sql/V1__restkeeper_store.sql
+docker exec -i <mysql容器> mysql -uroot -p123456 restkeeper_order    < deploy/sql/V1__restkeeper_order.sql
+```
+
+库表清单与字段依据见 `docs/requirements.md` 6.2。`t_staff.status` 含在内。
+
+> 逆向不确定项已在各 SQL 文件头注释标注（如金额单位、XML 遗留列 `t_store.category/password`、视图列范围）。
 
 ## 6. 虚拟机部署（192.168.20.88）
 
 中间件与数据在 VM 上的部署方案、配置对齐与验证清单见 [docs/MIDDLEWARE_DEPLOYMENT.md](../docs/MIDDLEWARE_DEPLOYMENT.md)。
-VM 专用 Nacos 配置在 `deploy/nacos-vm/`（地址 192.168.20.88、复用 mw-mysql/mw-redis，密码 123456）：
+VM 专用 Nacos 配置在 `deploy/nacos-vm/`（地址 192.168.20.88、复用现有 MySQL/Redis，密码 123456）：
 
 ```bash
 NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh

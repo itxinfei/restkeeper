@@ -246,14 +246,14 @@ provider 均无 servlet context-path 配置，路径前缀全部由契约类级 
 
 ### 6.2 库表清单（Flyway V1 输入，@TableName 全量去重实证）
 
-物理库名与 jdbc 数据源在 Nacos（仓库不可见），下表按 provider 数据域分组；全仓库 `**/*.sql` **无任何文件**，以下 29 张表 + 1 视图全部为 Flyway V1 逆向产出输入（列以实体 + Mapper XML 为准，含 shop_id/store_id 租户列、is_deleted 逻辑删除列、字符集与索引）。
+物理库名与 jdbc 数据源在 Nacos（仓库不可见），下表按 provider 数据域分组；表结构已由 V1 DDL 产出（`deploy/sql/V1__restkeeper_{operator,shop,store,order}.sql`，共 29 表 + 1 视图），列以实体 + Mapper XML 为准，含 shop_id/store_id 租户列、is_deleted 逻辑删除列、字符集与索引。
 
 | 数据域 | 表 / 视图 |
 |---|---|
 | operator（3 表） | t_enterprise_account、t_operator_user、t_sys_dict |
 | shop（3 表） | t_brand、t_store、t_store_manager |
 | store（15 表） | t_category、t_dish、t_dish_flavor、t_setmeal、t_setmeal_dish、t_table、t_table_area、t_table_log、t_staff（**含新增 status 列，default 1**）、t_credit、t_credit_company_user、t_credit_logs、t_credit_repayment、t_remark、t_sell_calculation |
-| order（6 表 + 1 视图） | t_order、t_order_detail、t_order_detail_meal、t_reverse_order、t_report_pay、t_report_dish；视图 **v_order_detail_all**（视图定义同样随 V1 产出，按 Mapper XML 逆向） |
+| order（6 表 + 1 视图） | t_order、t_order_detail、t_order_detail_meal、t_reverse_order、t_report_pay、t_report_dish；视图 **v_order_detail_all**（已随 V1 产出：两明细表 UNION ALL，含租户列） |
 | job 归档独有（2 表，与 order 同库） | t_his_order、t_his_order_detail |
 | es | 无关系表；索引 **dish**（DishEs `@Document(indexName="dish")`），mapping / IK 词典 / 初始化数据方案随中间件阶段产出（K16） |
 
