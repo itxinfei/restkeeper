@@ -68,10 +68,9 @@ public class DishSearchServiceImpl {
         final String wildcardPattern = "*" + keyword + "*";
         NativeQuery query = NativeQuery.builder()
                 .withQuery(q -> q.bool(b -> {
-                    //租户与逻辑删除条件走 filter，不参与评分
+                    //租户条件走 filter，不参与评分；索引只存未删除数据（删除即移除文档），无需 is_deleted 过滤
                     b.filter(f -> f.term(t -> t.field("shop_id").value(FieldValue.of(shopId))));
                     b.filter(f -> f.term(t -> t.field("store_id").value(FieldValue.of(storeId))));
-                    b.filter(f -> f.term(t -> t.field("is_deleted").value(FieldValue.of(0))));
                     if (withType) {
                         b.filter(f -> f.term(t -> t.field("type").value(FieldValue.of(type))));
                     }

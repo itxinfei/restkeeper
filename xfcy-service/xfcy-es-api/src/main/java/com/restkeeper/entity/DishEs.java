@@ -32,7 +32,7 @@ public class DishEs implements Serializable {
     @Schema(description = "商品码")
     private String code;
 
-    @Field(name = "dish_name", type = FieldType.Text)
+    @Field(name = "dish_name", type = FieldType.Wildcard)
     @Schema(description = "菜品名称")
     private String dishName;
 
