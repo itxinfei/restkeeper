@@ -59,7 +59,7 @@ services:
       - redis-data:/data
 
   rabbitmq:
-    image: rabbitmq:4.4.0-management
+    image: rabbitmq:4.4.1-management
     container_name: xfcy-rabbitmq
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:-xf}

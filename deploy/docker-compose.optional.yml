@@ -6,7 +6,7 @@ name: xfcy
 
 services:
   xxl-job-admin:
-    image: xuxueli/xxl-job-admin:3.3.2
+    image: xuxueli/xxl-job-admin:3.5.0
     container_name: xfcy-xxl-job-admin
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/xxl_job?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
