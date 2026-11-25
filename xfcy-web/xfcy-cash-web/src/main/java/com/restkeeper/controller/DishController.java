@@ -62,4 +62,37 @@ public class DishController {
         result.setPages(pages);
         return result;
     }
+
+    @Operation(summary = "根据菜名搜索菜品")
+    @GetMapping("/search/dish/name/{name}/type/{type}/page/{pageNum}/{pageSize}")
+    public PageResult<DishPanelVO> queryByName(@PathVariable("name") String name,
+                                               @PathVariable("type") int type,
+                                               @PathVariable("pageNum") int pageNum,
+                                               @PathVariable("pageSize") int pageSize) {
+        SearchResult<DishEs> searchResult = dishSearchService.searchDishByName(name, type, pageNum, pageSize);
+
+        List<DishPanelVO> dishVOList = new ArrayList<>();
+        searchResult.getRecords().forEach(es -> {
+            DishPanelVO dishPanelVO = new DishPanelVO();
+            dishPanelVO.setDishId(es.getId());
+            dishPanelVO.setDishName(es.getDishName());
+            dishPanelVO.setPrice(es.getPrice());
+            dishPanelVO.setImage(es.getImage());
+            dishPanelVO.setType(es.getType());
+            dishPanelVO.setRemainder(sellCalculationService.getRemainderCount(es.getId()));
+            dishVOList.add(dishPanelVO);
+        });
+
+        long pages = searchResult.getTotal() % pageSize == 0
+                ? searchResult.getTotal() / pageSize
+                : searchResult.getTotal() / pageSize + 1;
+
+        PageResult<DishPanelVO> result = new PageResult<>();
+        result.setRecords(dishVOList);
+        result.setTotal(searchResult.getTotal());
+        result.setPage(pageNum);
+        result.setSize(pageSize);
+        result.setPages(pages);
+        return result;
+    }
 }
