@@ -14,6 +14,7 @@ import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.mapper.SetMealMapper;
 import com.restkeeper.store.mq.DishIndexEventPublisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -32,6 +33,7 @@ public class SetMealServiceImpl extends ServiceImpl<SetMealMapper, SetMeal> {
     private SetMealDishServiceImpl setMealDishService;
 
     @Autowired
+    @Lazy
     private DishServiceImpl dishService;
 
     @Autowired

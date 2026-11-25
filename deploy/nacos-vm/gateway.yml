@@ -1,30 +1,35 @@
 # [VM 192.168.20.88] 与 deploy/nacos 同内容；地址/凭据以《部署手册-中间件与数据》§3 为准。
 # dataId: gateway.yml（gateway，prefix=gateway）
 # 生产路由以 Nacos 为准；本地可用 discovery.locator 兜底。
+# Spring Cloud 2025.1 起网关配置迁到 spring.cloud.gateway.server.webflux.*，旧前缀不再绑定。
 spring:
   cloud:
     gateway:
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      routes:
-        - id: operator-web
-          uri: lb://operator-web
-          predicates:
-            - Path=/operator/**,/enterprise/account/**,/sysDict/**
-        - id: enterprise-web
-          uri: lb://enterprise-web
-          predicates:
-            - Path=/brand/**,/store/**,/store/manager/**,/dish/**,/setMeal/**,/credit/**,/report/**,/table/**,/staff/**,/remark/**,/login
-        - id: cash-web
-          uri: lb://cash-web
-          predicates:
-            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation/**,/search/**
-        - id: microapp-web
-          uri: lb://microapp-web
-          predicates:
-            - Path=/microApp/**
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          routes:
+            - id: operator-web
+              uri: lb://operator-web
+              predicates:
+                - Path=/operator/**,/enterprise/account/**,/sysDict/**
+            # cash-web 前置并收紧 predicate：/staff/login 精确匹配优先于 enterprise-web 的
+            # /staff/**，且不再用宽泛 /dish/**、/table/** 抢走管家端管理接口
+            - id: cash-web
+              uri: lb://cash-web
+              predicates:
+                - Path=/staff/login,/order/**,/sellCalculation/**,/search/**,/table/area/list,/table/log/open,/table/area/*/page/*
+            - id: enterprise-web
+              uri: lb://enterprise-web
+              predicates:
+                - Path=/brand/**,/store/**,/store/manager/**,/dish/**,/setMeal/**,/credit/**,/report/**,/table/**,/staff/**,/remark/**,/login
+            - id: microapp-web
+              uri: lb://microapp-web
+              predicates:
+                - Path=/microApp/**
 gateway:
   # C 端 BFF 自身用独立 StpLogic 鉴权，网关对 /microApp/** 放行（见 MicroappStpLogicConfig）
   excludedUrls: /login,/staff/login,/operator/user/login,/enterprise/account/login,/store/manager/login,/microApp/**

@@ -6,6 +6,7 @@ import com.restkeeper.store.entity.Dish;
 import com.restkeeper.store.entity.SetMealDish;
 import com.restkeeper.store.mapper.SetMealDishMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import java.util.List;
 public class SetMealDishServiceImpl extends ServiceImpl<SetMealDishMapper, SetMealDish> {
 
     @Autowired
+    @Lazy
     private DishServiceImpl dishService;
 
     /**

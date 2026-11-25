@@ -6,7 +6,7 @@ import com.restkeeper.vo.LoginVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -24,7 +24,9 @@ public class LoginController {
 
     @Operation(summary = "员工登录")
     @PostMapping("/staff/login")
-    public Result login(@RequestBody LoginVO loginVO) {
-        return staffService.login(loginVO.getShopId(), loginVO.getLoginName(), loginVO.getLoginPass());
+    public Result login(@RequestParam("shopId") String shopId,
+                        @RequestParam("loginName") String loginName,
+                        @RequestParam("password") String password) {
+        return staffService.login(shopId, loginName, password);
     }
 }

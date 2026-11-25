@@ -4,31 +4,33 @@
 # 用途：Nacos dataId `gateway.yml`（192.168.20.88:8848）为本环境的权威路由配置，
 #       本文件为仓库内补录，用于版本管理与迁移比对。生产改动请同步 Nacos。
 #
-# 说明：三个 BFF 的端点前缀尚未统一（/dish、/table、/order 在 enterprise 与 cash 重复），
-#       阶段 7 前端重写统一前缀后，启用下方显式 routes；在此之前本地可用
-#       spring.cloud.gateway.discovery.locator（按服务名 /service-id/** 转发）。
+# 说明：Spring Cloud 2025.1 起配置前缀为 spring.cloud.gateway.server.webflux.*；
+#       cash-web 前置并收紧 predicate，避免其 /staff/login、/table/**、/dish/**
+#       与 enterprise-web 的宽泛前缀相互抢占。
 # =============================================================================
 spring:
   cloud:
     gateway:
-      routes:
-        # 运营中心 BFF（8083）
-        - id: operator-web
-          uri: lb://operator-web
-          predicates:
-            - Path=/operator/**,/enterprise/account/**,/sysDict/**
-        # 餐掌柜管家端 BFF（8081）
-        - id: enterprise-web
-          uri: lb://enterprise-web
-          predicates:
-            - Path=/brand/**,/store/**,/store/manager/**,/dish/**,/setMeal/**,/credit/**,/report/**,/table/**,/staff/**,/remark/**,/login
-        # 餐掌柜收银端 BFF（8085）
-        - id: cash-web
-          uri: lb://cash-web
-          predicates:
-            - Path=/staff/login,/table/**,/dish/**,/order/**,/sellCalculation/**,/search/**
-        # 移动端 BFF（规划，8087，context-path /microApp）
-        - id: microapp-web
-          uri: lb://microapp-web
-          predicates:
-            - Path=/microApp/**
+      server:
+        webflux:
+          routes:
+            # 运营中心 BFF（8083）
+            - id: operator-web
+              uri: lb://operator-web
+              predicates:
+                - Path=/operator/**,/enterprise/account/**,/sysDict/**
+            # 餐掌柜收银端 BFF（8085）
+            - id: cash-web
+              uri: lb://cash-web
+              predicates:
+                - Path=/staff/login,/order/**,/sellCalculation/**,/search/**,/table/area/list,/table/log/open,/table/area/*/page/*
+            # 餐掌柜管家端 BFF（8081）
+            - id: enterprise-web
+              uri: lb://enterprise-web
+              predicates:
+                - Path=/brand/**,/store/**,/store/manager/**,/dish/**,/setMeal/**,/credit/**,/report/**,/table/**,/staff/**,/remark/**,/login
+            # 移动端 BFF（规划，8087，context-path /microApp）
+            - id: microapp-web
+              uri: lb://microapp-web
+              predicates:
+                - Path=/microApp/**

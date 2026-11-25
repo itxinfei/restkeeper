@@ -24,20 +24,23 @@ spring:
         refreshable-dataids: common.yml
     gateway:
       # 生产路由以 Nacos dataId gateway.yml 为准；仓库内补录见 gateway-routes.yml。
+      # Spring Cloud 2025.1 起配置前缀为 spring.cloud.gateway.server.webflux.*；
       # 本地默认开启按服务名发现路由（/service-id/** 转发），阶段 7 前端统一前缀后切换为显式 routes。
-      discovery:
-        locator:
-          enabled: true
-          lower-case-service-id: true
-      # CORS 收口：允许所有来源携带凭证（Boot 4 下用 allowedOriginPatterns）
-      globalcors:
-        cors-configurations:
-          '[/**]':
-            allowedOriginPatterns: "*"
-            allowedMethods: "*"
-            allowedHeaders: "*"
-            allowCredentials: true
-            maxAge: 3600
+      server:
+        webflux:
+          discovery:
+            locator:
+              enabled: true
+              lower-case-service-id: true
+          # CORS 收口：允许所有来源携带凭证（Boot 4 下用 allowedOriginPatterns）
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns: "*"
+                allowedMethods: "*"
+                allowedHeaders: "*"
+                allowCredentials: true
+                maxAge: 3600
 server:
   # K12：原 8085 与 cash_web 冲突，网关改用 8080
   port: 8080

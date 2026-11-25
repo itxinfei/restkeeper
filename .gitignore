@@ -44,3 +44,8 @@ unpackage/
 .env
 .env.local
 .env.*.local
+
+# 本地开发临时产物（解压的 jar 内容、运行日志）
+.devrun/
+xfcy-ui/next/META-INF/
+

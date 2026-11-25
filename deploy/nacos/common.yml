@@ -1,10 +1,17 @@
 # Nacos 共享配置 dataId: common.yml（group: DEFAULT_GROUP）
 # 所有服务经 sharedDataids 引入。地址/凭据以《部署手册-中间件与数据》§3 为准。
+server:
+  # Boot 4/Tomcat 11 下 query string 默认按 ISO-8859-1 解码，显式指定 UTF-8（否则中文参数报 Character decoding failed）
+  tomcat:
+    uri-encoding: UTF-8
 spring:
-  redis:
-    host: 192.168.20.88
-    port: 6379
-    password: ${REDIS_PASSWORD:123456}
+  # Boot 3.0 起 Redis 属性前缀由 spring.redis.* 迁至 spring.data.redis.*，
+  # Boot 4 已移除旧前缀兼容，此处必须使用新前缀（否则回退 localhost）
+  data:
+    redis:
+      host: 192.168.20.88
+      port: 6379
+      password: ${REDIS_PASSWORD:123456}
   rabbitmq:
     host: 192.168.20.88
     port: 5672
