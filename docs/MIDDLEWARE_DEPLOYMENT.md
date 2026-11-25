@@ -56,19 +56,20 @@
 |---|---|
 | `deploy/nacos/common.yml` | redis host 192.168.20.88:6379 + password `${REDIS_PASSWORD:123456}`；rabbitmq username/password `${RABBITMQ_USERNAME:xf}` / `${RABBITMQ_PASSWORD:123456}` |
 | `deploy/nacos/*-dubbo-provider.yml` | jdbc url → `jdbc:mysql://192.168.20.88:3306/restkeeper_*`，username `${MYSQL_USERNAME:xf}`，password `${MYSQL_PASSWORD:123456}`；seata grouplist → 192.168.20.88:8091 |
-| `xfcy-service/*/bootstrap.yml`、`xfcy-web/*/bootstrap.yml`、`xfcy-gateway/bootstrap.yml` | nacos discovery/config server-addr = 192.168.20.88:8848（已回写，无需启动覆盖） |
+| `xfcy-service/*/bootstrap.yml`、`xfcy-web/*/bootstrap.yml`、`xfcy-gateway/bootstrap.yml` | nacos discovery/config server-addr = 192.168.20.88:8848，且均已补 `username: ${NACOS_USERNAME:nacos}` / `password: ${NACOS_PASSWORD:123456}`（VM 已开启 `NACOS_AUTH_ENABLE=true`，否则拉不到配置） |
 | `deploy/.env.example` | 同步 192.168.20.88 + xf/123456 + REDIS/RABBITMQ/NACOS token/MinIO 口径 |
 | `deploy/sql/init.sql` | 新增业务账号 `xf/123456`（仅本 4 库授权） |
 
 Nacos 配置导入（VM 上或本机指向 VM 均可）：
 
 ```bash
-NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy/nacos-vm/*.yml POST 到 /nacos/v1/cs/configs
+NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos-vm/import.sh   # 遍历 deploy/nacos-vm/*.yml；v3 Admin API + 自动登录
 # 若 VM 上的 Nacos 已升 3.3.0，也可用本地同内容版本：
 NACOS_SERVER=192.168.20.88:8848 bash deploy/nacos/import.sh
 ```
 
-> 若 VM 上已存在同名 dataId（此前导入过本地版），再次导入为覆盖更新，安全。
+> VM 实测（2026-11-25）：Nacos 已开 `NACOS_AUTH_ENABLE=true`，可用账号 **nacos/123456**（手册字面为 admin）；导入脚本自动登录取 accessToken 后走 v3 Admin API，8 个 dataId 均返回 `code:0`。
+> 若 VM 上已存在同名 dataId，再次导入为覆盖更新，安全。
 
 ## 5. 执行步骤（按序）
 

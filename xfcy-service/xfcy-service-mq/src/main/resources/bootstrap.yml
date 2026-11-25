@@ -5,8 +5,12 @@ spring:
     nacos:
       discovery:
         server-addr: 192.168.20.88:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:123456}
       config:
         server-addr: 192.168.20.88:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:123456}
         file-extension: yml
         sharedDataids: common.yml
         refreshable-dataids: common.yml

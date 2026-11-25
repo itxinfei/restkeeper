@@ -5,8 +5,12 @@ spring:
     nacos:
       discovery:
         server-addr: 192.168.20.88:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:123456}
       config:
         server-addr: 192.168.20.88:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:123456}
         file-extension: yml #指定文件扩展名，默认为properties
         prefix: operator-web
         #添加共享配置的dataId,如多个使用逗号分隔，并且越靠后，优先级越高

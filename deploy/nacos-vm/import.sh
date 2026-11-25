@@ -1,19 +1,29 @@
 #!/usr/bin/env bash
 # 将 deploy/nacos-vm/*.yml 导入 VM（192.168.20.88）上的 Nacos。
 # 与 deploy/nacos/import.sh 的区别：本目录为 VM 专用派生版（地址 192.168.20.88、凭据同手册 §3）。
+# 鉴权开启时先用 NACOS_USERNAME/NACOS_PASSWORD 登录取 accessToken（或直接给 NACOS_ACCESS_TOKEN）。
 set -euo pipefail
 NACOS="${NACOS_SERVER:-192.168.20.88:8848}"
 GROUP="${NACOS_GROUP:-DEFAULT_GROUP}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
+if [[ -z "${NACOS_ACCESS_TOKEN:-}" ]]; then
+  NACOS_ACCESS_TOKEN="$(curl -s -X POST "http://$NACOS/nacos/v1/auth/login" \
+    --data-urlencode "username=${NACOS_USERNAME:-nacos}" \
+    --data-urlencode "password=${NACOS_PASSWORD:-123456}" \
+    | sed -n 's/.*"accessToken"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p')"
+  if [[ -n "$NACOS_ACCESS_TOKEN" ]]; then echo "Nacos 登录成功（${NACOS_USERNAME:-nacos}）"; fi
+fi
+TOKEN_ARGS=(); [[ -n "${NACOS_ACCESS_TOKEN:-}" ]] && TOKEN_ARGS=(--data-urlencode "accessToken=$NACOS_ACCESS_TOKEN")
+
 publish() { # $1=apiBase $2=dataId $3=groupParamName $4=group $5=file
   local api="$1" did="$2" gp="$3" grp="$4" f="$5"
-  # Git Bash 下 curl 不认 /d/... 的 MSYS 路径，转成 Windows 风格
   local contentPath; contentPath="$(cygpath -w "$f" 2>/dev/null || echo "$f")"
   curl -s -X POST "$api" \
     --data-urlencode "dataId=$did" \
     --data-urlencode "$gp=$grp" \
     --data-urlencode "type=yaml" \
+    "${TOKEN_ARGS[@]}" \
     --data-urlencode "content@$contentPath"
 }
 
