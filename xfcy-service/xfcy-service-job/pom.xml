@@ -45,17 +45,18 @@
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
         </dependency>
+        <!-- job 需以 Web 容器方式启动（application.yml 配置了 server.port=8001），
+             且 Nacos 自动注册依赖 WebServerInitializedEvent，缺 web starter 会导致注册 bean 创建失败 -->
         <dependency>
-            <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-extension</artifactId>
-            <version>3.3.0</version>
-            <scope>compile</scope>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+        <!-- 与全局统一：MyBatis-Plus 3.5.18.1 + Boot4 starter。
+             旧版 3.3.0 的 extension/boot-starter 会拖入 Spring 5 时代的 mybatis-spring 2.0.3，
+             其 SqlSessionFactoryBean 引用 Spring 7 已移除的 NestedIOException，导致 sqlSessionFactory 创建失败。 -->
         <dependency>
             <groupId>com.baomidou</groupId>
-            <artifactId>mybatis-plus-boot-starter</artifactId>
-            <version>3.3.0</version>
-            <scope>compile</scope>
+            <artifactId>mybatis-plus-spring-boot4-starter</artifactId>
         </dependency>
 
     </dependencies>

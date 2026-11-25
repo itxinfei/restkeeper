@@ -1,23 +1,19 @@
 package com.restkeeper.config;
 
-import com.baomidou.mybatisplus.autoconfigure.MybatisPlusProperties;
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.config.GlobalConfig;
-import com.baomidou.mybatisplus.extension.spring.MybatisSqlSessionFactoryBean;
+import com.baomidou.mybatisplus.spring.MybatisSqlSessionFactoryBean;
 import org.mybatis.spring.annotation.MapperScan;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.jdbc.DataSourceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 import javax.sql.DataSource;
 
 @Configuration
-@EnableConfigurationProperties({MybatisPlusProperties.class})
 @MapperScan("com.restkeeper.mapper")
 public class MybatisPlusConfig{
     @Value("${spring.datasource.order.driver-class-name}")
@@ -31,12 +27,6 @@ public class MybatisPlusConfig{
 
     @Value("${spring.datasource.order.username}")
     private String username;
-
-    private  MybatisPlusProperties properties;
-
-    public MybatisPlusConfig(MybatisPlusProperties properties) {
-        this.properties = properties;
-    }
 
     @Bean(name = "orderDataSource")
     public DataSource orderDataSource(){
@@ -61,14 +51,13 @@ public class MybatisPlusConfig{
 
         mybatisSqlSessionFactoryBean.setGlobalConfig(globalConfig);
 
+        //本模块 mapper 全部使用注解 SQL，无需 XML；显式指定 classpath*:/mapper/*.xml 匹配不到资源，
+        //在 Spring 7（Boot 4）下会因 NestedIOException 被移除而创建 sqlSessionFactory 失败。
 
-        mybatisSqlSessionFactoryBean.setMapperLocations(new PathMatchingResourcePatternResolver()
-                .getResources("classpath*:/mapper/*.xml"));
-
-        MybatisConfiguration configuration = this.properties.getConfiguration();
-        if(configuration == null){
-            configuration = new MybatisConfiguration();
-        }
+        //MyBatis-Plus 3.5.x 的 MybatisPlusProperties.CoreConfiguration 与 core.MybatisConfiguration
+        //已非继承关系，无法直接转换；本模块使用显式配置即可。
+        MybatisConfiguration configuration = new MybatisConfiguration();
+        configuration.setMapUnderscoreToCamelCase(Boolean.TRUE);
         mybatisSqlSessionFactoryBean.setConfiguration(configuration);
 
         return mybatisSqlSessionFactoryBean;

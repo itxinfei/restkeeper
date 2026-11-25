@@ -23,6 +23,12 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
+        <!-- mq 以 Web 容器方式启动（application.yml 配置了 server.port=8089），
+             且 Nacos 自动注册依赖 WebServerInitializedEvent，缺 web starter 会导致注册 bean 创建失败 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
 
 
         <!-- TODO 阶段3：SCA 2025.1 已移除该 starter，换新 dysmsapi20170525 SDK；临时锁版本仅为反应堆模型有效 -->

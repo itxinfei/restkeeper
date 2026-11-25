@@ -24,12 +24,12 @@ spring:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://192.168.20.88:3306/restkeeper_store?serverTimezone=Asia/Shanghai
       username: ${MYSQL_USERNAME:xf}
-      password: ${MYSQL_PASSWORD:root}
+      password: ${MYSQL_PASSWORD:123456}
     order:
       driver-class-name: com.mysql.cj.jdbc.Driver
       url: jdbc:mysql://192.168.20.88:3306/restkeeper_order?serverTimezone=Asia/Shanghai
       username: ${MYSQL_USERNAME:xf}
-      password: ${MYSQL_PASSWORD:root}
+      password: ${MYSQL_PASSWORD:123456}
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -42,6 +42,7 @@ xxl:
       addresses: http://192.168.20.88:8086/xxl-job-admin #手册 §3：XXL-Job 控制台 8086
     executor:
       appname: restkeeper-job  #执行器的名称
-      port: 9999     #本地程序和xxl-job的通信端口
-      ip: 192.168.20.88 #执行器注册地址（多网卡可留空自动获取）
+      port: ${XXL_JOB_EXECUTOR_PORT:9999}     #本地程序和xxl-job的通信端口（多项目共用本机时可覆盖，避免端口冲突）
+      #本地联调留空自动获取本机 IP；VM 部署可通过 XXL_JOB_EXECUTOR_IP 指定固定 IP
+      ip: ${XXL_JOB_EXECUTOR_IP:}
       logretentiondays: 30 #日志保存时长(30天)
