@@ -49,7 +49,18 @@ public class AuthFilter implements GlobalFilter, Ordered {
                 .filter(s -> !s.isEmpty())
                 .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
         if (excluded) {
-            return chain.filter(exchange);
+            //白名单允许匿名；但若带有效 token，仍注入会话租户头，保证 C 端已登录用户下游可还原上下文
+            return SaReactorSyncHolder.setContext(exchange, () -> {
+                try {
+                    if (exchange.getRequest().getHeaders().getFirst("Authorization") != null) {
+                        StpUtil.checkLogin();
+                        return chain.filter(injectTenantHeaders(exchange));
+                    }
+                } catch (Exception ignored) {
+                    //匿名访问或令牌失效：无租户上下文属预期，直接放行
+                }
+                return chain.filter(exchange);
+            });
         }
 
         String token = exchange.getRequest().getHeaders().getFirst("Authorization");

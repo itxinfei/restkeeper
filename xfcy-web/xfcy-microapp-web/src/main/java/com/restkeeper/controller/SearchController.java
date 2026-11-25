@@ -27,7 +27,10 @@ public class SearchController {
     @GetMapping
     public Map<String, Object> search(@RequestParam("keyword") String keyword,
                                       @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
-                                      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) {
+                                      @RequestParam(value = "pageSize", defaultValue = "10") int pageSize,
+                                      @RequestParam(value = "shopId", required = false) String shopId,
+                                      @RequestParam(value = "storeId", required = false) String storeId) {
+        TenantQuerySupport.apply(shopId, storeId);
         //1 菜品、2 套餐，合并返回
         SearchResult<DishEs> dish = dishSearchService.searchDishByName(keyword, 1, pageNum, pageSize);
         SearchResult<DishEs> setMeal = dishSearchService.searchDishByName(keyword, 2, pageNum, pageSize);

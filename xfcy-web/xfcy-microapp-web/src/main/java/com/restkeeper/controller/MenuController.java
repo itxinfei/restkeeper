@@ -37,22 +37,33 @@ public class MenuController {
     }
 
     @GetMapping("/category")
-    public List<Map<String, Object>> category(@RequestParam(value = "type", defaultValue = "1") Integer type) {
+    public List<Map<String, Object>> category(@RequestParam(value = "type", defaultValue = "1") Integer type,
+                                              @RequestParam(value = "shopId", required = false) String shopId,
+                                              @RequestParam(value = "storeId", required = false) String storeId) {
+        TenantQuerySupport.apply(shopId, storeId);
         return dishCategoryService.findCategoryList(type);
     }
 
     @GetMapping("/dish/{categoryId}")
-    public List<Map<String, Object>> dish(@PathVariable("categoryId") String categoryId) {
+    public List<Map<String, Object>> dish(@PathVariable("categoryId") String categoryId,
+                                          @RequestParam(value = "shopId", required = false) String shopId,
+                                          @RequestParam(value = "storeId", required = false) String storeId) {
+        TenantQuerySupport.apply(shopId, storeId);
         return dishService.findEnableDishListInfo(categoryId, null);
     }
 
     @GetMapping("/setMeal/{id}")
-    public SetMeal setMeal(@PathVariable("id") String id) {
+    public SetMeal setMeal(@PathVariable("id") String id,
+                           @RequestParam(value = "shopId", required = false) String shopId,
+                           @RequestParam(value = "storeId", required = false) String storeId) {
+        TenantQuerySupport.apply(shopId, storeId);
         return setMealService.getById(id);
     }
 
     @GetMapping("/area")
-    public List<Map<String, Object>> area() {
+    public List<Map<String, Object>> area(@RequestParam(value = "shopId", required = false) String shopId,
+                                          @RequestParam(value = "storeId", required = false) String storeId) {
+        TenantQuerySupport.apply(shopId, storeId);
         return tableAreaService.listTableArea();
     }
 }

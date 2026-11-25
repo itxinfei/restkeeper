@@ -87,11 +87,11 @@ function getShopContext(): { shopId: string; storeId: string } {
   try {
     const query = Taro.getLaunchOptionsSync?.().query ?? {}
     return {
-      shopId: String(query.shopId ?? 'shop-001'),
-      storeId: String(query.storeId ?? 'store-001'),
+      shopId: String(query.shopId ?? 's001'),
+      storeId: String(query.storeId ?? 'st001'),
     }
   } catch {
-    return { shopId: 'shop-001', storeId: 'store-001' }
+    return { shopId: 's001', storeId: 'st001' }
   }
 }
 
@@ -119,15 +119,16 @@ export interface MenuData {
 
 /** 拉取菜单：分类（菜品 + 套餐）、桌台区域、各分类可售菜品 */
 export async function fetchMenu(): Promise<MenuData> {
+  const ctx = getShopContext()
   const [dishCats, setMealCats, areas] = await Promise.all([
-    microapp.menuCategory(1),
-    microapp.menuCategory(2),
-    microapp.menuArea(),
+    microapp.menuCategory(1, ctx),
+    microapp.menuCategory(2, ctx),
+    microapp.menuArea(ctx),
   ])
   const categories = [...dishCats, ...setMealCats].map(toCategory)
   const groups = await Promise.all(
     categories.map(async (cat) => {
-      const rows = await microapp.menuDish(cat.id)
+      const rows = await microapp.menuDish(cat.id, ctx)
       return rows.map((row) => toDish(row, cat.id))
     }),
   )
@@ -140,7 +141,7 @@ export async function fetchMenu(): Promise<MenuData> {
 export async function searchMenu(keyword: string): Promise<Dish[]> {
   const kw = keyword.trim()
   if (!kw) return []
-  const res = await microapp.search(kw, 1, 50)
+  const res = await microapp.search(kw, 1, 50, getShopContext())
   return [...(res.dish?.records ?? []), ...(res.setMeal?.records ?? [])].map(toSearchDish)
 }
 

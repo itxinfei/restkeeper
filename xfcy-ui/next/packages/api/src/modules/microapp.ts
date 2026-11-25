@@ -33,6 +33,12 @@ export interface MicroappCategoryRow {
   type?: number
 }
 
+/** C 端匿名浏览时的租户上下文（query 兜底，已登录时由网关注入请求头） */
+export interface MicroappTenant {
+  shopId?: string
+  storeId?: string
+}
+
 /** 菜品行（MenuController 精简列：id/name/status/price；mock 附带展示字段） */
 export interface MicroappDishRow {
   id: string
@@ -66,26 +72,34 @@ export type MicroappSetMeal = Record<string, unknown>
 /* ---------------- 菜单 ---------------- */
 
 /** 分类列表：GET /menu/category?type=（1 菜品 / 2 套餐） */
-export async function menuCategory(type?: number): Promise<MicroappCategoryRow[]> {
-  const { data } = await http.get('/menu/category', type === undefined ? {} : { params: { type } })
+export async function menuCategory(type?: number, tenant?: MicroappTenant): Promise<MicroappCategoryRow[]> {
+  const { data } = await http.get('/menu/category', {
+    params: { type, ...(tenant?.shopId ? { shopId: tenant.shopId } : {}), ...(tenant?.storeId ? { storeId: tenant.storeId } : {}) },
+  })
   return unwrap<MicroappCategoryRow[]>(data)
 }
 
 /** 可售菜品：GET /menu/dish/{categoryId} */
-export async function menuDish(categoryId: string): Promise<MicroappDishRow[]> {
-  const { data } = await http.get(`/menu/dish/${categoryId}`)
+export async function menuDish(categoryId: string, tenant?: MicroappTenant): Promise<MicroappDishRow[]> {
+  const { data } = await http.get(`/menu/dish/${categoryId}`, {
+    params: { ...(tenant?.shopId ? { shopId: tenant.shopId } : {}), ...(tenant?.storeId ? { storeId: tenant.storeId } : {}) },
+  })
   return unwrap<MicroappDishRow[]>(data)
 }
 
 /** 套餐详情：GET /menu/setMeal/{id} */
-export async function menuSetMeal(id: string): Promise<MicroappSetMeal> {
-  const { data } = await http.get(`/menu/setMeal/${id}`)
+export async function menuSetMeal(id: string, tenant?: MicroappTenant): Promise<MicroappSetMeal> {
+  const { data } = await http.get(`/menu/setMeal/${id}`, {
+    params: { ...(tenant?.shopId ? { shopId: tenant.shopId } : {}), ...(tenant?.storeId ? { storeId: tenant.storeId } : {}) },
+  })
   return unwrap<MicroappSetMeal>(data)
 }
 
 /** 桌台区域：GET /menu/area */
-export async function menuArea(): Promise<MicroappAreaRow[]> {
-  const { data } = await http.get('/menu/area')
+export async function menuArea(tenant?: MicroappTenant): Promise<MicroappAreaRow[]> {
+  const { data } = await http.get('/menu/area', {
+    params: { ...(tenant?.shopId ? { shopId: tenant.shopId } : {}), ...(tenant?.storeId ? { storeId: tenant.storeId } : {}) },
+  })
   return unwrap<MicroappAreaRow[]>(data)
 }
 
@@ -96,8 +110,17 @@ export async function search(
   keyword: string,
   pageNum = 1,
   pageSize = 10,
+  tenant?: MicroappTenant,
 ): Promise<MicroappSearchResponse> {
-  const { data } = await http.get('/search', { params: { keyword, pageNum, pageSize } })
+  const { data } = await http.get('/search', {
+    params: {
+      keyword,
+      pageNum,
+      pageSize,
+      ...(tenant?.shopId ? { shopId: tenant.shopId } : {}),
+      ...(tenant?.storeId ? { storeId: tenant.storeId } : {}),
+    },
+  })
   return unwrap<MicroappSearchResponse>(data)
 }
 
