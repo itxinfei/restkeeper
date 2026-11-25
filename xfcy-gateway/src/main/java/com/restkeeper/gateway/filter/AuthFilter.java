@@ -14,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -29,6 +30,11 @@ import java.util.Map;
 @Component
 public class AuthFilter implements GlobalFilter, Ordered {
 
+    /**
+     * 放行清单支持 Ant 风格（如 /microApp/**）；旧配置为精确路径，两者都可匹配。
+     */
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
+
     @Value("#{'${gateway.excludedUrls:}'.split(',')}")
     private List<String> excludedUrls;
 
@@ -37,7 +43,11 @@ public class AuthFilter implements GlobalFilter, Ordered {
         ServerHttpResponse response = exchange.getResponse();
 
         String path = exchange.getRequest().getURI().getPath();
-        if (excludedUrls.contains(path)) {
+        boolean excluded = excludedUrls.stream()
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+        if (excluded) {
             return chain.filter(exchange);
         }
 

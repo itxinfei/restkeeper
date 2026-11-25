@@ -1,6 +1,7 @@
 package com.restkeeper.store.service;
 
 import com.restkeeper.http.PageResult;
+import com.restkeeper.store.dto.StaffLoginDTO;
 import com.restkeeper.store.entity.Staff;
 import com.restkeeper.utils.Result;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,9 +40,7 @@ public interface IStaffService {
     @PostExchange("/add")
     String addStaff(@RequestBody Staff staff);
 
-    //登录
+    //登录（body 传参：规避 Boot4/Tomcat11 query 中文按 ISO-8859-1 解码导致的 Character decoding failed）
     @PostExchange("/login")
-    Result login(@RequestParam("shopId") String shopId,
-                 @RequestParam("loginName") String loginName,
-                 @RequestParam("password") String password);
+    Result login(@RequestBody StaffLoginDTO dto);
 }

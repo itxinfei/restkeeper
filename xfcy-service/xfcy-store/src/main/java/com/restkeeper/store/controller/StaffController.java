@@ -1,6 +1,7 @@
 package com.restkeeper.store.controller;
 
 import com.restkeeper.http.PageResult;
+import com.restkeeper.store.dto.StaffLoginDTO;
 import com.restkeeper.store.entity.Staff;
 import com.restkeeper.store.service.IStaffService;
 import com.restkeeper.store.service.StaffServiceImpl;
@@ -43,7 +44,7 @@ public class StaffController implements IStaffService {
     }
 
     @Override
-    public Result login(String shopId, String loginName, String password) {
-        return staffService.login(shopId, loginName, password);
+    public Result login(StaffLoginDTO dto) {
+        return staffService.login(dto.getShopId(), dto.getLoginName(), dto.getPassword());
     }
 }

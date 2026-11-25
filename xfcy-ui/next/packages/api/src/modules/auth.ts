@@ -95,13 +95,14 @@ export async function loginOperator(
   return { token, user, userType: 'operator' }
 }
 
-/** 门店员工登录：POST /staff/login（注意参数名为 password，非 loginPass） */
+/** 门店员工登录：POST /staff/login（body 传参，注意参数名为 password，非 loginPass） */
 export async function loginStaff(
   shopId: string,
   loginName: string,
   password: string,
 ): Promise<LoginResult<Staff>> {
-  const { data } = await postParams('/staff/login', { shopId, loginName, password })
+  // body 传参而非 query：规避 Boot4/Tomcat11 query 中文按 ISO-8859-1 解码导致的 Character decoding failed
+  const { data } = await http.post('/staff/login', { shopId, loginName, password })
   const { token, user } = unwrapLogin<Staff>(data)
   setToken(token)
   cacheUser(user, 'staff')
