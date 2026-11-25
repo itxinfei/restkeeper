@@ -1,4 +1,14 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
+      - nacos:enterprise-web.yml
+  # BFF 不直连数据库；classpath 经 api 模块带入 MP/JDBC，需关闭其自动配置
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
+      - org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration
+      - com.baomidou.mybatisplus.autoconfigure.MybatisPlusAutoConfiguration
   application:
     name: enterprise-web
   profiles:

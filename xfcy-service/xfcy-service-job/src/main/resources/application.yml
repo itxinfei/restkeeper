@@ -1,4 +1,7 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
   application:
     name: restkeeper-job
   profiles:

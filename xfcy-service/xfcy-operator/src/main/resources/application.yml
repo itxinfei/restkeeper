@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
+      - nacos:operator-dubbo-provider.yml
   application:
     name: operator-dubbo-provider
   profiles:

@@ -1,4 +1,8 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
+      - nacos:gateway.yml
   application:
     name: gateway
   profiles:

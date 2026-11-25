@@ -1,6 +1,10 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
+      - nacos:order-dubbo-provider.yml
   application:
-    name: store-dubbo-provider
+    name: order-dubbo-provider
   profiles:
     active: dev
   cloud:
@@ -20,14 +24,4 @@ spring:
       seata:
         tx-service-group: ${spring.application.name}-seata-tx-service-group
 server:
-  port: 9991
-
-# Sa-Token：token 走 Authorization 头，会话经 Redis 共享（sa-token-redis-jackson）
-sa-token:
-  token-name: Authorization
-  timeout: 259200            # 3 天，与原 JWT 有效期一致
-  active-timeout: -1
-  is-concurrent: true
-  is-share: true
-  is-read-header: true
-  is-read-cookie: false
+  port: 9992

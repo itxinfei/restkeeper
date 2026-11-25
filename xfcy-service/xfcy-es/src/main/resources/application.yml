@@ -1,6 +1,10 @@
 spring:
+  config:
+    import:
+      - nacos:common.yml
+      - nacos:es-dubbo-provider.yml
   application:
-    name: shop-dubbo-provider
+    name: es-dubbo-provider
   profiles:
     active: dev
   cloud:
@@ -14,15 +18,9 @@ spring:
         username: ${NACOS_USERNAME:nacos}
         password: ${NACOS_PASSWORD:123456}
         file-extension: yml
-        shared-dataids: common.yml
+        sharedDataids: common.yml
         refreshable-dataids: common.yml
-
-# Sa-Token：token 走 Authorization 头，会话经 Redis 共享（sa-token-redis-jackson）
-sa-token:
-  token-name: Authorization
-  timeout: 259200            # 3 天，与原 JWT 有效期一致
-  active-timeout: -1
-  is-concurrent: true
-  is-share: true
-  is-read-header: true
-  is-read-cookie: false
+management:
+    health:
+      elasticsearch:
+        enabled: false

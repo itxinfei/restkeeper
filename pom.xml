@@ -61,6 +61,11 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
+        <!-- Boot 4 将 JSON 支持从 starter-web 拆出，需显式引入（ObjectMapper / MVC JSON 转换）-->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-jackson</artifactId>
+        </dependency>
         <!--springboottest-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
