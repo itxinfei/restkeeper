@@ -1,6 +1,7 @@
 package com.restkeeper.http;
 
 import com.restkeeper.tenant.TenantContext;
+import com.restkeeper.utils.HeaderTextCodec;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +39,10 @@ public class TenantContextHeaderFilter extends OncePerRequestFilter {
     private void putIfPresent(HttpServletRequest request, String headerName, String contextKey) {
         String value = request.getHeader(headerName);
         if (StringUtils.hasText(value)) {
+            //登录人姓名经网关注入时做了 Base64 编码，此处还原；其余头为纯 ASCII 原样透传
+            if (HttpHeaderNames.X_LOGIN_USER_NAME.equals(headerName)) {
+                value = HeaderTextCodec.decode(value);
+            }
             TenantContext.addAttachment(contextKey, value);
         }
     }

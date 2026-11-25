@@ -126,6 +126,8 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> {
         StpUtil.getSession().set("userType", SystemCode.USER_TYPE_STAFF);
         String token = StpUtil.getTokenValue();
 
+        //登录响应脱敏：BCrypt 密码哈希不下发前端
+        staff.setPassword(null);
         result.setStatus(ResultCode.success);
         result.setDesc("ok");
         result.setData(staff);

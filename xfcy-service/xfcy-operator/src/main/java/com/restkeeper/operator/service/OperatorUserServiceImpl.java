@@ -71,6 +71,8 @@ public class OperatorUserServiceImpl extends ServiceImpl<OperatorUserMapper, Ope
         StpUtil.getSession().set("loginUserName", operatorUser.getLoginname());
         String token = StpUtil.getTokenValue();
 
+        //登录响应脱敏：BCrypt 密码哈希不下发前端
+        operatorUser.setLoginpass(null);
         result.setStatus(ResultCode.success);
         result.setDesc("ok");
         result.setData(operatorUser);

@@ -176,6 +176,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
     @Transactional
     public boolean pay(OrderEntity orderEntity) {
 
+        //支付完成由服务端强制置为已支付，避免依赖调用方透传导致"只收钱不核销"
+        orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
+
         //修改订单主表的信息
         this.updateById(orderEntity);
 

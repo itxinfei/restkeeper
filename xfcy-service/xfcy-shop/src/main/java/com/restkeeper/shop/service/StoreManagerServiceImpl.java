@@ -208,6 +208,8 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
         StpUtil.getSession().set("userType", SystemCode.USER_TYPE_STORE_MANAGER);
         String token = StpUtil.getTokenValue();
 
+        //登录响应脱敏：BCrypt 密码哈希不下发前端
+        storeManager.setPassword(null);
         result.setStatus(ResultCode.success);
         result.setDesc("ok");
         result.setData(storeManager);

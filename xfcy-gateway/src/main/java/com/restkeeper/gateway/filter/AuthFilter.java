@@ -5,6 +5,7 @@ import cn.dev33.satoken.reactor.context.SaReactorSyncHolder;
 import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.restkeeper.utils.HeaderTextCodec;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -88,7 +89,8 @@ public class AuthFilter implements GlobalFilter, Ordered {
                         headers.set("x-login-user-id", loginUserId);
                     }
                     if (loginUserName != null) {
-                        headers.set("x-login-user-name", loginUserName);
+                        //头值按 ISO-8859-1 传输，中文姓名需 Base64 编码，provider 侧解码还原
+                        headers.set("x-login-user-name", HeaderTextCodec.encode(loginUserName));
                     }
                 })
                 .build();

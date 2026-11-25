@@ -1,6 +1,7 @@
 package com.restkeeper.http;
 
 import com.restkeeper.tenant.TenantContext;
+import com.restkeeper.utils.HeaderTextCodec;
 import org.springframework.http.HttpRequest;
 import org.springframework.http.client.ClientHttpRequestExecution;
 import org.springframework.http.client.ClientHttpRequestInterceptor;
@@ -20,7 +21,9 @@ public class TenantContextClientInterceptor implements ClientHttpRequestIntercep
         setIfPresent(request, HttpHeaderNames.X_TENANT_SHOP_ID, TenantContext.getShopId());
         setIfPresent(request, HttpHeaderNames.X_TENANT_STORE_ID, TenantContext.getStoreId());
         setIfPresent(request, HttpHeaderNames.X_LOGIN_USER_ID, TenantContext.getLoginUserId());
-        setIfPresent(request, HttpHeaderNames.X_LOGIN_USER_NAME, TenantContext.getLoginUserName());
+        //姓名可能是中文，头值需 Base64 编码；其余 ID 为 ASCII 原样透传
+        setIfPresent(request, HttpHeaderNames.X_LOGIN_USER_NAME,
+                HeaderTextCodec.encode(TenantContext.getLoginUserName()));
         return execution.execute(request, body);
     }
 
