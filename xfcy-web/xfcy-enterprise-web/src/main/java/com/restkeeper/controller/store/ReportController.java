@@ -3,7 +3,9 @@ package com.restkeeper.controller.store;
 import com.restkeeper.dto.CurrentAmountCollectDTO;
 import com.restkeeper.dto.CurrentHourCollectDTO;
 import com.restkeeper.dto.DayAmountCollectDTO;
+import com.restkeeper.dto.PayTypeCollectDTO;
 import com.restkeeper.dto.PrivilegeDTO;
+import com.restkeeper.entity.OrderDetailAllView;
 import com.restkeeper.entity.ReportDishEntity;
 import com.restkeeper.service.IOrderDetailService;
 import com.restkeeper.service.IOrderService;
@@ -82,10 +84,13 @@ public class ReportController {
     public List<PieVo> getCategoryAmountCollect(@RequestParam(value = "start", required = false) LocalDate start,
                                                @RequestParam(value = "end", required = false) LocalDate end) {
         LocalDate[] range = todayRange(start, end);
-        return orderDetailService.getCurrentCategoryAmountCollect(range[0], range[1]).stream().map(d -> {
+        List<OrderDetailAllView> list = orderDetailService.getCurrentCategoryAmountCollect(range[0], range[1]);
+        int total = list.stream().mapToInt(OrderDetailAllView::getDishAmount).sum();
+        return list.stream().map(d -> {
             PieVo pieVo = new PieVo();
             pieVo.setValue(d.getDishAmount());
             pieVo.setName(d.getDishCategoryName());
+            pieVo.setPercent(percent(d.getDishAmount(), total));
             return pieVo;
         }).collect(Collectors.toList());
     }
@@ -95,10 +100,13 @@ public class ReportController {
     public List<PieVo> getCategoryCountCollect(@RequestParam(value = "start", required = false) LocalDate start,
                                               @RequestParam(value = "end", required = false) LocalDate end) {
         LocalDate[] range = todayRange(start, end);
-        return orderDetailService.getCurrentCategoryCountCollect(range[0], range[1]).stream().map(d -> {
+        List<OrderDetailAllView> list = orderDetailService.getCurrentCategoryCountCollect(range[0], range[1]);
+        int total = list.stream().mapToInt(OrderDetailAllView::getTotalCount).sum();
+        return list.stream().map(d -> {
             PieVo pieVo = new PieVo();
             pieVo.setValue(d.getTotalCount());
             pieVo.setName(d.getDishCategoryName());
+            pieVo.setPercent(percent(d.getTotalCount(), total));
             return pieVo;
         }).collect(Collectors.toList());
     }
@@ -121,10 +129,13 @@ public class ReportController {
     public List<PieVo> getPayTypeCollect(@RequestParam(value = "start", required = false) LocalDate start,
                                         @RequestParam(value = "end", required = false) LocalDate end) {
         LocalDate[] range = todayRange(start, end);
-        return orderService.getPayTypeCollect(range[0], range[1]).stream().map(d -> {
+        List<PayTypeCollectDTO> list = orderService.getPayTypeCollect(range[0], range[1]);
+        int total = list.stream().mapToInt(d -> d.getTotalCount() == null ? 0 : d.getTotalCount()).sum();
+        return list.stream().map(d -> {
             PieVo pieVo = new PieVo();
             pieVo.setName(d.getPayName());
             pieVo.setValue(d.getTotalCount());
+            pieVo.setPercent(percent(d.getTotalCount() == null ? 0 : d.getTotalCount(), total));
             return pieVo;
         }).collect(Collectors.toList());
     }
@@ -190,10 +201,13 @@ public class ReportController {
                                              @RequestParam("end") String end) {
         LocalDate startDate = LocalDate.parse(start, DATE_FORMATTER);
         LocalDate endDate = LocalDate.parse(end, DATE_FORMATTER);
-        return reportPayService.getPayTypeCollect(startDate, endDate).stream().map(d -> {
+        List<PayTypeCollectDTO> list = reportPayService.getPayTypeCollect(startDate, endDate);
+        int total = list.stream().mapToInt(d -> d.getTotalCount() == null ? 0 : d.getTotalCount()).sum();
+        return list.stream().map(d -> {
             PieVo pieVo = new PieVo();
             pieVo.setName(d.getPayName());
             pieVo.setValue(d.getTotalCount());
+            pieVo.setPercent(percent(d.getTotalCount() == null ? 0 : d.getTotalCount(), total));
             return pieVo;
         }).collect(Collectors.toList());
     }
@@ -243,18 +257,22 @@ public class ReportController {
 
         List<ReportDishEntity> results = reportDishService.getCategoryAmountCollect(startDate, endDate);
         if (type == 1) {
+            int total = results.stream().mapToInt(d -> d.getDishMoney() == null ? 0 : d.getDishMoney()).sum();
             return results.stream().map(d -> {
                 PieVo pieVo = new PieVo();
                 pieVo.setValue(d.getDishMoney());
                 pieVo.setName(d.getCategory());
+                pieVo.setPercent(percent(d.getDishMoney() == null ? 0 : d.getDishMoney(), total));
                 return pieVo;
             }).collect(Collectors.toList());
         }
         if (type == 2) {
+            int total = results.stream().mapToInt(d -> d.getDishNumber() == null ? 0 : d.getDishNumber()).sum();
             return results.stream().map(d -> {
                 PieVo pieVo = new PieVo();
                 pieVo.setValue(d.getDishNumber());
                 pieVo.setName(d.getCategory());
+                pieVo.setPercent(percent(d.getDishNumber() == null ? 0 : d.getDishNumber(), total));
                 return pieVo;
             }).collect(Collectors.toList());
         }
