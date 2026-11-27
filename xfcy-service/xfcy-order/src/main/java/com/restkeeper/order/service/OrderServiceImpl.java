@@ -697,10 +697,28 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             //通过套餐id获取该套餐下的菜品信息
             List<Dish> dishList = setMealDishService.getAllDishBySetMealId(orderSetMeal.getDishId());
 
+            //套餐未配置菜品时，原实现 reduce(...).get() 会抛 NoSuchElementException
+            if (dishList == null || dishList.isEmpty()) {
+                throw new BussinessException("套餐[" + orderSetMeal.getDishName() + "]未配置菜品，无法完成结账");
+            }
+
+            int setMealNumber = orderSetMeal.getDishNumber() == null ? 0 : orderSetMeal.getDishNumber();
             //当前套餐的优惠比率 = 套餐支付金额 / 套餐中所有菜品的原价总和
-            float allDishPriceInSetMeal = dishList.stream().map(d->d.getPrice()*setMealDishService.getDishCopiesInSetMeal(d.getId(),orderSetMeal.getDishId()))
-                    .reduce(Integer::sum).get() * orderSetMeal.getDishNumber();
-            float rate = orderSetMeal.getDishAmount() / allDishPriceInSetMeal;
+            int allDishPriceInSetMeal = dishList.stream()
+                    .mapToInt(d -> {
+                        Integer price = d.getPrice();
+                        Integer copies = setMealDishService.getDishCopiesInSetMeal(d.getId(), orderSetMeal.getDishId());
+                        if (price == null || copies == null) {
+                            throw new BussinessException("套餐[" + orderSetMeal.getDishName() + "]内菜品缺少价格或份数，无法完成结账");
+                        }
+                        return price * copies;
+                    }).sum() * setMealNumber;
+            //原价合计为 0 会让比率为 Infinity/NaN，污染报表数据，直接拦下
+            if (allDishPriceInSetMeal <= 0) {
+                throw new BussinessException("套餐[" + orderSetMeal.getDishName() + "]原价合计为 0，无法计算优惠比率");
+            }
+            int payAmount = orderSetMeal.getDishAmount() == null ? 0 : orderSetMeal.getDishAmount();
+            float rate = payAmount / (float) allDishPriceInSetMeal;
 
 
             //循环补充其他信息
@@ -723,10 +741,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
                 //获取套餐中这个菜品的数量
                 Integer dishCopies = setMealDishService.getDishCopiesInSetMeal(d.getId(),orderSetMeal.getDishId());
 
-                //菜品数量：订单中套餐的数量 * 套餐中这个菜品的数量
-                orderDetailMealEntity.setDishNumber(orderSetMeal.getDishNumber() * dishCopies);
+                //菜品数量：订单中套餐的数量 * 套餐中这个菜品的数量；份数缺失按 0，避免拆箱 NPE
+                orderDetailMealEntity.setDishNumber(setMealNumber * dishCopies);
 
-                orderDetailMealEntity.setDishAmount((int)(d.getPrice()*dishCopies*orderSetMeal.getDishNumber()*rate));
+                orderDetailMealEntity.setDishAmount((int)(d.getPrice()*dishCopies*setMealNumber*rate));
 
                 orderDetailMealService.save(orderDetailMealEntity);
             });
