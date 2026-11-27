@@ -7,6 +7,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.service.annotation.DeleteExchange;
 import org.springframework.web.service.annotation.GetExchange;
 import org.springframework.web.service.annotation.HttpExchange;
 import org.springframework.web.service.annotation.PostExchange;
@@ -35,4 +36,12 @@ public interface ICreditLogService {
     //保存挂账流水（挂账结账流程内部调用）
     @PostExchange
     boolean save(@RequestBody CreditLogs creditLogs);
+
+    //按订单查询挂账流水（反结账撤销挂账用）
+    @GetExchange("/list/byOrder")
+    List<CreditLogs> listByOrderId(@RequestParam("orderId") String orderId);
+
+    //按订单删除挂账流水（反结账撤销挂账用，逻辑删）
+    @DeleteExchange("/deleteByOrder")
+    boolean deleteByOrderId(@RequestParam("orderId") String orderId);
 }

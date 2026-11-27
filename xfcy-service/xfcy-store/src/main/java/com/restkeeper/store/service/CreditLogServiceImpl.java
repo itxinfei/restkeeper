@@ -39,4 +39,22 @@ public class CreditLogServiceImpl extends ServiceImpl<CreditLogMapper, CreditLog
         queryWrapper.lambda().orderByDesc(CreditLogs::getLastUpdateTime);
         return this.list(queryWrapper);
     }
+
+    /**
+     * 按订单查询挂账流水（反结账撤销挂账用）
+     */
+    public List<CreditLogs> listByOrderId(String orderId) {
+        QueryWrapper<CreditLogs> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(CreditLogs::getOrderId, orderId);
+        return this.list(queryWrapper);
+    }
+
+    /**
+     * 按订单删除挂账流水（逻辑删；CreditLogs 带 @TableLogic，挂账报表自动过滤）
+     */
+    public boolean deleteByOrderId(String orderId) {
+        QueryWrapper<CreditLogs> queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda().eq(CreditLogs::getOrderId, orderId);
+        return this.remove(queryWrapper);
+    }
 }

@@ -33,4 +33,14 @@ public class CreditLogController implements ICreditLogService {
     public boolean save(CreditLogs creditLogs) {
         return creditLogService.save(creditLogs);
     }
+
+    @Override
+    public List<CreditLogs> listByOrderId(String orderId) {
+        return creditLogService.listByOrderId(orderId);
+    }
+
+    @Override
+    public boolean deleteByOrderId(String orderId) {
+        return creditLogService.deleteByOrderId(orderId);
+    }
 }
