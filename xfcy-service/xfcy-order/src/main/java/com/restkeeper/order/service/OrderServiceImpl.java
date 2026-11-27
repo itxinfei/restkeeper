@@ -205,11 +205,19 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
         //先确认订单存在：updateById 对不存在的 id 返回 false 且不报错，
         //若不拦住，前端会看到"结账成功"而订单实际未被核销
-        if (!StringUtils.hasText(orderEntity.getOrderId())) {
+        String orderId = orderEntity.getOrderId();
+        if (!StringUtils.hasText(orderId)) {
             throw new BussinessException("订单不存在");
         }
-        if (this.getById(orderEntity.getOrderId()) == null) {
+        OrderEntity dbOrder = this.getById(orderId);
+        if (dbOrder == null) {
             throw new BussinessException("订单不存在");
+        }
+
+        //桌台等关键字段以库中为准：调用方通常只传 orderId / 支付方式 / 金额，
+        //缺 tableId 会让后续跨服务查桌台报路径变量缺失（实测 "Missing path variable value 'id'"）
+        if (!StringUtils.hasText(orderEntity.getTableId())) {
+            orderEntity.setTableId(dbOrder.getTableId());
         }
 
         //支付完成由服务端强制置为已支付，避免依赖调用方透传导致"只收钱不核销"
@@ -239,11 +247,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         CreditDTO creditDTO = request.getCredit();
 
         //入参兜底：挂账端点必须带订单与挂账支付方式，否则会把单误标成"已付"而不记挂账
-        if (!StringUtils.hasText(orderEntity.getOrderId())) {
+        String orderId = orderEntity.getOrderId();
+        if (!StringUtils.hasText(orderId)) {
             throw new BussinessException("订单不存在");
         }
-        if (this.getById(orderEntity.getOrderId()) == null) {
+        OrderEntity dbOrder = this.getById(orderId);
+        if (dbOrder == null) {
             throw new BussinessException("订单不存在");
+        }
+        //桌台等关键字段以库中为准，原因同 pay：缺 tableId 会导致跨服务查桌台失败
+        if (!StringUtils.hasText(orderEntity.getTableId())) {
+            orderEntity.setTableId(dbOrder.getTableId());
         }
         Integer payType = orderEntity.getPayType();
         if (payType == null || payType != OrderPayType.CREDIT.getType()) {
