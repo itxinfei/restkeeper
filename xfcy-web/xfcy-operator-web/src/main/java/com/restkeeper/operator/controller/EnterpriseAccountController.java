@@ -1,5 +1,6 @@
 package com.restkeeper.operator.controller;
 
+import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.operator.entity.EnterpriseAccount;
 import com.restkeeper.operator.service.IEnterpriseAccountService;
@@ -104,6 +105,9 @@ public class EnterpriseAccountController {
     @PutMapping("/enterprise/account/forbidden/{id}")
     public boolean forbidden(@PathVariable("id") String id) {
         EnterpriseAccount enterpriseAccount = enterpriseAccountService.getById(id);
+        if (enterpriseAccount == null) {
+            throw new BussinessException("账号不存在");
+        }
         enterpriseAccount.setStatus(AccountStatus.Forbidden.getStatus());
         // 停用不涉及到期重算，validityDay 传 null
         return enterpriseAccountService.updateById(enterpriseAccount, null);

@@ -96,6 +96,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //必须在入库前判断：saveOrUpdate 会用雪花 ID 回填 orderId，之后新单也会变成非 null
         boolean isNewOrder = orderEntity.getOrderId() == null;
 
+        //t_order.create_time 无数据库默认值，服务端必须补：否则订单时间为 NULL，
+        //按起止时间筛选（cash-web /order/page?start=&end=）会漏掉这些单
+        if (isNewOrder) {
+            orderEntity.setCreateTime(LocalDateTime.now());
+        }
+
         //加菜需要把本次明细合计累加到主表金额，否则订单总额与明细不一致（入参通常不带 totalAmount）
         List<OrderDetailEntity> addingDetails = orderEntity.getOrderDetails();
         if (!isNewOrder && addingDetails != null) {
@@ -119,6 +125,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
                 ? OrderDetailType.NORMAL_DISH.getType()
                 : OrderDetailType.PLUS_DISH.getType();
         orderDetailEntities.forEach(orderDetailEntity -> {
+            //明细入参兜底：缺 ID / 份数 / 单价时给业务提示，
+            //否则跨服务查沽清会以 Missing path variable 形式冒出去
+            checkOrderDetailParam(orderDetailEntity);
 
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
@@ -139,6 +148,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
 
         return orderEntity.getOrderId();
+    }
+
+    /**
+     * 下单/加菜明细入参校验：
+     * 缺菜品 ID、份数或单价缺失时抛业务异常，
+     * 避免 null 进入跨服务路径变量（沽清查询）或触发拆箱 NPE。
+     */
+    private void checkOrderDetailParam(OrderDetailEntity detail) {
+        String name = detail.getDishName() == null ? "" : detail.getDishName();
+        if (detail.getDishId() == null || detail.getDishId().isEmpty()) {
+            throw new BussinessException("菜品[" + name + "]缺少菜品ID");
+        }
+        if (detail.getDishNumber() == null || detail.getDishNumber() <= 0) {
+            throw new BussinessException("菜品[" + name + "]份数必须大于 0");
+        }
+        if (detail.getDishPrice() == null || detail.getDishPrice() < 0) {
+            throw new BussinessException("菜品[" + name + "]单价不合法");
+        }
     }
 
     //退菜
@@ -170,7 +197,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             return_detailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(detailEntity.getOrderNumber()));
             return_detailEntity.setDetailStatus(OrderDetailType.RETURN_DISH.getType());
             return_detailEntity.setDishNumber(1);
-            return_detailEntity.setReturnRemark(detailDTO.getRemarks().toString());
+            return_detailEntity.setReturnRemark(detailDTO.getRemarks() == null ? "" : detailDTO.getRemarks().toString());
             orderDetailService.save(return_detailEntity);
 
             //修改原有订单详情中的信息
@@ -227,6 +254,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         this.updateById(orderEntity);
 
         //修改桌台的状态
+        if (!StringUtils.hasText(orderEntity.getTableId())) {
+            throw new BussinessException("订单缺少桌台信息，无法完成结账");
+        }
         Table table = tableService.getById(orderEntity.getTableId());
         if (table == null) {
             throw new BussinessException("订单关联的桌台不存在，无法完成结账");
@@ -258,6 +288,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //桌台等关键字段以库中为准，原因同 pay：缺 tableId 会导致跨服务查桌台失败
         if (!StringUtils.hasText(orderEntity.getTableId())) {
             orderEntity.setTableId(dbOrder.getTableId());
+        }
+        //库中该单本身无桌台信息（历史脏数据）时，直接给可理解的业务提示
+        if (!StringUtils.hasText(orderEntity.getTableId())) {
+            throw new BussinessException("订单缺少桌台信息，无法完成挂账结账");
+        }
+        //挂账信息必须完整：creditDTO 为空或缺主体 ID 时不能继续，
+        //否则请求已把订单置为已付却记不上挂账，且下游会报 Missing path variable
+        if (null == creditDTO || !StringUtils.hasText(creditDTO.getCreditId())) {
+            throw new BussinessException("挂账信息不完整，请填写挂账主体");
         }
         Integer payType = orderEntity.getPayType();
         if (payType == null || payType != OrderPayType.CREDIT.getType()) {
@@ -399,6 +438,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         }
 
         //获取原有的桌台对象
+        if (!StringUtils.hasText(orderEntity.getTableId())) {
+            throw new BussinessException("订单缺少桌台信息，无法换台");
+        }
         Table sourceTable = tableService.getById(orderEntity.getTableId());
         if (sourceTable == null) {
             throw new BussinessException("订单关联的原桌台不存在，无法换台");

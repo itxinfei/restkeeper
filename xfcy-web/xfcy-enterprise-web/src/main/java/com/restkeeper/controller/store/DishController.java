@@ -55,6 +55,9 @@ public class DishController {
     @Operation(summary = "修改菜品")
     @PutMapping
     public boolean update(@RequestBody DishVO dishVO) {
+        if (dishVO.getId() == null || dishVO.getId().isEmpty()) {
+            throw new BussinessException("缺少菜品ID");
+        }
         Dish dish = dishService.getById(dishVO.getId());
         if (dish == null) {
             throw new BussinessException("菜品不存在");

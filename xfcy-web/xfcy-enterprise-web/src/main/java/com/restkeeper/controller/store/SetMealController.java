@@ -86,6 +86,9 @@ public class SetMealController {
     @Operation(summary = "修改套餐")
     @PutMapping
     public boolean update(@RequestBody SetMealVO setMealVO) {
+        if (setMealVO.getId() == null || setMealVO.getId().isEmpty()) {
+            throw new BussinessException("缺少套餐ID");
+        }
         SetMeal setMeal = setMealService.getById(setMealVO.getId());
         if (setMeal == null) {
             throw new BussinessException("套餐不存在");
