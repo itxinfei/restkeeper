@@ -340,10 +340,13 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             creditLogs.setType(credit.getCreditType());
             // K14：creditAmount 只赋值一次；orderAmount=订单总额，receivedAmount=本次实收（payAmount，未记录则回退总额）
             creditLogs.setCreditAmount(creditDTO.getCreditAmount());
-            creditLogs.setOrderAmount(orderEntity.getTotalAmount());
+            //金额以库中订单为准：调用方通常只传 orderId + 支付方式，不带金额，否则日志金额恒为 0
+            Integer orderAmount = dbOrder.getTotalAmount() != null
+                    ? dbOrder.getTotalAmount() : orderEntity.getTotalAmount();
+            creditLogs.setOrderAmount(orderAmount);
             Integer receivedAmount = orderEntity.getPayAmount();
             creditLogs.setReceivedAmount(receivedAmount == null || receivedAmount <= 0
-                    ? orderEntity.getTotalAmount() : receivedAmount);
+                    ? orderAmount : receivedAmount);
 
             if (creditType.equals(SystemCode.CREDIT_TYPE_COMPANY)){
 

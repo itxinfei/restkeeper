@@ -83,6 +83,10 @@ public class OrderController {
 
         List<OrderDetailEntity> orderDetails = new ArrayList<>();
         dishes.forEach(dishVO -> {
+            //入参兜底：ID / 类型 / 份数 / 单价缺一不可，否则后续跨服务调用会以
+            //"Missing path variable" 或 NPE 形式冒出来，前端无法理解
+            checkDishParam(dishVO);
+
             OrderDetailEntity orderDetailEntity = new OrderDetailEntity();
             orderDetailEntity.setDishName(dishVO.getDishName());
             orderDetailEntity.setDishType(dishVO.getType());
@@ -94,7 +98,7 @@ public class OrderController {
             orderDetailEntity.setDishPrice(dishVO.getPrice());
 
             DishCategory dishCategory = null;
-            if (dishVO.getType() != null && dishVO.getType() == 1) {
+            if (dishVO.getType() == 1) {
                 Dish dish = dishService.getById(dishVO.getDishId());
                 if (dish != null) {
                     dishCategory = dish.getDishCategory();
@@ -133,6 +137,9 @@ public class OrderController {
         int amount = 0;
 
         for (OrderDetailVO detail : orderVO.getDishes()) {
+            //同 addOrder：缺 ID / 份数 / 单价时直接给业务提示，不进后续流程
+            checkDishParam(detail);
+
             OrderDetailEntity orderDetailEntity = new OrderDetailEntity();
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
@@ -174,6 +181,28 @@ public class OrderController {
      */
     private String flavorText(OrderDetailVO detailVO) {
         return detailVO.getFlavorList() == null ? "[]" : detailVO.getFlavorList().toString();
+    }
+
+    /**
+     * 下单 / 加菜菜品入参校验：
+     * 缺菜品 ID、类型非法、份数或单价缺失时直接抛业务异常，
+     * 避免把 null 交给跨服务路径变量（"Missing path variable"）或触发拆箱 NPE。
+     */
+    private void checkDishParam(OrderDetailVO dishVO) {
+        String name = dishVO.getDishName() == null ? "" : dishVO.getDishName();
+        if (dishVO.getDishId() == null || dishVO.getDishId().isEmpty()) {
+            throw new BussinessException("菜品[" + name + "]缺少菜品ID");
+        }
+        Integer type = dishVO.getType();
+        if (type == null || (type != 1 && type != 2)) {
+            throw new BussinessException("菜品[" + name + "]类型缺失或非法（1 菜品 / 2 套餐）");
+        }
+        if (dishVO.getDishNumber() == null || dishVO.getDishNumber() <= 0) {
+            throw new BussinessException("菜品[" + name + "]份数必须大于 0");
+        }
+        if (dishVO.getPrice() == null || dishVO.getPrice() < 0) {
+            throw new BussinessException("菜品[" + name + "]单价不合法");
+        }
     }
 
     @Operation(summary = "退菜")
