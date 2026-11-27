@@ -6,6 +6,8 @@ import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReverseOrder;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.order.mapper.ReverseOrderMapper;
+import com.restkeeper.store.entity.Table;
+import com.restkeeper.store.service.ITableService;
 import com.restkeeper.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,9 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
 
     @Autowired
     private OrderServiceImpl orderService;
+
+    @Autowired
+    private ITableService tableService;
 
     @Transactional
     public boolean reverse(ReverseOrder reverseOrder) {
@@ -39,13 +44,25 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_NOTPAY);
         orderService.updateById(orderEntity);
 
+        // 反结账后订单回到未付，桌台必须恢复为已开桌：否则桌台空闲却压着一张未付单，
+        // 而 openTable 只看桌台状态，会导致同一桌台被重复开台、旧单永久悬挂。
+        Table table = tableService.getById(orderEntity.getTableId());
+        if (table != null && !Integer.valueOf(SystemCode.TABLE_STATUS_OPENED).equals(table.getStatus())) {
+            table.setStatus(SystemCode.TABLE_STATUS_OPENED);
+            tableService.updateById(table);
+        }
 
         //向反结账表插入一条记录
         reverseOrder.setCreateTime(LocalDateTime.now());
         reverseOrder.setOrderNumber(orderEntity.getOrderNumber());
         reverseOrder.setTableId(orderEntity.getTableId());
-        reverseOrder.setAmount(orderEntity.getPayAmount());
+        //反结账金额：优先实付金额，未记录（null 或 0）时回退订单总额（否则历史单会恒为 0）
+        Integer payAmount = orderEntity.getPayAmount();
+        reverseOrder.setAmount(payAmount == null || payAmount <= 0
+                ? orderEntity.getTotalAmount() : payAmount);
         reverseOrder.setOperatorName(TenantContext.getLoginUserName());
+        //status：0 失败 1 成功；走到这里说明校验与订单状态修改已完成，固定记成功
+        reverseOrder.setStatus(1);
 
 
         return this.save(reverseOrder);

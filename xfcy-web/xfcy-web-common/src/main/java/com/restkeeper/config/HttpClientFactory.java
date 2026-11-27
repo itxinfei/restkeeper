@@ -1,6 +1,7 @@
 package com.restkeeper.config;
 
 import com.restkeeper.SpringUtil;
+import com.restkeeper.http.ResultStatusInterceptor;
 import com.restkeeper.http.TenantContextClientInterceptor;
 import io.github.resilience4j.retry.Retry;
 import io.github.resilience4j.retry.RetryConfig;
@@ -31,6 +32,8 @@ public final class HttpClientFactory {
         RestClient restClient = builder.clone()
                 .baseUrl("http://" + serviceName)
                 .requestInterceptor(new TenantContextClientInterceptor())
+                //识别 provider 的 Result 错误信封（HTTP 200 + status!=200），避免静默空结果/丢失原因
+                .requestInterceptor(new ResultStatusInterceptor())
                 .build();
         T client = HttpServiceProxyFactory.builderFor(RestClientAdapter.create(restClient))
                 .build()

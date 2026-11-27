@@ -6,6 +6,7 @@ import com.restkeeper.dto.DetailDTO;
 import com.restkeeper.entity.OrderDetailEntity;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReverseOrder;
+import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.service.IOrderService;
 import com.restkeeper.service.IReverseOrderService;
@@ -75,15 +76,20 @@ public class OrderController {
         orderEntity.setOrderRemark(orderVO.getOrderRemark());
         orderEntity.setCreateTime(LocalDateTime.now());
 
+        List<OrderDetailVO> dishes = orderVO.getDishes();
+        if (dishes == null || dishes.isEmpty()) {
+            throw new BussinessException("订单菜品不能为空");
+        }
+
         List<OrderDetailEntity> orderDetails = new ArrayList<>();
-        orderVO.getDishes().forEach(dishVO -> {
+        dishes.forEach(dishVO -> {
             OrderDetailEntity orderDetailEntity = new OrderDetailEntity();
             orderDetailEntity.setDishName(dishVO.getDishName());
             orderDetailEntity.setDishType(dishVO.getType());
             orderDetailEntity.setDishId(dishVO.getDishId());
             orderDetailEntity.setDishAmount(dishVO.getDishNumber() * dishVO.getPrice());
             orderDetailEntity.setDishNumber(dishVO.getDishNumber());
-            orderDetailEntity.setFlavorRemark(dishVO.getFlavorList().toString());
+            orderDetailEntity.setFlavorRemark(flavorText(dishVO));
             orderDetailEntity.setTableId(orderVO.getTableId());
             orderDetailEntity.setDishPrice(dishVO.getPrice());
 
@@ -116,6 +122,12 @@ public class OrderController {
 
     private Result plusDish(OrderVO orderVO) {
         OrderEntity orderEntity = orderService.getById(orderVO.getOrderId());
+        if (orderEntity == null) {
+            throw new BussinessException("订单不存在");
+        }
+        if (orderVO.getDishes() == null || orderVO.getDishes().isEmpty()) {
+            throw new BussinessException("加菜菜品不能为空");
+        }
 
         List<OrderDetailEntity> orderDetailEntities = new ArrayList<>();
         int amount = 0;
@@ -134,7 +146,7 @@ public class OrderController {
             orderDetailEntity.setDishNumber(detail.getDishNumber());
             orderDetailEntity.setDishAmount(detail.getDishNumber() * detail.getPrice());
             orderDetailEntity.setDishRemark(detail.getDishRemark());
-            orderDetailEntity.setFlavorRemark(detail.getFlavorList().toString());
+            orderDetailEntity.setFlavorRemark(flavorText(detail));
 
             Dish dish = dishService.getById(detail.getDishId());
             if (dish != null && dish.getDishCategory() != null) {
@@ -155,6 +167,13 @@ public class OrderController {
         result.setData(orderId);
         result.setDesc("ok");
         return result;
+    }
+
+    /**
+     * 口味列表转文本：口味可为空，避免直接 toString 抛 NPE
+     */
+    private String flavorText(OrderDetailVO detailVO) {
+        return detailVO.getFlavorList() == null ? "[]" : detailVO.getFlavorList().toString();
     }
 
     @Operation(summary = "退菜")

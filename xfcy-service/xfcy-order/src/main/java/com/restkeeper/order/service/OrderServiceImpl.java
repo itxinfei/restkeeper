@@ -47,6 +47,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -92,14 +93,36 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             String storeId = TenantContext.getStoreId();
             orderEntity.setOrderNumber(SequenceUtils.getSequence(storeId));
         }
+        //必须在入库前判断：saveOrUpdate 会用雪花 ID 回填 orderId，之后新单也会变成非 null
+        boolean isNewOrder = orderEntity.getOrderId() == null;
+
+        //加菜需要把本次明细合计累加到主表金额，否则订单总额与明细不一致（入参通常不带 totalAmount）
+        List<OrderDetailEntity> addingDetails = orderEntity.getOrderDetails();
+        if (!isNewOrder && addingDetails != null) {
+            int addedAmount = addingDetails.stream()
+                    .filter(d -> d.getDishNumber() != null && d.getDishPrice() != null)
+                    .mapToInt(d -> d.getDishNumber() * d.getDishPrice())
+                    .sum();
+            OrderEntity exists = this.getById(orderEntity.getOrderId());
+            if (exists != null) {
+                int baseAmount = exists.getTotalAmount() == null ? 0 : exists.getTotalAmount();
+                orderEntity.setTotalAmount(baseAmount + addedAmount);
+            }
+        }
+
         this.saveOrUpdate(orderEntity);
 
         //操作订单详情
         List<OrderDetailEntity> orderDetailEntities = orderEntity.getOrderDetails();
+        // 明细状态区分「正常下单」与「加菜」：入参不带 orderId 表示新开订单
+        Integer detailStatus = isNewOrder
+                ? OrderDetailType.NORMAL_DISH.getType()
+                : OrderDetailType.PLUS_DISH.getType();
         orderDetailEntities.forEach(orderDetailEntity -> {
 
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
+            orderDetailEntity.setDetailStatus(detailStatus);
 
             //沽清检查（租户上下文由 TenantContextHeaderFilter 从请求头还原，HTTP 客户端拦截器透传）
             Integer remainder = sellCalculationService.getRemainderCount(orderDetailEntity.getDishId());
@@ -126,7 +149,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         OrderDetailEntity detailEntity = orderDetailService.getById(detailDTO.getDetailId());
 
         Integer detailStatus = detailEntity.getDetailStatus();
-        if (OrderDetailType.PLUS_DISH.getType() == detailStatus || OrderDetailType.NORMAL_DISH.getType() == detailStatus){
+        // 先判空再比较，避免历史数据 detail_status 为 NULL 时拆箱 NPE；用 equals 规避 Integer 缓存陷阱
+        boolean normalOrPlus = detailStatus != null
+                && (detailStatus.equals(OrderDetailType.PLUS_DISH.getType())
+                    || detailStatus.equals(OrderDetailType.NORMAL_DISH.getType()));
+        if (normalOrPlus){
 
             if (detailEntity.getDishNumber() <= 0){
                 throw new BussinessException(detailEntity.getDishName()+"已经被退完");
@@ -158,9 +185,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
             //退菜回补沽清
             Integer remainderCount = sellCalculationService.getRemainderCount(detailEntity.getDishId());
-            if (remainderCount > 0){
-                //沽清中有该菜品信息
-                //沽清的剩余数量+1
+            // getRemainderCount 约定：-1 表示未设置沽清（不限量），无需回补；
+            // 其余取值都要回补，含「已售罄 0」——否则售罄菜退菜后永远是 0，再也卖不出去
+            if (remainderCount != null && remainderCount >= 0) {
                 sellCalculationService.add(detailEntity.getDishId(),1);
             }
 
@@ -176,6 +203,15 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
     @Transactional
     public boolean pay(OrderEntity orderEntity) {
 
+        //先确认订单存在：updateById 对不存在的 id 返回 false 且不报错，
+        //若不拦住，前端会看到"结账成功"而订单实际未被核销
+        if (!StringUtils.hasText(orderEntity.getOrderId())) {
+            throw new BussinessException("订单不存在");
+        }
+        if (this.getById(orderEntity.getOrderId()) == null) {
+            throw new BussinessException("订单不存在");
+        }
+
         //支付完成由服务端强制置为已支付，避免依赖调用方透传导致"只收钱不核销"
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
 
@@ -184,6 +220,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
         //修改桌台的状态
         Table table = tableService.getById(orderEntity.getTableId());
+        if (table == null) {
+            throw new BussinessException("订单关联的桌台不存在，无法完成结账");
+        }
         table.setStatus(SystemCode.TABLE_STATUS_FREE);
         tableService.updateById(table);
 
@@ -199,10 +238,25 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         OrderEntity orderEntity = request.getOrder();
         CreditDTO creditDTO = request.getCredit();
 
+        //入参兜底：挂账端点必须带订单与挂账支付方式，否则会把单误标成"已付"而不记挂账
+        if (!StringUtils.hasText(orderEntity.getOrderId())) {
+            throw new BussinessException("订单不存在");
+        }
+        if (this.getById(orderEntity.getOrderId()) == null) {
+            throw new BussinessException("订单不存在");
+        }
+        Integer payType = orderEntity.getPayType();
+        if (payType == null || payType != OrderPayType.CREDIT.getType()) {
+            throw new BussinessException("当前支付方式不是挂账，请走对应结账接口");
+        }
+
+        //挂账结账同样视为已结，服务端强制置为已支付，不依赖调用方透传
+        orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
+
         this.updateById(orderEntity);
 
         //设置挂账信息
-        if (orderEntity.getPayType() == OrderPayType.CREDIT.getType()){
+        if (payType == OrderPayType.CREDIT.getType()){
 
             String creditId = creditDTO.getCreditId();
             Credit credit = creditService.getById(creditId);
@@ -223,11 +277,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
                 throw new BussinessException("挂账金额超过剩余欠款额度");
             }
 
-            //个人用户
-            if (credit.getCreditType() == SystemCode.CREDIT_TYPE_USER){
+            //挂账主体类型：null 时不能直接与 int 比较（拆箱 NPE）
+            Integer creditType = credit.getCreditType();
+            if (creditType == null) {
+                throw new BussinessException("挂账主体类型缺失，请联系管家端维护");
+            }
 
-                //判断挂账人信息是否正确
-                if (!credit.getUserName().equals(creditDTO.getCreditUserName())){
+            //个人用户
+            if (creditType.equals(SystemCode.CREDIT_TYPE_USER)){
+
+                //判断挂账人信息是否正确（用 Objects.equals 规避任一侧为 null 的 NPE）
+                if (!Objects.equals(credit.getUserName(), creditDTO.getCreditUserName())){
                     throw new BussinessException("挂账人信息不同，不允许挂账");
                 }
 
@@ -238,12 +298,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
             //公司用户
             List<CreditCompanyUser> companyUsers = null;
-            if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
+            if (creditType.equals(SystemCode.CREDIT_TYPE_COMPANY)){
 
                 List<CreditCompanyUser> companyUserList = creditCompanyUserService.getInfoList(creditId);
+                if (companyUserList == null || companyUserList.isEmpty()) {
+                    throw new BussinessException("该公司未配置挂账人，请联系管家端进行设置");
+                }
 
                 //判断当前挂账人在集合中是否存在
-                Optional<CreditCompanyUser> resultInfo = companyUserList.stream().filter(user -> user.getUserName().equals(creditDTO.getCreditUserName())).findFirst();
+                Optional<CreditCompanyUser> resultInfo = companyUserList.stream()
+                        .filter(user -> Objects.equals(user.getUserName(), creditDTO.getCreditUserName()))
+                        .findFirst();
                 if (!resultInfo.isPresent()){
                     //不存在，不允许挂账
                     throw new BussinessException("当前用户不在该公司中，请联系管家端进行设置");
@@ -259,21 +324,24 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             creditLogs.setCreditId(creditId);
             creditLogs.setOrderId(orderEntity.getOrderId());
             creditLogs.setType(credit.getCreditType());
-            // K14：creditAmount 只赋值一次；orderAmount=订单总额，receivedAmount=本次实收（payAmount，空则回退总额）
+            // K14：creditAmount 只赋值一次；orderAmount=订单总额，receivedAmount=本次实收（payAmount，未记录则回退总额）
             creditLogs.setCreditAmount(creditDTO.getCreditAmount());
             creditLogs.setOrderAmount(orderEntity.getTotalAmount());
-            creditLogs.setReceivedAmount(orderEntity.getPayAmount() != null
-                    ? orderEntity.getPayAmount() : orderEntity.getTotalAmount());
+            Integer receivedAmount = orderEntity.getPayAmount();
+            creditLogs.setReceivedAmount(receivedAmount == null || receivedAmount <= 0
+                    ? orderEntity.getTotalAmount() : receivedAmount);
 
-            if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY){
+            if (creditType.equals(SystemCode.CREDIT_TYPE_COMPANY)){
 
                 creditLogs.setUserName(creditDTO.getCreditUserName());
                 creditLogs.setCompanyName(credit.getCompanyName());
-                Optional<CreditCompanyUser> optional = companyUsers.stream().filter(user -> user.getUserName().equals(creditDTO.getCreditUserName())).findFirst();
+                Optional<CreditCompanyUser> optional = companyUsers.stream()
+                        .filter(user -> Objects.equals(user.getUserName(), creditDTO.getCreditUserName()))
+                        .findFirst();
                 String phone = optional.get().getPhone();
                 creditLogs.setPhone(phone);
 
-            }else if (credit.getCreditType() == SystemCode.CREDIT_TYPE_USER){
+            }else if (creditType.equals(SystemCode.CREDIT_TYPE_USER)){
 
                 creditLogs.setUserName(creditDTO.getCreditUserName());
                 creditLogs.setPhone(credit.getPhone());
@@ -282,6 +350,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
             //修改桌台状态为空闲
             Table table = tableService.getById(orderEntity.getTableId());
+            if (table == null) {
+                throw new BussinessException("订单关联的桌台不存在，无法完成挂账结账");
+            }
             table.setStatus(SystemCode.TABLE_STATUS_FREE);
             tableService.updateById(table);
 
@@ -303,15 +374,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         if (targetTable == null){
             throw new BussinessException("桌台不存在");
         }
-        if (targetTable.getStatus() != SystemCode.TABLE_STATUS_FREE){
-            throw new BussinessException("桌台处于非空闲状态，不能换桌");
-        }
 
         //获取订单对象
         OrderEntity orderEntity = this.getById(orderId);
+        if (orderEntity == null) {
+            throw new BussinessException("订单不存在");
+        }
 
         //获取原有的桌台对象
         Table sourceTable = tableService.getById(orderEntity.getTableId());
+        if (sourceTable == null) {
+            throw new BussinessException("订单关联的原桌台不存在，无法换台");
+        }
+        //先判同一桌再判目标状态：否则同牌桌会报「非空闲」，提示与实际不符
+        if (Objects.equals(targetTableId, sourceTable.getTableId())) {
+            throw new BussinessException("目标桌台与原桌台相同，无需换台");
+        }
+
+        //Integer 与 int 直接比较会拆箱，历史数据 status 为 NULL 时 NPE
+        if (!Integer.valueOf(SystemCode.TABLE_STATUS_FREE).equals(targetTable.getStatus())){
+            throw new BussinessException("桌台处于非空闲状态，不能换桌");
+        }
 
         //将原有的桌台对象状态设置为空闲
         sourceTable.setStatus(SystemCode.TABLE_STATUS_FREE);
@@ -364,9 +447,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
     public PageResult<OrderEntity> queryPage(int pageNum, int pageSize, LocalDate start, LocalDate end,
                                              Integer payStatus, Integer payType, String orderNumber) {
         Page<OrderEntity> page = new Page<>(pageNum, pageSize);
+        // 条件重载会先对取值表达式求值，必须用三元兜住 null，否则 start/end 为空时 NPE
         LambdaQueryWrapper<OrderEntity> wrapper = new QueryWrapper<OrderEntity>().lambda()
-                .ge(start != null, OrderEntity::getLastUpdateTime, start.atStartOfDay())
-                .lt(end != null, OrderEntity::getLastUpdateTime, end.plusDays(1).atStartOfDay())
+                .ge(start != null, OrderEntity::getLastUpdateTime,
+                        start == null ? null : start.atStartOfDay())
+                .lt(end != null, OrderEntity::getLastUpdateTime,
+                        end == null ? null : end.plusDays(1).atStartOfDay())
                 .eq(payStatus != null, OrderEntity::getPayStatus, payStatus)
                 .eq(payType != null, OrderEntity::getPayType, payType)
                 .like(StringUtils.hasText(orderNumber), OrderEntity::getOrderNumber, orderNumber)

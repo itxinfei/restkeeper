@@ -49,3 +49,11 @@ unpackage/
 .devrun/
 xfcy-ui/next/META-INF/
 
+
+# 本地运行日志与临时产物
+deploy/run/
+
+# IDE 本地配置与规则分发备份
+.cursor/
+.trae/
+*.bak*

@@ -15,6 +15,12 @@ spring:
               uri: lb://operator-web
               predicates:
                 - Path=/operator/**,/enterprise/account/**,/sysDict/**
+            # 报表端点在 enterprise-web（ReportController），必须先于 cash-web 的 /order/**
+            # 命中，否则会被抢到 cash-web 而报 No static resource。
+            - id: enterprise-report
+              uri: lb://enterprise-web
+              predicates:
+                - Path=/order/report/**,/order/detail/report/**
             # cash-web 前置并收紧 predicate：/staff/login 精确匹配优先于 enterprise-web 的
             # /staff/**，且不再用宽泛 /dish/**、/table/** 抢走管家端管理接口
             - id: cash-web
