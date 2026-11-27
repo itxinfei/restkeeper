@@ -686,6 +686,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
     //向t_order_detail_meal中添加数据（结账时把套餐明细拆成单品，供报表按菜品维度统计）
     private void saveOrderDetailMealInfo(String orderId){
 
+        //反结账后再次结账会重复拆明细，先按订单清掉旧快照（物理删，避免逻辑删对 job 历史统计不可见）
+        orderDetailMealService.getBaseMapper().physicalDeleteByOrderId(orderId);
+
         //获取订单明细表中的套餐信息
         QueryWrapper<OrderDetailEntity> wrapper = new QueryWrapper<>();
         wrapper.lambda().eq(OrderDetailEntity::getOrderId,orderId).eq(OrderDetailEntity::getDishType,2);
