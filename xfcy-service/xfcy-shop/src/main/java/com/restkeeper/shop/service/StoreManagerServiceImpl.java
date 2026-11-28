@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 import com.restkeeper.constants.SystemCode;
+import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.shop.config.RabbitMQConfig;
 import com.restkeeper.shop.entity.Store;
@@ -68,6 +69,10 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
      */
     @Transactional
     public boolean addStoreManager(String name, String phone, List<String> storeIds) {
+        //归属门店为空会让 in(storeIds) 生成 IN () 非法 SQL，直接拦下
+        if (storeIds == null || storeIds.isEmpty()) {
+            throw new BussinessException("请选择店长归属门店");
+        }
         //新增店长基础信息，8 位随机初始密码 BCrypt 加密入库
         StoreManager storeManager = new StoreManager();
         storeManager.setStoreManagerName(name);
@@ -96,6 +101,10 @@ public class StoreManagerServiceImpl extends ServiceImpl<StoreManagerMapper, Sto
      */
     @Transactional
     public boolean updateStoreManager(String storeManagerId, String name, String phone, List<String> storeIds) {
+        //归属门店为空会让 in(storeIds) 生成 IN () 非法 SQL，直接拦下
+        if (storeIds == null || storeIds.isEmpty()) {
+            throw new BussinessException("请选择店长归属门店");
+        }
         StoreManager storeManager = this.getById(storeManagerId);
 
         if (StringUtils.hasText(name)) {

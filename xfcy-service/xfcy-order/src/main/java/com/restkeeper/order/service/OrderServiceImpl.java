@@ -120,6 +120,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
         //操作订单详情
         List<OrderDetailEntity> orderDetailEntities = orderEntity.getOrderDetails();
+        //明细缺失时给业务提示：microapp 的 submit 不传 orderDetails，
+        //直接 forEach 会 NPE 并被全局异常兜成 500
+        if (orderDetailEntities == null || orderDetailEntities.isEmpty()) {
+            throw new BussinessException("订单缺少菜品明细");
+        }
         // 明细状态区分「正常下单」与「加菜」：入参不带 orderId 表示新开订单
         Integer detailStatus = isNewOrder
                 ? OrderDetailType.NORMAL_DISH.getType()

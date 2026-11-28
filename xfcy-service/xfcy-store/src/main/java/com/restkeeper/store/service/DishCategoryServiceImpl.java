@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 菜品分类本地服务
@@ -87,7 +88,8 @@ public class DishCategoryServiceImpl extends ServiceImpl<DishCategoryMapper, Dis
             throw new BussinessException("分类不存在");
         }
 
-        if (dishCategory.getType() == 1) {
+        //类型为 NULL 时不能与 int 字面量直接比较，否则拆箱 NPE
+        if (Objects.equals(dishCategory.getType(), 1)) {
             QueryWrapper<Dish> queryWrapper = new QueryWrapper<>();
             queryWrapper.lambda().eq(Dish::getCategoryId, id);
             long count = dishService.count(queryWrapper);
@@ -96,7 +98,7 @@ public class DishCategoryServiceImpl extends ServiceImpl<DishCategoryMapper, Dis
             }
         }
 
-        if (dishCategory.getType() == 2) {
+        if (Objects.equals(dishCategory.getType(), 2)) {
             QueryWrapper<SetMeal> queryWrapper = new QueryWrapper<>();
             queryWrapper.lambda().eq(SetMeal::getCategoryId, id);
             long count = setMealService.count(queryWrapper);

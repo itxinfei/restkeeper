@@ -37,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -136,7 +137,8 @@ public class CreditController {
                     creditLogExcelVO.setRevenueAmount(c.getReceivedAmount());
                     creditLogExcelVO.setUserName(c.getUserName());
                     creditLogExcelVO.setOrderId(c.getOrderId());
-                    if (c.getType() == SystemCode.CREDIT_TYPE_COMPANY) {
+                    //类型为 NULL 时不能与 int 常量直接比较，否则导出接口拆箱 NPE
+                    if (Objects.equals(c.getType(), SystemCode.CREDIT_TYPE_COMPANY)) {
                         creditLogExcelVO.setCreditType("企业");
                     } else {
                         creditLogExcelVO.setCreditType("个人");

@@ -11,8 +11,10 @@ import com.restkeeper.tenant.TenantContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  * 开台记录本地服务
@@ -28,12 +30,24 @@ public class TableLogServiceImpl extends ServiceImpl<TableLogMapper, TableLog> {
      */
     @Transactional
     public boolean openTable(TableLog tableLog) {
+        if (tableLog == null || !StringUtils.hasText(tableLog.getTableId())) {
+            throw new BussinessException("缺少桌台信息，不能开桌");
+        }
         Table table = tableService.getById(tableLog.getTableId());
-
-        if (SystemCode.TABLE_STATUS_FREE != table.getStatus()) {
+        if (table == null) {
+            throw new BussinessException("不存在该桌台");
+        }
+        //状态为 NULL 时不能直接与 int 常量比较，否则拆箱 NPE
+        if (table.getStatus() == null || SystemCode.TABLE_STATUS_FREE != table.getStatus()) {
             throw new BussinessException("非空闲桌台，不能开桌");
         }
-        if (tableLog.getUserNumbers() > table.getTableSeatNumber()) {
+        //人数缺省/座位数为空时同样要避免拆箱 NPE
+        Integer userNumbers = tableLog.getUserNumbers();
+        Integer seatNumber = table.getTableSeatNumber();
+        if (userNumbers == null || userNumbers <= 0) {
+            throw new BussinessException("请填写开台人数");
+        }
+        if (seatNumber != null && userNumbers > seatNumber) {
             throw new BussinessException("超过桌台的限定人数，不能开桌");
         }
 
@@ -47,11 +61,12 @@ public class TableLogServiceImpl extends ServiceImpl<TableLogMapper, TableLog> {
     }
 
     /**
-     * 查询桌台最近一条开台记录
+     * 查询桌台最近一条开台记录；无记录时返回 null（调用方按未开台处理）
      */
     public TableLog getOpenTableLog(String tableId) {
         QueryWrapper<TableLog> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda().eq(TableLog::getTableId, tableId).orderByDesc(TableLog::getCreateTime);
-        return this.list(queryWrapper).get(0);
+        List<TableLog> list = this.list(queryWrapper);
+        return list.isEmpty() ? null : list.get(0);
     }
 }

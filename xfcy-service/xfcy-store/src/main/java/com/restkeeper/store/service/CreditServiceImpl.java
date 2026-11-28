@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -58,7 +59,8 @@ public class CreditServiceImpl extends ServiceImpl<CreditMapper, Credit> {
         Page<Credit> resultPage = this.page(page, queryWrapper);
 
         resultPage.getRecords().forEach(credit -> {
-            if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY) {
+            //挂账类型为 NULL 时不能与 int 常量直接比较，否则拆箱 NPE 整页 500
+            if (Objects.equals(credit.getCreditType(), SystemCode.CREDIT_TYPE_COMPANY)) {
                 QueryWrapper<CreditCompanyUser> userWrapper = new QueryWrapper<>();
                 userWrapper.lambda().eq(CreditCompanyUser::getCreditId, credit.getCreditId());
                 credit.setUsers(creditCompanyUserService.list(userWrapper));
@@ -84,7 +86,7 @@ public class CreditServiceImpl extends ServiceImpl<CreditMapper, Credit> {
      */
     @Transactional
     public boolean updateInfo(Credit credit, List<CreditCompanyUser> users) {
-        if (credit.getCreditType() == SystemCode.CREDIT_TYPE_COMPANY) {
+        if (Objects.equals(credit.getCreditType(), SystemCode.CREDIT_TYPE_COMPANY)) {
             List<CreditCompanyUser> oldUsers = credit.getUsers();
             if (oldUsers != null && !oldUsers.isEmpty()) {
                 List<String> idList = oldUsers.stream().map(CreditCompanyUser::getId).collect(Collectors.toList());
@@ -105,7 +107,7 @@ public class CreditServiceImpl extends ServiceImpl<CreditMapper, Credit> {
      * 企业挂账回填关联用餐人列表
      */
     private void fillCompanyUsers(Credit credit) {
-        if (credit.getCreditType() != SystemCode.CREDIT_TYPE_COMPANY) {
+        if (!Objects.equals(credit.getCreditType(), SystemCode.CREDIT_TYPE_COMPANY)) {
             return;
         }
         QueryWrapper<CreditCompanyUser> queryWrapper = new QueryWrapper<>();

@@ -28,14 +28,16 @@ public interface IStoreManagerService {
     @PostExchange("/add")
     boolean addStoreManager(@RequestParam("name") String name,
                             @RequestParam("phone") String phone,
-                            @RequestParam("storeIds") List<String> storeIds);
+                            //非必填：缺失时由 provider 统一给「请选择店长归属门店」业务提示
+                            @RequestParam(value = "storeIds", required = false) List<String> storeIds);
 
     //修改门店经理
     @PutExchange("/update")
     boolean updateStoreManager(@RequestParam("storeManagerId") String storeManagerId,
                                @RequestParam("name") String name,
                                @RequestParam("phone") String phone,
-                               @RequestParam("storeIds") List<String> storeIds);
+                               //非必填：缺失时由 provider 统一给「请选择店长归属门店」业务提示
+                               @RequestParam(value = "storeIds", required = false) List<String> storeIds);
 
     //逻辑删除门店经理
     @DeleteExchange("/{storeManagerId}")
