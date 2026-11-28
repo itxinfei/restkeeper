@@ -3,9 +3,11 @@ package com.restkeeper.store.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
+import com.restkeeper.exception.BussinessException;
 import com.restkeeper.http.PageResult;
 import com.restkeeper.store.entity.SellCalculation;
 import com.restkeeper.store.mapper.SellCalculationMapper;
+import com.restkeeper.tenant.TenantContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -45,15 +47,28 @@ public class SellCalculationServiceImpl extends ServiceImpl<SellCalculationMappe
     }
 
     /**
-     * 扣减沽清数量（不小于 0）
+     * 扣减沽清数量：改为单条原子 UPDATE（remainder >= n 才扣），
+     * 并发下不再出现两个订单读到同一余量、后写的覆盖前者导致超卖。
      */
     @Transactional
     public void decrease(String dishId, Integer dishNumber) {
-        SellCalculation sellCalculation = getByDishId(dishId);
-        if (sellCalculation != null) {
-            int remainder = sellCalculation.getRemainder() - dishNumber;
-            sellCalculation.setRemainder(Math.max(remainder, 0));
-            this.updateById(sellCalculation);
+        if (dishId == null || dishNumber == null || dishNumber <= 0) {
+            return;
+        }
+        String shopId = TenantContext.getShopId();
+        String storeId = TenantContext.getStoreId();
+        if (shopId == null || storeId == null) {
+            throw new BussinessException("租户上下文缺失，无法扣减沽清");
+        }
+        //无记录表示不限量，无需扣减
+        if (getByDishId(dishId) == null) {
+            return;
+        }
+        int affected = this.getBaseMapper().decreaseAtomic(dishId, dishNumber, shopId, storeId);
+        if (affected == 0) {
+            //并发下余量已被其它请求扣到不足，明确报业务错误
+            SellCalculation current = getByDishId(dishId);
+            throw new BussinessException((current == null ? dishId : current.getDishName()) + "库存不足");
         }
     }
 

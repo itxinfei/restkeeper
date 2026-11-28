@@ -31,7 +31,9 @@ public class OrderHttpClientConfig {
     @Bean
     @LoadBalanced
     public RestClient.Builder restClientBuilder() {
-        return RestClient.builder();
+        return RestClient.builder()
+                //透传 Seata 全局事务 XID，跨库分支才能随全局事务回滚
+                .requestInterceptor(new SeataXidClientInterceptor());
     }
 
     /**
