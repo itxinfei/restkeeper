@@ -57,3 +57,7 @@ deploy/run/
 .cursor/
 .trae/
 *.bak*
+# 本机 AI 规则分发产物（真源在 ~/.aiglobal/.rulesync/rules，改规则请改真源后重新分发）
+AGENTS.md
+CLAUDE.md
+GEMINI.md
