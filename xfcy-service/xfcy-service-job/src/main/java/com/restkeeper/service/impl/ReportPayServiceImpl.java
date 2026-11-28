@@ -1,6 +1,8 @@
 package com.restkeeper.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.restkeeper.constants.SystemCode;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReportPay;
 import com.restkeeper.mapper.OrderMapper;
@@ -30,9 +32,14 @@ public class ReportPayServiceImpl implements ReportPayService {
         LocalDate end = LocalDate.now();
         LocalDate start = end.plusDays(-1);
 
+        //生成前先清掉同一统计日的历史汇总，保证任务可重复执行不会主键冲突或数据翻倍
+        reportPayMapper.delete(new LambdaQueryWrapper<ReportPay>().eq(ReportPay::getPayDate, start));
+
         QueryWrapper<OrderEntity> wrapper = new QueryWrapper<>();
         wrapper.select("SUM( total_amount ) AS total_amount","SUM( free_amount ) AS free_amount","SUM( present_amount ) AS present_amount","SUM( small_amount ) AS small_amount","SUM( pay_amount ) AS pay_amount","SUM( person_numbers ) AS person_numbers","COUNT(pay_type) as pay_count","pay_type","store_id","shop_id")
                 .lambda().ge(OrderEntity::getLastUpdateTime,start).lt(OrderEntity::getLastUpdateTime,end)
+                //未付款订单不计入营收汇总
+                .eq(OrderEntity::getPayStatus,SystemCode.ORDER_STATUS_PAYED)
                 .groupBy(OrderEntity::getPayType,OrderEntity::getShopId,OrderEntity::getStoreId);
         List<OrderEntity> orderEntityList = orderMapper.selectList(wrapper);
 
@@ -42,7 +49,8 @@ public class ReportPayServiceImpl implements ReportPayService {
             reportPay.setPayAmount(orderEntity.getPayAmount());
             reportPay.setSmallAmount(orderEntity.getSmallAmount());
             reportPay.setPresentAmount(orderEntity.getPresentAmount());
-            reportPay.setPayDate(end);
+            //营业日期按统计区间首日记录，与菜品销量报表保持同一天口径
+            reportPay.setPayDate(start);
             reportPay.setPayType(orderEntity.getPayType());
             reportPay.setPersonNumbers(orderEntity.getPersonNumbers());
             reportPay.setShopId(orderEntity.getShopId());

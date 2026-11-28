@@ -20,7 +20,7 @@ public class ReportDishServiceImpl extends ServiceImpl<ReportDishMapper, ReportD
 
         QueryWrapper<ReportDishEntity> wrapper = new QueryWrapper<>();
         wrapper.select("category","sum(dish_number) as dish_number","sum(dish_money) as dish_money")
-                .lambda().gt(ReportDishEntity::getLastUpdateTime,start).lt(ReportDishEntity::getLastUpdateTime,end)
+                .lambda().ge(ReportDishEntity::getPayDate, start).lt(ReportDishEntity::getPayDate, end)
                 .groupBy(ReportDishEntity::getCategory);
 
         return this.list(wrapper);
@@ -32,7 +32,7 @@ public class ReportDishServiceImpl extends ServiceImpl<ReportDishMapper, ReportD
         QueryWrapper<ReportDishEntity> wrapper = new QueryWrapper<>();
 
         wrapper.select("dish_name","sum(dish_number) as dish_number")
-                .lambda().gt(ReportDishEntity::getLastUpdateTime,start).lt(ReportDishEntity::getLastUpdateTime,end)
+                .lambda().ge(ReportDishEntity::getPayDate, start).lt(ReportDishEntity::getPayDate, end)
                 .groupBy(ReportDishEntity::getDishName);
         return this.list(wrapper);
     }

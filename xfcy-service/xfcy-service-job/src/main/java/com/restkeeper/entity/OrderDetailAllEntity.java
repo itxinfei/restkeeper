@@ -29,6 +29,8 @@ public class OrderDetailAllEntity{
 
     private Integer dishNumber;
 
+    private Integer payStatus;
+
     private String dishCategoryName;
 
     @TableField(value = "last_update_time")

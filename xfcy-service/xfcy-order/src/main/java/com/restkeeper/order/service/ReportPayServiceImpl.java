@@ -27,7 +27,7 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
 
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
         wrapper.select("sum(pay_amount) as pay_amount","sum(pay_count) as pay_count","pay_date")
-                .lambda().ge(ReportPay::getLastUpdateTime,start).lt(ReportPay::getLastUpdateTime,end)
+                .lambda().ge(ReportPay::getPayDate,start).lt(ReportPay::getPayDate,end)
                 .groupBy(ReportPay::getPayDate)
                 .orderByDesc(ReportPay::getPayDate);
         List<ReportPay> reportPayList = this.list(wrapper);
@@ -84,7 +84,7 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
 
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
         wrapper.select("sum(pay_amount) as total_amount","pay_type")
-                .lambda().ge(ReportPay::getLastUpdateTime,start).lt(ReportPay::getLastUpdateTime,end)
+                .lambda().ge(ReportPay::getPayDate,start).lt(ReportPay::getPayDate,end)
                 .isNotNull(ReportPay::getPayType)
                 .groupBy(ReportPay::getPayType);
         List<ReportPay> reportPayList = this.list(wrapper);
@@ -102,21 +102,23 @@ public class ReportPayServiceImpl extends ServiceImpl<ReportPayMapper, ReportPay
     //优惠统计
     public PrivilegeDTO getPrivilegeCollectByDate(LocalDate start, LocalDate end) {
         QueryWrapper<ReportPay> wrapper = new QueryWrapper<>();
-        wrapper.select("sum(present_amount) as present_amount","sum(small_amount) as small_amount","sum(free_amount) as free_amount")
-                .lambda().ge(ReportPay::getLastUpdateTime,start).lt(ReportPay::getLastUpdateTime,end);
-        ReportPay reportPay = this.getOne(wrapper);
+        wrapper.select("present_amount","small_amount","free_amount")
+                .lambda().ge(ReportPay::getPayDate,start).lt(ReportPay::getPayDate,end);
+        List<ReportPay> reportPayList = this.list(wrapper);
 
         PrivilegeDTO dto = new PrivilegeDTO();
 
-        if (reportPay == null){
-            dto.setFreeAmount(0);
-            dto.setPresentAmount(0);
-            dto.setSmallAmount(0);
-        }else {
-            dto.setFreeAmount(reportPay.getFreeAmount());
-            dto.setPresentAmount(reportPay.getPresentAmount());
-            dto.setSmallAmount(reportPay.getSmallAmount());
+        int present = 0;
+        int small = 0;
+        int free = 0;
+        for (ReportPay row : reportPayList){
+            present += row.getPresentAmount() == null ? 0 : row.getPresentAmount();
+            small += row.getSmallAmount() == null ? 0 : row.getSmallAmount();
+            free += row.getFreeAmount() == null ? 0 : row.getFreeAmount();
         }
+        dto.setPresentAmount(present);
+        dto.setSmallAmount(small);
+        dto.setFreeAmount(free);
 
         return dto;
     }

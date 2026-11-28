@@ -210,38 +210,43 @@ CREATE TABLE IF NOT EXISTS `t_his_order_detail` (
 -- 视图必须包含 shop_id / store_id / last_update_time / is_deleted：
 --   store/order 模块的多租户拦截器会对视图查询自动追加 shop_id + store_id 条件，
 --   OrderDetailAllView 继承 BaseEntity 带 @TableLogic，缺列会运行时报错。
+-- pay_status 由 t_order JOIN 带入（明细表不存付款状态），供报表区分已付/未付订单。
 DROP VIEW IF EXISTS `v_order_detail_all`;
 CREATE VIEW `v_order_detail_all` AS
 SELECT
-  `detail_id`,
-  `order_id`,
-  `order_number`,
-  `detail_status`,
-  `dish_type`,
-  `dish_name`,
-  `dish_price`,
-  `dish_number`,
-  `dish_category_name`,
-  `dish_amount`,
-  `shop_id`,
-  `store_id`,
-  `last_update_time`,
-  `is_deleted`
-FROM `t_order_detail`
+  `d`.`detail_id`,
+  `d`.`order_id`,
+  `d`.`order_number`,
+  `d`.`detail_status`,
+  `d`.`dish_type`,
+  `d`.`dish_name`,
+  `d`.`dish_price`,
+  `d`.`dish_number`,
+  `d`.`dish_category_name`,
+  `d`.`dish_amount`,
+  `d`.`shop_id`,
+  `d`.`store_id`,
+  `d`.`last_update_time`,
+  `d`.`is_deleted`,
+  `o`.`pay_status`
+FROM `t_order_detail` `d`
+LEFT JOIN `t_order` `o` ON `o`.`order_id` = `d`.`order_id`
 UNION ALL
 SELECT
-  `detail_id`,
-  `order_id`,
-  `order_number`,
-  `detail_status`,
-  `dish_type`,
-  `dish_name`,
-  `dish_price`,
-  `dish_number`,
-  `dish_category_name`,
-  `dish_amount`,
-  `shop_id`,
-  `store_id`,
-  `last_update_time`,
-  `is_deleted`
-FROM `t_order_detail_meal`;
+  `m`.`detail_id`,
+  `m`.`order_id`,
+  `m`.`order_number`,
+  `m`.`detail_status`,
+  `m`.`dish_type`,
+  `m`.`dish_name`,
+  `m`.`dish_price`,
+  `m`.`dish_number`,
+  `m`.`dish_category_name`,
+  `m`.`dish_amount`,
+  `m`.`shop_id`,
+  `m`.`store_id`,
+  `m`.`last_update_time`,
+  `m`.`is_deleted`,
+  `o`.`pay_status`
+FROM `t_order_detail_meal` `m`
+LEFT JOIN `t_order` `o` ON `o`.`order_id` = `m`.`order_id`;
