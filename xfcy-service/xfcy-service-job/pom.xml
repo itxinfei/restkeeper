@@ -16,8 +16,8 @@
         <dependency>
             <groupId>com.xuxueli</groupId>
             <artifactId>xxl-job-core</artifactId>
-            <!-- 手册 §2 定版 XXL-Job 3.3.2（调度中心与执行器 core 同版） -->
-            <version>3.3.2</version>
+            <!-- 手册 §2 定版 XXL-Job：调度中心镜像 xxl-job-admin:3.5.0，core 必须同版（原 3.3.2 注册报 "accessToken or appname is empty"） -->
+            <version>3.5.0</version>
         </dependency>
 
         <dependency>

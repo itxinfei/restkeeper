@@ -37,9 +37,11 @@ server:
   port: 8001
 xxl:
   job:
-    accessToken:
+    #调度中心校验 access_token：与 xxl_job_group.access_token 一致（该 admin 用 default_token）
+    accessToken: ${XXL_JOB_ACCESS_TOKEN:default_token}
     admin:
-      addresses: http://192.168.20.88:8086/xxl-job-admin #手册 §3：XXL-Job 控制台 8086
+      #调度中心部署在根路径（/api/registry 可用，带 /xxl-job-admin 前缀会 404）
+      addresses: http://192.168.20.88:8086
     executor:
       appname: restkeeper-job  #执行器的名称
       port: ${XXL_JOB_EXECUTOR_PORT:9999}     #本地程序和xxl-job的通信端口（多项目共用本机时可覆盖，避免端口冲突）
