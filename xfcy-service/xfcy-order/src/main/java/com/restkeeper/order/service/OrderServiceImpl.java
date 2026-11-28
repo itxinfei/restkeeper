@@ -260,6 +260,57 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         return sum;
     }
 
+    /**
+     * 抹零 / 免单范围校验：不能为负，合计不能超过订单总额。
+     * 这两个金额此前完全由调用方透传，并直接 SUM 进营收报表。
+     */
+    private void validateDiscountAmount(int totalAmount, OrderEntity orderEntity) {
+        int small = orderEntity.getSmallAmount() == null ? 0 : orderEntity.getSmallAmount();
+        int free = orderEntity.getFreeAmount() == null ? 0 : orderEntity.getFreeAmount();
+        if (small < 0 || free < 0) {
+            throw new BussinessException("抹零/免单金额不能为负");
+        }
+        if (small + free > totalAmount) {
+            throw new BussinessException("抹零/免单金额合计不能超过订单总额");
+        }
+    }
+
+    private int payableAmount(int totalAmount, OrderEntity orderEntity) {
+        int small = orderEntity.getSmallAmount() == null ? 0 : orderEntity.getSmallAmount();
+        int free = orderEntity.getFreeAmount() == null ? 0 : orderEntity.getFreeAmount();
+        return totalAmount - small - free;
+    }
+
+    /**
+     * 现金类结账实收兜底：未传按应付金额补齐；少收直接拒付（多收走找零，不设上限）。
+     */
+    private void applyCashPayAmount(OrderEntity orderEntity, int totalAmount) {
+        validateDiscountAmount(totalAmount, orderEntity);
+        int payable = payableAmount(totalAmount, orderEntity);
+        Integer payAmount = orderEntity.getPayAmount();
+        if (payAmount == null) {
+            orderEntity.setPayAmount(payable);
+        } else if (payAmount < payable) {
+            throw new BussinessException("实收金额小于应付金额" + (payable / 100.0) + "元");
+        }
+    }
+
+    /**
+     * 挂账结账金额兜底：未填按应付记账；空值/超额挂账拒绝。
+     */
+    private void applyCreditPayAmount(OrderEntity orderEntity, CreditDTO creditDTO, int totalAmount) {
+        validateDiscountAmount(totalAmount, orderEntity);
+        int payable = payableAmount(totalAmount, orderEntity);
+        Integer creditAmount = creditDTO.getCreditAmount();
+        if (creditAmount == null || creditAmount <= 0) {
+            creditAmount = payable;
+        }
+        if (creditAmount > payable) {
+            throw new BussinessException("挂账金额超过应付金额" + (payable / 100.0) + "元");
+        }
+        creditDTO.setCreditAmount(creditAmount);
+    }
+
     //退菜
     @Transactional
     public boolean returnDish(DetailDTO detailDTO) {
@@ -342,7 +393,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //支付完成由服务端强制置为已支付，避免依赖调用方透传导致"只收钱不核销"
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
         //订单总额按库内有效明细汇总重算，不信任调用方透传的金额
-        orderEntity.setTotalAmount(sumValidDetailAmount(orderId));
+        int totalAmount = sumValidDetailAmount(orderId);
+        orderEntity.setTotalAmount(totalAmount);
+        //实收金额服务端兜底并校验下限，防止少收、抹零/免单超过总额
+        applyCashPayAmount(orderEntity, totalAmount);
 
         //修改订单主表的信息
         this.updateById(orderEntity);
@@ -400,7 +454,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //挂账结账同样视为已结，服务端强制置为已支付，不依赖调用方透传
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
         //订单总额同样按库内有效明细重算，避免挂账金额随入参被改写
-        orderEntity.setTotalAmount(sumValidDetailAmount(orderId));
+        int totalAmount = sumValidDetailAmount(orderId);
+        orderEntity.setTotalAmount(totalAmount);
+        //挂账金额服务端兜底并校验范围：未填按应付记账，超额挂账直接拒
+        applyCreditPayAmount(orderEntity, creditDTO, totalAmount);
 
         this.updateById(orderEntity);
 
@@ -476,8 +533,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             // K14：creditAmount 只赋值一次；orderAmount=订单总额，receivedAmount=本次实收（payAmount，未记录则回退总额）
             creditLogs.setCreditAmount(creditDTO.getCreditAmount());
             //金额以库中订单为准：调用方通常只传 orderId + 支付方式，不带金额，否则日志金额恒为 0
-            Integer orderAmount = dbOrder.getTotalAmount() != null
-                    ? dbOrder.getTotalAmount() : orderEntity.getTotalAmount();
+            Integer orderAmount = totalAmount;
             creditLogs.setOrderAmount(orderAmount);
             Integer receivedAmount = orderEntity.getPayAmount();
             creditLogs.setReceivedAmount(receivedAmount == null || receivedAmount <= 0
