@@ -25,13 +25,16 @@ import com.restkeeper.store.entity.Credit;
 import com.restkeeper.store.entity.CreditCompanyUser;
 import com.restkeeper.store.entity.CreditLogs;
 import com.restkeeper.store.entity.Dish;
+import com.restkeeper.store.entity.SetMeal;
 import com.restkeeper.store.entity.Table;
 import com.restkeeper.store.entity.TableLog;
 import com.restkeeper.store.service.ICreditCompanyUserService;
 import com.restkeeper.store.service.ICreditLogService;
 import com.restkeeper.store.service.ICreditService;
+import com.restkeeper.store.service.IDishService;
 import com.restkeeper.store.service.ISellCalculationService;
 import com.restkeeper.store.service.ISetMealDishService;
+import com.restkeeper.store.service.ISetMealService;
 import com.restkeeper.store.service.ITableLogService;
 import com.restkeeper.store.service.ITableService;
 import com.restkeeper.tenant.TenantContext;
@@ -46,7 +49,9 @@ import org.springframework.util.StringUtils;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -84,6 +89,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
     @Autowired
     private ISetMealDishService setMealDishService;
 
+    @Autowired
+    private IDishService dishService;
+
+    @Autowired
+    private ISetMealService setMealService;
+
     //下单（跨订单/门店两库，Seata 全局事务）
     @GlobalTransactional
     public String addOrder(OrderEntity orderEntity) {
@@ -102,22 +113,6 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             orderEntity.setCreateTime(LocalDateTime.now());
         }
 
-        //加菜需要把本次明细合计累加到主表金额，否则订单总额与明细不一致（入参通常不带 totalAmount）
-        List<OrderDetailEntity> addingDetails = orderEntity.getOrderDetails();
-        if (!isNewOrder && addingDetails != null) {
-            int addedAmount = addingDetails.stream()
-                    .filter(d -> d.getDishNumber() != null && d.getDishPrice() != null)
-                    .mapToInt(d -> d.getDishNumber() * d.getDishPrice())
-                    .sum();
-            OrderEntity exists = this.getById(orderEntity.getOrderId());
-            if (exists != null) {
-                int baseAmount = exists.getTotalAmount() == null ? 0 : exists.getTotalAmount();
-                orderEntity.setTotalAmount(baseAmount + addedAmount);
-            }
-        }
-
-        this.saveOrUpdate(orderEntity);
-
         //操作订单详情
         List<OrderDetailEntity> orderDetailEntities = orderEntity.getOrderDetails();
         //明细缺失时给业务提示：microapp 的 submit 不传 orderDetails，
@@ -125,15 +120,27 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         if (orderDetailEntities == null || orderDetailEntities.isEmpty()) {
             throw new BussinessException("订单缺少菜品明细");
         }
+
+        //单价与总额一律以服务端为准：按菜品/套餐表重算每条明细单价与小计。
+        //否则调用方只要传一个不存在的 dishId + 任意低价，就能伪造订单金额（资金漏洞）。
+        int totalAmount = recalcDetailAmount(orderDetailEntities);
+        if (!isNewOrder) {
+            //加菜在库中订单总额基础上累加本次明细，避免逐条回查明细
+            OrderEntity exists = this.getById(orderEntity.getOrderId());
+            if (exists == null) {
+                throw new BussinessException("订单不存在");
+            }
+            totalAmount += exists.getTotalAmount() == null ? 0 : exists.getTotalAmount();
+        }
+        orderEntity.setTotalAmount(totalAmount);
+
+        this.saveOrUpdate(orderEntity);
+
         // 明细状态区分「正常下单」与「加菜」：入参不带 orderId 表示新开订单
         Integer detailStatus = isNewOrder
                 ? OrderDetailType.NORMAL_DISH.getType()
                 : OrderDetailType.PLUS_DISH.getType();
         orderDetailEntities.forEach(orderDetailEntity -> {
-            //明细入参兜底：缺 ID / 份数 / 单价时给业务提示，
-            //否则跨服务查沽清会以 Missing path variable 形式冒出去
-            checkOrderDetailParam(orderDetailEntity);
-
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
             orderDetailEntity.setDetailStatus(detailStatus);
@@ -157,20 +164,94 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
     /**
      * 下单/加菜明细入参校验：
-     * 缺菜品 ID、份数或单价缺失时抛业务异常，
+     * 缺菜品 ID、类型非法、份数缺失时抛业务异常，
      * 避免 null 进入跨服务路径变量（沽清查询）或触发拆箱 NPE。
+     * 单价不在此校验：金额由 {@link #recalcDetailAmount} 按菜品表重算。
      */
     private void checkOrderDetailParam(OrderDetailEntity detail) {
         String name = detail.getDishName() == null ? "" : detail.getDishName();
         if (detail.getDishId() == null || detail.getDishId().isEmpty()) {
             throw new BussinessException("菜品[" + name + "]缺少菜品ID");
         }
+        Integer type = detail.getDishType();
+        if (type == null || (type != SystemCode.DISH_TYPE_MORMAL && type != SystemCode.DISH_TYPE_SETMEAL)) {
+            throw new BussinessException("菜品[" + name + "]类型缺失或非法（1 菜品 / 2 套餐）");
+        }
         if (detail.getDishNumber() == null || detail.getDishNumber() <= 0) {
             throw new BussinessException("菜品[" + name + "]份数必须大于 0");
         }
-        if (detail.getDishPrice() == null || detail.getDishPrice() < 0) {
-            throw new BussinessException("菜品[" + name + "]单价不合法");
+    }
+
+    /**
+     * 按菜品/套餐表重算每条明细的单价与小计，返回本次明细合计。
+     * 同一单内重复菜品只查一次价，减少跨服务往返。
+     */
+    private int recalcDetailAmount(List<OrderDetailEntity> details) {
+        Map<String, Integer> priceCache = new HashMap<>();
+        int sum = 0;
+        for (OrderDetailEntity detail : details) {
+            checkOrderDetailParam(detail);
+            int price = resolveDishPrice(detail, priceCache);
+            detail.setDishPrice(price);
+            detail.setDishAmount(price * detail.getDishNumber());
+            sum += detail.getDishAmount();
         }
+        return sum;
+    }
+
+    /**
+     * 查询菜品/套餐表单价：查不到或已停售直接报业务错误，避免伪造低价单。
+     */
+    private int resolveDishPrice(OrderDetailEntity detail, Map<String, Integer> priceCache) {
+        String dishId = detail.getDishId();
+        String name = detail.getDishName() == null ? dishId : detail.getDishName();
+        Integer cached = priceCache.get(dishId);
+        if (cached != null) {
+            return cached;
+        }
+        Integer price;
+        if (SystemCode.DISH_TYPE_SETMEAL == detail.getDishType()) {
+            SetMeal setMeal = setMealService.getById(dishId);
+            if (setMeal == null) {
+                throw new BussinessException("套餐[" + name + "]不存在或已删除");
+            }
+            if (setMeal.getStatus() == null || setMeal.getStatus() != SystemCode.ENABLED) {
+                throw new BussinessException("套餐[" + name + "]已停售");
+            }
+            price = setMeal.getPrice();
+        } else {
+            Dish dish = dishService.getById(dishId);
+            if (dish == null) {
+                throw new BussinessException("菜品[" + name + "]不存在或已删除");
+            }
+            if (dish.getStatus() == null || dish.getStatus() != SystemCode.ENABLED) {
+                throw new BussinessException("菜品[" + name + "]已停售");
+            }
+            price = dish.getPrice();
+        }
+        if (price == null || price < 0) {
+            throw new BussinessException("菜品[" + name + "]价格未维护，无法下单");
+        }
+        priceCache.put(dishId, price);
+        return price;
+    }
+
+    /**
+     * 按库内有效明细汇总订单总额（正常下单 + 加菜口径，与销量报表一致）。
+     */
+    private int sumValidDetailAmount(String orderId) {
+        List<OrderDetailEntity> details = orderDetailService.lambdaQuery()
+                .eq(OrderDetailEntity::getOrderId, orderId)
+                .in(OrderDetailEntity::getDetailStatus,
+                        OrderDetailType.NORMAL_DISH.getType(), OrderDetailType.PLUS_DISH.getType())
+                .list();
+        int sum = 0;
+        for (OrderDetailEntity detail : details) {
+            if (detail.getDishAmount() != null) {
+                sum += detail.getDishAmount();
+            }
+        }
+        return sum;
     }
 
     //退菜
@@ -254,6 +335,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
         //支付完成由服务端强制置为已支付，避免依赖调用方透传导致"只收钱不核销"
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
+        //订单总额按库内有效明细汇总重算，不信任调用方透传的金额
+        orderEntity.setTotalAmount(sumValidDetailAmount(orderId));
 
         //修改订单主表的信息
         this.updateById(orderEntity);
@@ -310,6 +393,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
 
         //挂账结账同样视为已结，服务端强制置为已支付，不依赖调用方透传
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_PAYED);
+        //订单总额同样按库内有效明细重算，避免挂账金额随入参被改写
+        orderEntity.setTotalAmount(sumValidDetailAmount(orderId));
 
         this.updateById(orderEntity);
 

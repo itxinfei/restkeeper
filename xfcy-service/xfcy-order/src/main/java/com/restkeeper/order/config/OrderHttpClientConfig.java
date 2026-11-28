@@ -4,8 +4,10 @@ import com.restkeeper.http.TenantContextClientInterceptor;
 import com.restkeeper.store.service.ICreditCompanyUserService;
 import com.restkeeper.store.service.ICreditLogService;
 import com.restkeeper.store.service.ICreditService;
+import com.restkeeper.store.service.IDishService;
 import com.restkeeper.store.service.ISellCalculationService;
 import com.restkeeper.store.service.ISetMealDishService;
+import com.restkeeper.store.service.ISetMealService;
 import com.restkeeper.store.service.ITableLogService;
 import com.restkeeper.store.service.ITableService;
 import org.springframework.cloud.client.loadbalancer.LoadBalanced;
@@ -85,5 +87,15 @@ public class OrderHttpClientConfig {
     @Bean
     public ISetMealDishService setMealDishService(RestClient.Builder restClientBuilder) {
         return createStoreClient(ISetMealDishService.class, restClientBuilder);
+    }
+
+    @Bean
+    public IDishService dishService(RestClient.Builder restClientBuilder) {
+        return createStoreClient(IDishService.class, restClientBuilder);
+    }
+
+    @Bean
+    public ISetMealService setMealService(RestClient.Builder restClientBuilder) {
+        return createStoreClient(ISetMealService.class, restClientBuilder);
     }
 }

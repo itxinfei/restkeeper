@@ -91,7 +91,8 @@ public class OrderController {
             orderDetailEntity.setDishName(dishVO.getDishName());
             orderDetailEntity.setDishType(dishVO.getType());
             orderDetailEntity.setDishId(dishVO.getDishId());
-            orderDetailEntity.setDishAmount(dishVO.getDishNumber() * dishVO.getPrice());
+            //单价与金额由 order provider 按菜品/套餐表重算，这里仅在入参带价时预填，避免拆箱 NPE
+            orderDetailEntity.setDishAmount(dishVO.getPrice() == null ? 0 : dishVO.getDishNumber() * dishVO.getPrice());
             orderDetailEntity.setDishNumber(dishVO.getDishNumber());
             orderDetailEntity.setFlavorRemark(flavorText(dishVO));
             orderDetailEntity.setTableId(orderVO.getTableId());
@@ -151,7 +152,8 @@ public class OrderController {
             orderDetailEntity.setDishName(detail.getDishName());
             orderDetailEntity.setDishPrice(detail.getPrice());
             orderDetailEntity.setDishNumber(detail.getDishNumber());
-            orderDetailEntity.setDishAmount(detail.getDishNumber() * detail.getPrice());
+            //金额由 order provider 重算，这里仅预填入参值，避免拆箱 NPE
+            orderDetailEntity.setDishAmount(detail.getPrice() == null ? 0 : detail.getDishNumber() * detail.getPrice());
             orderDetailEntity.setDishRemark(detail.getDishRemark());
             orderDetailEntity.setFlavorRemark(flavorText(detail));
 
@@ -200,9 +202,7 @@ public class OrderController {
         if (dishVO.getDishNumber() == null || dishVO.getDishNumber() <= 0) {
             throw new BussinessException("菜品[" + name + "]份数必须大于 0");
         }
-        if (dishVO.getPrice() == null || dishVO.getPrice() < 0) {
-            throw new BussinessException("菜品[" + name + "]单价不合法");
-        }
+        //单价不再必填：服务端按菜品表重算，前端金额只作参考
     }
 
     @Operation(summary = "退菜")
