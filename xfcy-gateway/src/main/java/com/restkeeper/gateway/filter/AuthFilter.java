@@ -113,11 +113,11 @@ public class AuthFilter implements GlobalFilter, Ordered {
                         headers.set("x-tenant-store-id", storeId);
                     }
                     if (loginUserId != null) {
-                        headers.set("x-login-user-id", loginUserId);
+                        headers.set("x-tenant-user-id", loginUserId);
                     }
                     if (loginUserName != null) {
                         //头值按 ISO-8859-1 传输，中文姓名需 Base64 编码，provider 侧解码还原
-                        headers.set("x-login-user-name", HeaderTextCodec.encode(loginUserName));
+                        headers.set("x-tenant-user-name", HeaderTextCodec.encode(loginUserName));
                     }
                 })
                 .build();

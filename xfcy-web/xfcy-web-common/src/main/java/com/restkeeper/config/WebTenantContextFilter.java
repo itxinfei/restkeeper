@@ -31,8 +31,8 @@ public class WebTenantContextFilter extends OncePerRequestFilter {
         try {
             putIfPresent(request, HttpHeaderNames.X_TENANT_SHOP_ID, "shopId");
             putIfPresent(request, HttpHeaderNames.X_TENANT_STORE_ID, "storeId");
-            putIfPresent(request, HttpHeaderNames.X_LOGIN_USER_ID, "loginUserId");
-            putIfPresent(request, HttpHeaderNames.X_LOGIN_USER_NAME, "loginUserName");
+            putIfPresent(request, HttpHeaderNames.X_TENANT_USER_ID, "loginUserId");
+            putIfPresent(request, HttpHeaderNames.X_TENANT_USER_NAME, "loginUserName");
             filterChain.doFilter(request, response);
         } finally {
             TenantContext.clear();
@@ -43,7 +43,7 @@ public class WebTenantContextFilter extends OncePerRequestFilter {
         String value = request.getHeader(headerName);
         if (StringUtils.hasText(value)) {
             //登录人姓名经网关注入时做了 Base64 编码，此处还原；其余头为纯 ASCII 原样透传
-            if (HttpHeaderNames.X_LOGIN_USER_NAME.equals(headerName)) {
+            if (HttpHeaderNames.X_TENANT_USER_NAME.equals(headerName)) {
                 value = HeaderTextCodec.decode(value);
             }
             TenantContext.addAttachment(contextKey, value);
