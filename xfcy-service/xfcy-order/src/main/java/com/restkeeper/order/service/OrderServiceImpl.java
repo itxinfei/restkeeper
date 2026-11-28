@@ -124,6 +124,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //单价与总额一律以服务端为准：按菜品/套餐表重算每条明细单价与小计。
         //否则调用方只要传一个不存在的 dishId + 任意低价，就能伪造订单金额（资金漏洞）。
         int totalAmount = recalcDetailAmount(orderDetailEntities);
+        //赠送金额（赠菜原值）同样由服务端汇总，供营收报表统计赠品价值
+        int presentAmount = sumPresentOriginalAmount(orderDetailEntities);
         if (!isNewOrder) {
             //加菜在库中订单总额基础上累加本次明细，避免逐条回查明细
             OrderEntity exists = this.getById(orderEntity.getOrderId());
@@ -131,8 +133,10 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
                 throw new BussinessException("订单不存在");
             }
             totalAmount += exists.getTotalAmount() == null ? 0 : exists.getTotalAmount();
+            presentAmount += exists.getPresentAmount() == null ? 0 : exists.getPresentAmount();
         }
         orderEntity.setTotalAmount(totalAmount);
+        orderEntity.setPresentAmount(presentAmount);
 
         this.saveOrUpdate(orderEntity);
 
@@ -143,7 +147,11 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         orderDetailEntities.forEach(orderDetailEntity -> {
             orderDetailEntity.setOrderId(orderEntity.getOrderId());
             orderDetailEntity.setOrderNumber(SequenceUtils.getSequenceWithPrefix(orderEntity.getOrderNumber()));
-            orderDetailEntity.setDetailStatus(detailStatus);
+            //状态缺省或非法时按新单/加菜兜底；显式传赠菜(2)不再被无条件覆盖
+            Integer incomingStatus = orderDetailEntity.getDetailStatus();
+            if (incomingStatus == null || incomingStatus < 1 || incomingStatus > 4) {
+                orderDetailEntity.setDetailStatus(detailStatus);
+            }
 
             //沽清检查（租户上下文由 TenantContextHeaderFilter 从请求头还原，HTTP 客户端拦截器透传）
             Integer remainder = sellCalculationService.getRemainderCount(orderDetailEntity.getDishId());
@@ -193,7 +201,9 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             checkOrderDetailParam(detail);
             int price = resolveDishPrice(detail, priceCache);
             detail.setDishPrice(price);
-            detail.setDishAmount(price * detail.getDishNumber());
+            //赠菜不计入订单总额：小计置 0，单价保留用于赠品价值统计
+            boolean present = OrderDetailType.PRESENT_DISH.getType().equals(detail.getDetailStatus());
+            detail.setDishAmount(present ? 0 : price * detail.getDishNumber());
             sum += detail.getDishAmount();
         }
         return sum;
@@ -255,6 +265,37 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         for (OrderDetailEntity detail : details) {
             if (detail.getDishAmount() != null) {
                 sum += detail.getDishAmount();
+            }
+        }
+        return sum;
+    }
+
+    /**
+     * 本次明细的赠送原值：赠菜不计价，但需按原价统计赠品价值入报表。
+     */
+    private int sumPresentOriginalAmount(List<OrderDetailEntity> details) {
+        int sum = 0;
+        for (OrderDetailEntity detail : details) {
+            if (OrderDetailType.PRESENT_DISH.getType().equals(detail.getDetailStatus())
+                    && detail.getDishPrice() != null && detail.getDishNumber() != null) {
+                sum += detail.getDishPrice() * detail.getDishNumber();
+            }
+        }
+        return sum;
+    }
+
+    /**
+     * 按库内赠菜明细汇总赠送原值：结账金额以服务端为准，不信任调用方透传。
+     */
+    private int sumPresentAmountByOrder(String orderId) {
+        List<OrderDetailEntity> details = orderDetailService.lambdaQuery()
+                .eq(OrderDetailEntity::getOrderId, orderId)
+                .eq(OrderDetailEntity::getDetailStatus, OrderDetailType.PRESENT_DISH.getType())
+                .list();
+        int sum = 0;
+        for (OrderDetailEntity detail : details) {
+            if (detail.getDishPrice() != null && detail.getDishNumber() != null) {
+                sum += detail.getDishPrice() * detail.getDishNumber();
             }
         }
         return sum;
@@ -395,6 +436,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //订单总额按库内有效明细汇总重算，不信任调用方透传的金额
         int totalAmount = sumValidDetailAmount(orderId);
         orderEntity.setTotalAmount(totalAmount);
+        //赠送金额按库内赠菜明细汇总，同样不依赖入参
+        orderEntity.setPresentAmount(sumPresentAmountByOrder(orderId));
         //实收金额服务端兜底并校验下限，防止少收、抹零/免单超过总额
         applyCashPayAmount(orderEntity, totalAmount);
 
@@ -456,6 +499,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
         //订单总额同样按库内有效明细重算，避免挂账金额随入参被改写
         int totalAmount = sumValidDetailAmount(orderId);
         orderEntity.setTotalAmount(totalAmount);
+        //赠送金额同步按库内明细重算
+        orderEntity.setPresentAmount(sumPresentAmountByOrder(orderId));
         //挂账金额服务端兜底并校验范围：未填按应付记账，超额挂账直接拒
         applyCreditPayAmount(orderEntity, creditDTO, totalAmount);
 
