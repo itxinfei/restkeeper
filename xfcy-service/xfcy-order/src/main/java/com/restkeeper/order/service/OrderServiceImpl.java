@@ -218,6 +218,12 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, OrderEntity> {
             if (setMeal.getStatus() == null || setMeal.getStatus() != SystemCode.ENABLED) {
                 throw new BussinessException("套餐[" + name + "]已停售");
             }
+            //套餐未配置子菜时，原流程要到结账拆明细才报「未配置菜品」，
+            //订单已生成却结不了账。这里提前到下单拦截，避免单子卡死。
+            List<Dish> subDishes = setMealDishService.getAllDishBySetMealId(dishId);
+            if (subDishes == null || subDishes.isEmpty()) {
+                throw new BussinessException("套餐[" + name + "]未配置菜品，无法下单");
+            }
             price = setMeal.getPrice();
         } else {
             Dish dish = dishService.getById(dishId);
