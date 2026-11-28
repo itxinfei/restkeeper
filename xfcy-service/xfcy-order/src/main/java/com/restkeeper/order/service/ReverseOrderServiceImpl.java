@@ -1,19 +1,16 @@
 package com.restkeeper.order.service;
 
 import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
-import com.restkeeper.constants.OrderPayType;
 import com.restkeeper.constants.SystemCode;
 import com.restkeeper.entity.OrderEntity;
 import com.restkeeper.entity.ReverseOrder;
 import com.restkeeper.exception.BussinessException;
 import com.restkeeper.order.mapper.ReverseOrderMapper;
-import com.restkeeper.store.entity.Credit;
-import com.restkeeper.store.entity.CreditLogs;
+import com.restkeeper.order.service.reverse.OrderReverseHandler;
 import com.restkeeper.store.entity.Table;
-import com.restkeeper.store.service.ICreditLogService;
-import com.restkeeper.store.service.ICreditService;
 import com.restkeeper.store.service.ITableService;
 import com.restkeeper.tenant.TenantContext;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.seata.spring.annotation.GlobalTransactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -22,8 +19,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 反结账本地服务（操作均在订单库内，本地事务即可）
+ * 反结账服务：订单状态回退 + 按支付方式的撤销动作（如挂账回退主体欠款），跨库写走 Seata 全局事务
  */
+@Slf4j
 @Service("reverseOrderService")
 public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, ReverseOrder> {
 
@@ -33,11 +31,9 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
     @Autowired
     private ITableService tableService;
 
-    @Autowired
-    private ICreditLogService creditLogService;
-
-    @Autowired
-    private ICreditService creditService;
+    //按支付方式分派的撤销处理器（Spring 自动收集全部实现）
+    @Autowired(required = false)
+    private List<OrderReverseHandler> reverseHandlers;
 
     //跨 order/store 两库写（撤销挂账要回写挂账主体与流水），必须走 Seata 全局事务
     @GlobalTransactional
@@ -57,10 +53,19 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
         orderEntity.setPayStatus(SystemCode.ORDER_STATUS_NOTPAY);
         orderService.updateById(orderEntity);
 
-        //反结账撤销挂账：订单已回到未付而挂账留存，会让挂账主体欠款虚高、挂账报表多计
-        if (orderEntity.getPayType() != null
-                && orderEntity.getPayType() == OrderPayType.CREDIT.getType()) {
-            cancelCreditOfOrder(orderId);
+        //撤销原支付动作：订单已回到未付而外部数据（挂账/储值/积分等）留存会形成双标状态。
+        //按 payType 找对应处理器；找不到只告警不阻断（新增支付方式时若漏注册会在日志里显形）
+        Integer payType = orderEntity.getPayType();
+        boolean handled = false;
+        for (OrderReverseHandler handler : reverseHandlers) {
+            if (handler.support(payType)) {
+                handler.reverse(orderId);
+                handled = true;
+                break;
+            }
+        }
+        if (!handled) {
+            log.warn("反结账未找到支付方式的撤销处理器, orderId={}, payType={}", orderId, payType);
         }
 
         // 反结账后订单回到未付，桌台必须恢复为已开桌：否则桌台空闲却压着一张未付单，
@@ -87,29 +92,4 @@ public class ReverseOrderServiceImpl extends ServiceImpl<ReverseOrderMapper, Rev
         return this.save(reverseOrder);
     }
 
-    /**
-     * 撤销该订单产生的挂账：回退挂账主体剩余欠款并删除挂账流水。
-     * 回退金额不超过主体当前欠款，避免历史已还款数据被反向撑大。
-     */
-    private void cancelCreditOfOrder(String orderId) {
-        List<CreditLogs> creditLogsList = creditLogService.listByOrderId(orderId);
-        if (creditLogsList == null || creditLogsList.isEmpty()) {
-            return;
-        }
-        for (CreditLogs creditLogs : creditLogsList) {
-            Integer amount = creditLogs.getCreditAmount();
-            if (amount == null || amount <= 0) {
-                continue;
-            }
-            Credit credit = creditService.getById(creditLogs.getCreditId());
-            if (credit == null || credit.getCreditAmount() == null) {
-                continue;
-            }
-            if (credit.getCreditAmount() >= amount) {
-                credit.setCreditAmount(credit.getCreditAmount() - amount);
-                creditService.saveOrUpdate(credit);
-            }
-        }
-        creditLogService.deleteByOrderId(orderId);
-    }
 }
